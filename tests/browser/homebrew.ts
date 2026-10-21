@@ -206,8 +206,10 @@ globalThis.runRenderingContract = () => {
     sections,
     [1, 1, 2, 1, 0],
   );
-  const kept = ringCatalog.querySelectorAll(".hb-grant-kept").length;
-  check("every grant of the fixture is editable", kept === 0, kept, 0);
+  const changes = ringCatalog.querySelectorAll(".hb-toggle-row .hb-toggle-change").length;
+  check("the toggle lists each of its changes", changes === 2, changes, 2);
+  const switches = document.querySelectorAll('[name="characterMechanics"]').length;
+  check("automation follows the effects, with no switch", switches === 0, switches, 0);
   const casting = ringCatalog.querySelector<HTMLSelectElement>('select[name="casting-ability"]');
   check(
     "the spellcasting ability defaults to the player's pick",

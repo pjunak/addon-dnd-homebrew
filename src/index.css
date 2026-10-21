@@ -221,13 +221,16 @@
 .hb-grants-casting[hidden] {
   display: none;
 }
-.hb-grant-kept {
-  align-items: center;
-}
-.hb-grant-kept .hb-grant-text {
-  flex: 1 1 14rem;
+/* A toggle's changes sit on their own line under its name, indented. */
+.hb-toggle-changes {
+  flex: 1 1 100%;
   min-width: 0;
-  overflow-wrap: anywhere;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--border-subtle, #ffffff12);
+}
+.hb-toggle-change:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 .hb-preview-name {
   margin: 0;

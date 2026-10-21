@@ -59,7 +59,22 @@ type Selection =
   | { readonly kind: "class"; readonly id: string }
   | { readonly kind: "item"; readonly id: string }
   | { readonly kind: "new-class" }
-  | { readonly kind: "new-item"; readonly classId: string };
+  /** `template` prefills the editor, as Duplicate does. */
+  | { readonly kind: "new-item"; readonly classId: string; readonly template?: Item };
+
+/** Common item types, offered as suggestions; any one-line type is allowed. */
+const itemTypes = [
+  "Wondrous Item",
+  "Armor",
+  "Weapon",
+  "Ring",
+  "Rod",
+  "Staff",
+  "Wand",
+  "Potion",
+  "Scroll",
+  "Ammunition",
+] as const;
 
 export function defineCatalogElement(generation?: string): string {
   const tag = generation ? `${catalogElementTag}-${generation}` : catalogElementTag;
@@ -170,7 +185,9 @@ export function defineCatalogElement(generation?: string): string {
         this.#drafts = drafts;
         this.#published = published;
         if (this.#message?.text === "Loading homebrew items…") this.#message = undefined;
-        if (this.#selection && !this.#selected()) this.#selection = undefined;
+        // A selected draft that is gone leaves the editor; a new one stays open.
+        const selection = this.#selection;
+        if (selection && "id" in selection && !this.#selected()) this.#selection = undefined;
         this.#renderAll(!this.#dirty);
       } catch (error) {
         if (signal.aborted) return;
@@ -470,9 +487,50 @@ export function defineCatalogElement(generation?: string): string {
             ? this.#drafts.items.find((entry) => entry.value.id === selection.id)
             : undefined;
         this.#editor.replaceChildren(
-          this.#itemForm(stored, selection.kind === "new-item" ? selection.classId : undefined),
+          selection.kind === "new-item"
+            ? this.#itemForm(undefined, selection.classId, selection.template)
+            : this.#itemForm(stored, undefined),
         );
       }
+    }
+    /**
+     * The permanent id field. A new draft may leave it empty: the placeholder
+     * follows the name and shows the id saving will use.
+     */
+    #idField(saved: boolean, value: string, example: string): HTMLLabelElement {
+      const t = this.#t;
+      return textField(document, t("Id"), "id", value, {
+        maxLength: 64,
+        readOnly: saved,
+        placeholder: example,
+        hint: saved
+          ? t("Used in saved characters; it cannot change after the first save.")
+          : t(
+              "Leave it empty to make one from the name. Saved characters use it, so it cannot change after the first save.",
+            ),
+      });
+    }
+    #previewId(form: HTMLFormElement, taken: () => ReadonlySet<string>): void {
+      const name = form.querySelector<HTMLInputElement>('input[name="name"]'),
+        id = form.querySelector<HTMLInputElement>('input[name="id"]');
+      if (!name || !id || id.readOnly) return;
+      const example = id.placeholder;
+      const update = (): void => {
+        const text = name.value.trim();
+        id.placeholder = text ? freeId(text, taken()) : example;
+      };
+      name.addEventListener("input", update);
+      update();
+    }
+    #classIds(): ReadonlySet<string> {
+      return new Set(this.#drafts?.classes.map((entry) => entry.value.id) ?? []);
+    }
+    /** Item ids in use, including published records whose draft was deleted. */
+    #itemIds(): ReadonlySet<string> {
+      return new Set([
+        ...(this.#drafts?.items.map((entry) => entry.value.id) ?? []),
+        ...[...(this.#published?.records.values() ?? [])].map((entry) => entry.value.itemId),
+      ]);
     }
     #form(title: string): HTMLFormElement {
       const form = element(document, "form", "hb-form");
@@ -490,17 +548,15 @@ export function defineCatalogElement(generation?: string): string {
       const form = this.#form(stored ? value.name : t("New class"));
       form.append(
         textField(document, t("Name"), "name", value.name, { maxLength: 120 }),
-        textField(document, t("Id"), "id", value.id, {
-          maxLength: 64,
-          readOnly: stored !== undefined,
-          placeholder: "cursed-cards",
-          hint: t("Used in saved characters; it cannot change after the first save."),
-        }),
+        this.#idField(stored !== undefined, value.id, "elemental-rings"),
         textField(document, t("Name prefix"), "namePrefix", value.namePrefix, {
           maxLength: 60,
-          hint: t("Shown before each item's name, for example Cursed Card: Defense."),
+          hint: t("Shown before each item's name, for example Elemental Ring: Fire."),
         }),
-        textField(document, t("Item type"), "itemType", value.itemType, { maxLength: 120 }),
+        textField(document, t("Item type"), "itemType", value.itemType, {
+          maxLength: 120,
+          suggestions: itemTypes,
+        }),
         selectField(
           document,
           t("Rarity"),
@@ -551,11 +607,11 @@ export function defineCatalogElement(generation?: string): string {
         ),
         textField(document, t("Condition name"), "conditionName", value.condition?.name ?? "", {
           maxLength: 120,
-          placeholder: "Fate-Touched",
+          placeholder: "Elemental Attunement",
         }),
         textField(document, t("Condition id"), "conditionId", value.condition?.id ?? "", {
           maxLength: 64,
-          placeholder: "fate-touched",
+          placeholder: "elemental-attunement",
           hint: t("Filled from the name when empty."),
         }),
         textArea(
@@ -578,6 +634,7 @@ export function defineCatalogElement(generation?: string): string {
           t("Lists the class in the player gallery. Each item also needs its own switch."),
         ),
       );
+      this.#previewId(form, () => this.#classIds());
       const actions = element(document, "div", "hb-editor-actions");
       actions.dataset["uiActions"] = "";
       const save = actionButton(
@@ -605,7 +662,7 @@ export function defineCatalogElement(generation?: string): string {
     #readClass(form: HTMLFormElement, stored: Stored<ItemClass> | undefined): ItemClass {
       const data = new FormData(form);
       const name = formText(data, "name").trim();
-      const taken = new Set(this.#drafts?.classes.map((entry) => entry.value.id) ?? []);
+      const taken = this.#classIds();
       const conditionName = formText(data, "conditionName").trim(),
         conditionId = formText(data, "conditionId").trim(),
         conditionSummary = formText(data, "conditionSummary").trim();
@@ -636,17 +693,31 @@ export function defineCatalogElement(generation?: string): string {
     }
     async #saveClass(form: HTMLFormElement, stored: Stored<ItemClass> | undefined): Promise<void> {
       const value = this.#readClass(form, stored);
+      const named = !stored && formText(new FormData(form), "id").trim() === "";
+      if (!stored && this.#classIds().has(value.id))
+        return this.#editorProblem({ text: "This id is already in use. Choose another id." });
       const failure = classProblem(value);
-      if (!stored && this.#drafts?.classes.some((entry) => entry.value.id === value.id))
-        return this.#editorProblem({
-          text: "This id was used by a deleted draft. Choose another id.",
-        });
       if (failure) return this.#editorProblem(failure);
-      await this.#save(collections.classes, value, stored, { kind: "class", id: value.id });
+      await this.#save(
+        collections.classes,
+        value,
+        stored,
+        (saved) => ({ kind: "class", id: saved.id }),
+        named
+          ? (failed) => ({
+              ...value,
+              id: freeId(value.name, new Set([...this.#classIds(), ...failed])),
+            })
+          : undefined,
+      );
     }
-    #itemForm(stored: Stored<Item> | undefined, classId: string | undefined): HTMLFormElement {
+    #itemForm(
+      stored: Stored<Item> | undefined,
+      classId: string | undefined,
+      template?: Item,
+    ): HTMLFormElement {
       const t = this.#t;
-      const value = stored?.value ?? newItem("", "", classId ?? "", Date.now());
+      const value = stored?.value ?? template ?? newItem("", "", classId ?? "", Date.now());
       const form = this.#form(stored ? value.name : t("New item"));
       const classes = [...(this.#drafts?.classes ?? [])].sort((a, b) =>
         compare(fold(a.value.name), fold(b.value.name)),
@@ -655,12 +726,7 @@ export function defineCatalogElement(generation?: string): string {
         classes.find((entry) => entry.value.id === id)?.value;
       form.append(
         textField(document, t("Name"), "name", value.name, { maxLength: 120 }),
-        textField(document, t("Id"), "id", value.id, {
-          maxLength: 64,
-          readOnly: stored !== undefined,
-          placeholder: "defense",
-          hint: t("Used in saved characters; it cannot change after the first save."),
-        }),
+        this.#idField(stored !== undefined, value.id, "ring-of-embers"),
         selectField(document, t("Class"), "classId", value.classId, [
           ["", t("No class")],
           ...classes.map((entry) => [entry.value.id, entry.value.name] as const),
@@ -674,10 +740,6 @@ export function defineCatalogElement(generation?: string): string {
           maxMarkdown,
           t("The effect as players read it on their character sheet."),
         ),
-        selectField(document, t("Mechanics"), "characterMechanics", value.characterMechanics, [
-          ["narrative", t("Text only: the sheet shows the description")],
-          ["complete", t("Automated: the sheet applies the effects and properties")],
-        ]),
       );
       const effects = element(document, "fieldset", "hb-effects-fieldset");
       effects.append(
@@ -686,7 +748,9 @@ export function defineCatalogElement(generation?: string): string {
           document,
           "p",
           "hb-hint",
-          t("Effects apply while the item is equipped, and attuned when it requires attunement."),
+          t(
+            "Effects and properties apply while the item is equipped, and attuned when it requires attunement. An item with neither is text only: the sheet shows its description.",
+          ),
         ),
       );
       this.#effects = effectsEditor(
@@ -724,13 +788,7 @@ export function defineCatalogElement(generation?: string): string {
         () => form.querySelector<HTMLInputElement>('input[name="name"]')?.value.trim() ?? "",
       );
       grants.append(this.#grants.root);
-      effects.hidden = grants.hidden = value.characterMechanics !== "complete";
       form.append(effects, grants);
-      form
-        .querySelector<HTMLSelectElement>('select[name="characterMechanics"]')!
-        .addEventListener("change", (event) => {
-          effects.hidden = grants.hidden = (event.target as HTMLSelectElement).value !== "complete";
-        });
 
       const defaults = element(document, "details", "hb-defaults");
       const inherited = classOf(value.classId);
@@ -744,6 +802,7 @@ export function defineCatalogElement(generation?: string): string {
         textField(document, t("Item type"), "overrideItemType", value.overrides.itemType ?? "", {
           maxLength: 120,
           placeholder: inherited?.itemType ?? "Wondrous Item",
+          suggestions: itemTypes,
         }),
         selectField(document, t("Rarity"), "overrideRarity", value.overrides.rarity ?? "", [
           ["", fromClass(t(inherited?.rarity ?? "Common"))],
@@ -797,19 +856,43 @@ export function defineCatalogElement(generation?: string): string {
       const preview = element(document, "section", "hb-preview");
       preview.setAttribute("aria-live", "polite");
       form.append(preview);
+      this.#previewId(form, () => this.#itemIds());
       const actions = element(document, "div", "hb-editor-actions");
       actions.dataset["uiActions"] = "";
       const save = actionButton(
         document,
         t("Save"),
-        () => void this.#saveItem(form, stored),
+        () => void this.#saveItem(form, stored, false),
         "primary",
       );
       save.type = "submit";
       actions.append(save);
       if (stored)
         actions.append(
+          actionButton(
+            document,
+            t("Duplicate"),
+            () =>
+              void this.#select({
+                kind: "new-item",
+                classId: stored.value.classId,
+                template: {
+                  ...stored.value,
+                  id: "",
+                  name: t("{name} (copy)", { name: stored.value.name }),
+                  retired: false,
+                },
+              }),
+          ),
           actionButton(document, t("Delete"), () => void this.#deleteItem(stored), "danger"),
+        );
+      else
+        actions.append(
+          actionButton(
+            document,
+            t("Save and add another"),
+            () => void this.#saveItem(form, stored, true),
+          ),
         );
       form.append(actions);
       form.addEventListener("submit", (event) => event.preventDefault());
@@ -821,8 +904,11 @@ export function defineCatalogElement(generation?: string): string {
     #readItem(form: HTMLFormElement, stored: Stored<Item> | undefined): Item {
       const data = new FormData(form);
       const name = formText(data, "name").trim();
-      const taken = new Set(this.#drafts?.items.map((entry) => entry.value.id) ?? []);
-      const mechanics = formText(data, "characterMechanics") as Mechanics;
+      const effects = this.#effects?.read() ?? [],
+        grants = this.#grants?.read();
+      // An item is automated exactly when it declares something to automate.
+      const mechanics: Mechanics =
+        effects.length > 0 || grants !== undefined ? "complete" : "narrative";
       const itemType = formText(data, "overrideItemType").trim(),
         rarity = formText(data, "overrideRarity"),
         attunement = formText(data, "overrideAttunement");
@@ -834,9 +920,8 @@ export function defineCatalogElement(generation?: string): string {
           ? { bodyPlacements: formValues(data, "overridePlacements") as BodyPlacement[] }
           : {}),
       };
-      const grants = mechanics === "complete" ? this.#grants?.read() : undefined;
       return {
-        id: stored?.value.id ?? (formText(data, "id").trim() || freeId(name, taken)),
+        id: stored?.value.id ?? (formText(data, "id").trim() || freeId(name, this.#itemIds())),
         schemaVersion: 1,
         classId: formText(data, "classId"),
         name,
@@ -844,7 +929,7 @@ export function defineCatalogElement(generation?: string): string {
         overrides,
         tags: splitTags(formText(data, "tags")),
         characterMechanics: mechanics,
-        characterEffects: mechanics === "complete" ? (this.#effects?.read() ?? []) : [],
+        characterEffects: effects,
         playerVisible: data.get("playerVisible") !== null,
         retired: data.get("retired") !== null,
         updatedAt: Date.now(),
@@ -865,8 +950,7 @@ export function defineCatalogElement(generation?: string): string {
         element(document, "h3", "", t("As published")),
         element(document, "p", "hb-preview-name", published.record.name),
       );
-      if (failure && item.characterMechanics === "complete")
-        preview.append(messageBlock(document, problemText(t, failure), "alert"));
+      if (failure) preview.append(messageBlock(document, problemText(t, failure), "alert"));
       const lines = [
         ...published.record.characterEffects.map((effect) => describeEffect(effect, t)),
         ...describeGrants(published.record.grants, t),
@@ -878,15 +962,30 @@ export function defineCatalogElement(generation?: string): string {
       }
       preview.append(markdown(document, published.record.text));
     }
-    async #saveItem(form: HTMLFormElement, stored: Stored<Item> | undefined): Promise<void> {
+    async #saveItem(
+      form: HTMLFormElement,
+      stored: Stored<Item> | undefined,
+      another: boolean,
+    ): Promise<void> {
       const value = this.#readItem(form, stored);
-      if (!stored && this.#drafts?.items.some((entry) => entry.value.id === value.id))
-        return this.#editorProblem({
-          text: "This id was used by a deleted draft. Choose another id.",
-        });
+      const named = !stored && formText(new FormData(form), "id").trim() === "";
+      if (!stored && this.#itemIds().has(value.id))
+        return this.#editorProblem({ text: "This id is already in use. Choose another id." });
       const failure = itemProblem(value);
       if (failure) return this.#editorProblem(failure);
-      await this.#save(collections.items, value, stored, { kind: "item", id: value.id });
+      await this.#save(
+        collections.items,
+        value,
+        stored,
+        (saved) =>
+          another ? { kind: "new-item", classId: saved.classId } : { kind: "item", id: saved.id },
+        named
+          ? (failed) => ({
+              ...value,
+              id: freeId(value.name, new Set([...this.#itemIds(), ...failed])),
+            })
+          : undefined,
+      );
     }
     #editorProblem(problem: Problem): void {
       this.#editorMessage = { text: problemText(this.#t, problem), kind: "alert" };
@@ -895,18 +994,35 @@ export function defineCatalogElement(generation?: string): string {
       form?.querySelector("h2")?.after(messageBlock(document, this.#editorMessage.text, "alert"));
       this.#editorMessage = undefined;
     }
-    async #save(
+    /**
+     * Saves one draft and selects what `select` names. A new draft whose id
+     * came from its name can still meet a deleted draft's key, which the
+     * browser cannot reuse; `rename` then gives the next free id.
+     */
+    async #save<T extends ItemClass | Item>(
       collection: typeof collections.classes | typeof collections.items,
-      value: ItemClass | Item,
-      stored: Stored<ItemClass> | Stored<Item> | undefined,
-      selection: Selection,
+      value: T,
+      stored: Stored<T> | undefined,
+      select: (saved: T) => Selection,
+      rename?: (failed: ReadonlySet<string>) => T,
     ): Promise<void> {
       const runtime = this.#runtime;
       if (!runtime || this.#busy) return;
       this.#setBusy(true);
       try {
-        await runtime.repository.save(collection, value, stored?.revision ?? 0, this.#signal());
-        this.#selection = selection;
+        const failed = new Set<string>();
+        let draft = value;
+        for (;;) {
+          try {
+            await runtime.repository.save(collection, draft, stored?.revision ?? 0, this.#signal());
+            break;
+          } catch (error) {
+            if (!rename || !isConflict(error) || failed.size >= 5) throw error;
+            failed.add(draft.id);
+            draft = rename(failed);
+          }
+        }
+        this.#selection = select(draft);
         this.#setDirty(false);
         this.#editorMessage = { text: this.#t("Saved."), kind: "status" };
         this.#setBusy(false);

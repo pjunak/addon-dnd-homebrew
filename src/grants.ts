@@ -2,6 +2,7 @@ import type { Translator } from "./catalogs.js";
 import { abilityNames, skillName } from "./effects.js";
 import {
   actionButton,
+  checkField,
   chipsField,
   element,
   numberField,
@@ -16,8 +17,10 @@ import {
   damageTypes,
   freeId,
   grantFields,
+  modifierTargets,
   skills,
   slug,
+  spellSchools,
   type Ability,
   type Activation,
   type Advantage,
@@ -30,7 +33,9 @@ import {
   type Grants,
   type Modifier,
   type Skill,
+  type SpellFilter,
   type SpellGrant,
+  type SpellSchool,
 } from "./model.js";
 
 const rollLabels: Readonly<Record<AdvantageRoll, string>> = {
@@ -79,12 +84,25 @@ const senseLabels: Readonly<Record<string, string>> = {
   tremorsense: "Tremorsense",
   truesight: "Truesight",
 };
-type SpellKind = "use" | "atWill" | "cantrip" | "pick";
-const spellKindLabels: Readonly<Record<SpellKind, string>> = {
-  use: "Cast with a use",
-  atWill: "Cast at will",
-  cantrip: "Cantrip",
-  pick: "Player picks a cantrip",
+type SpellSource = "named" | "pick";
+const spellSourceLabels: Readonly<Record<SpellSource, string>> = {
+  named: "These spells",
+  pick: "The player's choice",
+};
+type SpellCast = "use" | "atWill" | "cantrip";
+const spellCastLabels: Readonly<Record<SpellCast, string>> = {
+  use: "With a use",
+  atWill: "At will",
+  cantrip: "As a cantrip, without a use",
+};
+type ModifierTarget = Modifier["target"];
+const modifierLabels: Readonly<Record<ModifierTarget, string>> = {
+  advantage: "Advantage or Disadvantage",
+  sense: "Sense range at least",
+  senseBonus: "Sense range extended",
+  resistance: "Resistance",
+  damageImmunity: "Damage immunity",
+  conditionImmunity: "Condition immunity",
 };
 type Rest = GrantResource["recharge"];
 const rechargeLabels: Readonly<Record<Rest, string>> = {
@@ -303,55 +321,49 @@ function value(node: HTMLElement, name: string): string {
 function count(node: HTMLElement, name: string): number {
   return Number(value(node, name) || "0");
 }
+function checked(node: HTMLElement, name: string): boolean {
+  return node.querySelector<HTMLInputElement>(`input[name="${name}"]`)?.checked ?? false;
+}
+/** Ids typed as a comma-separated list. */
+function idList(text: string): string[] {
+  return text
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => id !== "");
+}
 
-/**
- * One list of rows with an Add button. A row the editor cannot show (an
- * imported shape beyond its controls) stays as a described, removable row,
- * so saving never drops it.
- */
+/** One list of rows with an Add button; every row ends with its Remove button. */
 function section<T>(
   hooks: Hooks,
   title: string,
   addLabel: string,
   initial: readonly T[],
-  editable: (entry: T) => boolean,
-  describe: (entry: T) => string,
   render: (node: HTMLElement, entry: T | undefined) => () => T,
   onRowsChanged: () => void = () => {},
+  removeLabel: string = hooks.t("Remove"),
 ): { readonly root: HTMLElement; readonly rows: Row<T>[]; add(entry?: T): void } {
-  const { document, t } = hooks;
+  const { document } = hooks;
   const root = element(document, "div", "hb-grants-section");
   const heading = element(document, "h4", "hb-grants-heading", title);
   const items = element(document, "ol", "hb-effect-list");
   const rows: Row<T>[] = [];
-  const remove = (node: HTMLElement): HTMLButtonElement =>
-    actionButton(document, t("Remove"), () => {
-      rows.splice(
-        rows.findIndex((row) => row.node === node),
-        1,
-      );
-      node.remove();
-      onRowsChanged();
-      hooks.changed();
-      hooks.restructured();
-    });
   const add = (entry?: T): void => {
     const node = element(document, "li", "hb-effect-row hb-grant-row");
     node.dataset["uiToolbar"] = "";
-    let read: () => T;
-    if (entry !== undefined && !editable(entry)) {
-      node.classList.add("hb-grant-kept");
-      node.append(
-        element(document, "span", "hb-grant-text", describe(entry)),
-        element(document, "small", "hb-hint", t("Kept as imported; edit the file to change it.")),
-        remove(node),
-      );
-      read = () => entry;
-    } else {
-      read = render(node, entry);
-      node.append(remove(node));
-    }
-    rows.push({ node, read: () => read() });
+    const read = render(node, entry);
+    node.append(
+      actionButton(document, removeLabel, () => {
+        rows.splice(
+          rows.findIndex((row) => row.node === node),
+          1,
+        );
+        node.remove();
+        onRowsChanged();
+        hooks.changed();
+        hooks.restructured();
+      }),
+    );
+    rows.push({ node, read });
     items.append(node);
   };
   for (const entry of initial) add(entry);
@@ -368,10 +380,171 @@ function section<T>(
   return { root, rows, add };
 }
 
-/** Re-renders a row's controls in place when a choice changes which controls apply. */
-function rerender(node: HTMLElement, controls: () => HTMLElement[]): void {
+/** Re-renders a row's controls in place, keeping the Remove button once it exists. */
+function rerender(node: HTMLElement, controls: readonly HTMLElement[]): void {
   const remove = node.lastElementChild;
-  node.replaceChildren(...controls(), ...(remove ? [remove] : []));
+  node.replaceChildren(...controls, ...(remove ? [remove] : []));
+}
+
+/**
+ * The controls of one advantage. Changing the roll calls `redraw`, because the
+ * roll decides whether abilities and skills apply.
+ */
+function advantageFields(hooks: Hooks, entry: Advantage, redraw: () => void): HTMLElement[] {
+  const { document, t } = hooks;
+  const roll = selectField(
+    document,
+    t("Roll"),
+    "advantage-on",
+    entry.on,
+    advantageRolls.map((roll) => [roll, t(rollLabels[roll])] as const),
+  );
+  roll.querySelector("select")!.addEventListener("change", redraw);
+  const fields: HTMLElement[] = [
+    roll,
+    selectField(document, t("Result"), "advantage-mode", entry.mode ?? "advantage", [
+      ["advantage", t("Advantage")],
+      ["disadvantage", t("Disadvantage")],
+    ]),
+  ];
+  if (entry.on === "save" || entry.on === "check")
+    fields.push(
+      chipsField(
+        document,
+        t("Abilities"),
+        "advantage-abilities",
+        entry.abilities ?? [],
+        abilities.map((ability) => [ability, t(abilityNames[ability]!)] as const),
+      ),
+    );
+  if (entry.on === "check")
+    fields.push(
+      chipsField(
+        document,
+        t("Skills"),
+        "advantage-skills",
+        entry.skills ?? [],
+        skills.map((skill) => [skill, t(skillName(skill))] as const),
+      ),
+    );
+  fields.push(
+    textField(document, t("Only when"), "advantage-when", entry.when ?? "", {
+      maxLength: 200,
+      placeholder: t("Always"),
+    }),
+  );
+  return fields;
+}
+/** The advantage a row's controls show; abilities and skills only where they apply. */
+function readAdvantage(node: HTMLElement): Advantage {
+  const on = value(node, "advantage-on") as AdvantageRoll,
+    mode = value(node, "advantage-mode"),
+    when = value(node, "advantage-when"),
+    chosenAbilities = on === "save" || on === "check" ? selected(node, "advantage-abilities") : [],
+    chosenSkills = on === "check" ? selected(node, "advantage-skills") : [];
+  return {
+    on,
+    ...(mode === "disadvantage" ? { mode } : {}),
+    ...(chosenAbilities.length > 0 ? { abilities: chosenAbilities as Ability[] } : {}),
+    ...(chosenSkills.length > 0 ? { skills: chosenSkills as Skill[] } : {}),
+    ...(when ? { when } : {}),
+  };
+}
+
+function senseOptions(t: Translator, key: string): (readonly [string, string])[] {
+  return [
+    ...Object.keys(senseLabels).map((sense) => [sense, t(senseLabels[sense]!)] as const),
+    ...(senseLabels[key] ? [] : [[key, titleOf(key)] as const]),
+  ];
+}
+/** The controls of one toggle change, after its target. */
+function modifierFields(hooks: Hooks, modifier: Modifier, redraw: () => void): HTMLElement[] {
+  const { document, t } = hooks;
+  switch (modifier.target) {
+    case "advantage":
+      return advantageFields(hooks, modifier, redraw);
+    case "sense":
+    case "senseBonus":
+      return [
+        selectField(
+          document,
+          t("Sense"),
+          "change-sense",
+          modifier.key,
+          senseOptions(t, modifier.key),
+        ),
+        numberField(
+          document,
+          modifier.target === "sense" ? t("Range at least (ft)") : t("Range extended by (ft)"),
+          "change-range",
+          modifier.target === "sense" ? modifier.value : modifier.add,
+          { min: 1, max: 1000 },
+        ),
+      ];
+    case "resistance":
+    case "damageImmunity":
+      return [
+        selectField(
+          document,
+          t("Damage type"),
+          "change-damage",
+          modifier.value,
+          damageTypes.map((type) => [type, t(damageLabels[type])] as const),
+        ),
+      ];
+    case "conditionImmunity":
+      return [
+        selectField(
+          document,
+          t("Condition"),
+          "change-condition",
+          modifier.value,
+          conditionIds.map((id) => [id, t(conditionLabels[id])] as const),
+        ),
+      ];
+  }
+}
+function readModifier(node: HTMLElement): Modifier {
+  const target = value(node, "change-target") as ModifierTarget;
+  switch (target) {
+    case "advantage":
+      return { target, ...readAdvantage(node) };
+    case "sense":
+      return { target, key: value(node, "change-sense"), value: count(node, "change-range") };
+    case "senseBonus":
+      return { target, key: value(node, "change-sense"), add: count(node, "change-range") };
+    case "resistance":
+    case "damageImmunity":
+      return { target, value: value(node, "change-damage") as DamageType };
+    case "conditionImmunity":
+      return { target, value: value(node, "change-condition") as ConditionId };
+  }
+}
+/** A new change of `target`, keeping the sense or damage type it replaces. */
+function defaultModifier(target: ModifierTarget, previous?: Modifier): Modifier {
+  const key =
+    previous?.target === "sense" || previous?.target === "senseBonus" ? previous.key : "darkvision";
+  const damage =
+    previous?.target === "resistance" || previous?.target === "damageImmunity"
+      ? previous.value
+      : "fire";
+  switch (target) {
+    case "advantage":
+      return { target, on: "save" };
+    case "sense":
+      return { target, key, value: 60 };
+    case "senseBonus":
+      return { target, key, add: 30 };
+    case "resistance":
+    case "damageImmunity":
+      return { target, value: damage };
+    case "conditionImmunity":
+      return { target, value: "charmed" };
+  }
+}
+function castOf(spell: SpellGrant): Pick<SpellGrant, "atWill" | "resource"> {
+  if (spell.atWill) return { atWill: true };
+  return spell.resource === undefined ? {} : { resource: spell.resource };
 }
 
 /**
@@ -396,85 +569,18 @@ export function grantsEditor(
     t("Advantages"),
     t("Add advantage"),
     source.advantages ?? [],
-    () => true,
-    (entry) => describeAdvantage(entry, t),
     (node, entry) => {
-      const state = {
-        on: entry?.on ?? ("save" as AdvantageRoll),
-        mode: entry?.mode ?? "advantage",
-        abilities: [...(entry?.abilities ?? [])] as string[],
-        skills: [...(entry?.skills ?? [])] as string[],
-        when: entry?.when ?? "",
-      };
-      const read = (): Advantage => {
-        const mode = value(node, "advantage-mode"),
-          when = value(node, "advantage-when"),
-          chosenAbilities = selected(node, "advantage-abilities"),
-          chosenSkills = selected(node, "advantage-skills");
-        return {
-          on: state.on,
-          ...(mode === "disadvantage" ? { mode } : {}),
-          ...(chosenAbilities.length > 0 ? { abilities: chosenAbilities as Ability[] } : {}),
-          ...(chosenSkills.length > 0 ? { skills: chosenSkills as Skill[] } : {}),
-          ...(when ? { when } : {}),
-        };
-      };
-      const controls = (): HTMLElement[] => {
-        const roll = selectField(
-          document,
-          t("Roll"),
-          "advantage-on",
-          state.on,
-          advantageRolls.map((roll) => [roll, t(rollLabels[roll])] as const),
-        );
-        roll.querySelector("select")!.addEventListener("change", (event) => {
-          const current = read();
-          state.on = (event.target as HTMLSelectElement).value as AdvantageRoll;
-          state.mode = current.mode ?? "advantage";
-          state.abilities = [...(current.abilities ?? [])];
-          state.skills = [...(current.skills ?? [])];
-          state.when = current.when ?? "";
-          rerender(node, controls);
-          changed();
-          restructured();
-        });
-        const fields: HTMLElement[] = [
-          roll,
-          selectField(document, t("Result"), "advantage-mode", state.mode, [
-            ["advantage", t("Advantage")],
-            ["disadvantage", t("Disadvantage")],
-          ]),
-        ];
-        if (state.on === "save" || state.on === "check")
-          fields.push(
-            chipsField(
-              document,
-              t("Abilities"),
-              "advantage-abilities",
-              state.abilities,
-              abilities.map((ability) => [ability, t(abilityNames[ability]!)] as const),
-            ),
-          );
-        if (state.on === "check")
-          fields.push(
-            chipsField(
-              document,
-              t("Skills"),
-              "advantage-skills",
-              state.skills,
-              skills.map((skill) => [skill, t(skillName(skill))] as const),
-            ),
-          );
-        fields.push(
-          textField(document, t("Only when"), "advantage-when", state.when, {
-            maxLength: 200,
-            placeholder: t("Always"),
+      const draw = (current: Advantage): void =>
+        rerender(
+          node,
+          advantageFields(hooks, current, () => {
+            draw(readAdvantage(node));
+            changed();
+            restructured();
           }),
         );
-        return fields;
-      };
-      node.append(...controls());
-      return read;
+      draw(entry ?? { on: "save" });
+      return () => readAdvantage(node);
     },
   );
 
@@ -483,7 +589,7 @@ export function grantsEditor(
   const useSelects = new Map<HTMLElement, () => void>();
   const refreshUses = (): void => {
     for (const [node, refresh] of useSelects)
-      if (spells.rows.some((row) => row.node === node)) refresh();
+      if (node.parentElement) refresh();
       else useSelects.delete(node);
   };
   const uses = section<GrantResource>(
@@ -491,8 +597,6 @@ export function grantsEditor(
     t("Limited uses"),
     t("Add use"),
     source.resources ?? [],
-    () => true,
-    (entry) => describeUse(entry, t),
     (node, entry) => {
       const key = entry?.key ?? freeId("uses", new Set(usesKeys()));
       node.append(
@@ -517,68 +621,124 @@ export function grantsEditor(
     refreshUses,
   );
 
-  const representableSpell = (spell: SpellGrant): boolean =>
-    spell.ids !== undefined
-      ? spell.resource === undefined || typeof spell.resource === "string"
-      : Object.keys(spell).every((field) => ["id", "choose", "spellLevel"].includes(field)) &&
-        spell.spellLevel === 0;
   const spells = section<SpellGrant>(
     hooks,
     t("Spells"),
     t("Add spell"),
     source.spells ?? [],
-    representableSpell,
-    (entry) => describeSpell(entry, source.resources ?? [], t),
     (node, entry) => {
-      let kind: SpellKind = !entry
-        ? "use"
-        : entry.ids === undefined
-          ? "pick"
-          : entry.atWill
-            ? "atWill"
-            : entry.resource !== undefined
-              ? "use"
-              : "cantrip";
-      let ids = (entry?.ids ?? []).join(", "),
-        choose = entry?.choose ?? 1,
-        resource = typeof entry?.resource === "string" ? entry.resource : "";
-      const controls = (): HTMLElement[] => {
-        const kindField = selectField(
-          document,
-          t("How it is cast"),
-          "spell-kind",
-          kind,
-          (["use", "atWill", "cantrip", "pick"] as const).map(
-            (value) => [value, t(spellKindLabels[value])] as const,
-          ),
-        );
-        kindField.querySelector("select")!.addEventListener("change", (event) => {
-          if (kind === "pick") choose = count(node, "spell-choose") || 1;
-          else ids = value(node, "spell-ids");
-          kind = (event.target as HTMLSelectElement).value as SpellKind;
-          if (kind === "use" && uses.rows.length === 0) {
-            uses.add();
-            refreshUses();
-          }
-          rerender(node, controls);
+      // The use this row spends survives redraws and renamed uses.
+      let resource =
+        typeof entry?.resource === "string" ? entry.resource : (entry?.resource?.key ?? "");
+      const choiceId = entry?.id;
+      let read: () => SpellGrant = () => entry ?? { ids: [] };
+      const draw = (current: SpellGrant): void => {
+        const named = current.ids !== undefined;
+        const cast: SpellCast = current.atWill
+          ? "atWill"
+          : current.resource !== undefined
+            ? "use"
+            : "cantrip";
+        const redraw = (next: () => SpellGrant) => (): void => {
+          draw(next());
           changed();
           restructured();
-        });
-        const fields: HTMLElement[] = [kindField];
-        if (kind === "pick")
+        };
+        const sourceField = selectField(
+          document,
+          t("Spells"),
+          "spell-source",
+          named ? "named" : "pick",
+          (["named", "pick"] as const).map(
+            (value) => [value, t(spellSourceLabels[value])] as const,
+          ),
+        );
+        sourceField.querySelector("select")!.addEventListener(
+          "change",
+          redraw(() => {
+            const previous = read();
+            return named
+              ? {
+                  ...(choiceId !== undefined ? { id: choiceId } : {}),
+                  choose: 1,
+                  spellLevel: 0,
+                  ...castOf(previous),
+                }
+              : { ids: [...(previous.from?.ids ?? [])], ...castOf(previous) };
+          }),
+        );
+        const fields: HTMLElement[] = [sourceField];
+        if (named)
           fields.push(
-            numberField(document, t("Cantrips"), "spell-choose", choose, { min: 1, max: 10 }),
-          );
-        else
-          fields.push(
-            textField(document, t("Spell ids"), "spell-ids", ids, {
+            textField(document, t("Spell ids"), "spell-ids", (current.ids ?? []).join(", "), {
               maxLength: 1300,
               placeholder: "bless",
               hint: t("Ids from the rules data, separated by commas."),
             }),
           );
+        else
+          fields.push(
+            numberField(document, t("How many"), "spell-choose", current.choose ?? 1, {
+              min: 1,
+              max: 10,
+            }),
+            numberField(
+              document,
+              t("Spell level"),
+              "spell-level",
+              current.spellLevel ?? current.maxSpellLevel ?? 0,
+              { min: 0, max: 9 },
+            ),
+            checkField(document, t("Or lower"), "spell-lower", current.maxSpellLevel !== undefined),
+            textField(
+              document,
+              t("From class lists"),
+              "spell-classes",
+              (current.from?.class ?? []).join(", "),
+              {
+                maxLength: 1300,
+                placeholder: t("Any"),
+                hint: t("Class ids, separated by commas."),
+              },
+            ),
+            chipsField(
+              document,
+              t("Schools"),
+              "spell-schools",
+              current.from?.school ?? [],
+              spellSchools.map((school) => [school, t(titleOf(school))] as const),
+            ),
+            textField(
+              document,
+              t("Only these spells"),
+              "spell-only",
+              (current.from?.ids ?? []).join(", "),
+              { maxLength: 1300, placeholder: t("Any") },
+            ),
+            checkField(document, t("Rituals only"), "spell-ritual", current.from?.ritual === true),
+          );
+        const castField = selectField(
+          document,
+          t("How it is cast"),
+          "spell-cast",
+          cast,
+          (["use", "atWill", "cantrip"] as const).map(
+            (value) => [value, t(spellCastLabels[value])] as const,
+          ),
+        );
+        castField.querySelector("select")!.addEventListener(
+          "change",
+          redraw(() => {
+            if (value(node, "spell-cast") === "use" && uses.rows.length === 0) {
+              uses.add();
+              refreshUses();
+            }
+            return read();
+          }),
+        );
+        fields.push(castField);
         useSelects.delete(node);
-        if (kind === "use") {
+        if (cast === "use") {
           const field = selectField(document, t("Use"), "spell-use", resource, []);
           const input = field.querySelector("select")!;
           input.addEventListener("change", () => (resource = input.value));
@@ -600,26 +760,49 @@ export function grantsEditor(
           };
           refresh();
           useSelects.set(node, refresh);
-          fields.push(field);
+          const cost = typeof current.resource === "object" ? (current.resource.cost ?? 1) : 1;
+          fields.push(
+            field,
+            numberField(document, t("Uses per cast"), "spell-cost", cost, { min: 1, max: 100 }),
+          );
         }
-        return fields;
-      };
-      node.append(...controls());
-      return (): SpellGrant => {
-        if (kind === "pick")
-          return {
-            ...(entry?.id !== undefined ? { id: entry.id } : {}),
-            choose: count(node, "spell-choose"),
-            spellLevel: 0,
+        rerender(node, fields);
+        read = (): SpellGrant => {
+          const how = value(node, "spell-cast") as SpellCast,
+            cost = count(node, "spell-cost") || 1;
+          const castPart: Pick<SpellGrant, "atWill" | "resource"> =
+            how === "atWill"
+              ? { atWill: true }
+              : how === "use"
+                ? { resource: cost > 1 ? { key: resource, cost } : resource }
+                : {};
+          if (named) return { ids: idList(value(node, "spell-ids")), ...castPart };
+          const level = count(node, "spell-level"),
+            classes = idList(value(node, "spell-classes")),
+            schools = selected(node, "spell-schools") as SpellSchool[],
+            only = idList(value(node, "spell-only"));
+          const from: SpellFilter = {
+            ...(classes.length > 0 ? { class: classes } : {}),
+            ...(schools.length > 0 ? { school: schools } : {}),
+            ...(only.length > 0 ? { ids: only } : {}),
+            ...(checked(node, "spell-ritual") ? { ritual: true as const } : {}),
           };
-        const named = value(node, "spell-ids")
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id !== "");
-        if (kind === "atWill") return { ids: named, atWill: true };
-        if (kind === "use") return { ids: named, resource };
-        return { ids: named };
+          return {
+            ...(choiceId !== undefined ? { id: choiceId } : {}),
+            choose: count(node, "spell-choose"),
+            ...(checked(node, "spell-lower") ? { maxSpellLevel: level } : { spellLevel: level }),
+            ...(Object.keys(from).length > 0 ? { from } : {}),
+            ...castPart,
+          };
+        };
       };
+      // A new spell is cast with a use, so offer one right away.
+      if (!entry && uses.rows.length === 0) {
+        uses.add();
+        refreshUses();
+      }
+      draw(entry ?? { ids: [], resource: "" });
+      return () => read();
     },
     () => {
       casting.hidden = spells.rows.length === 0;
@@ -652,33 +835,57 @@ export function grantsEditor(
   casting.hidden = spells.rows.length === 0;
   spells.root.insertBefore(casting, spells.root.lastElementChild);
 
-  const representableToggle = (activation: Activation): boolean => {
-    const senses = activation.modifiers.filter(
-      (modifier) => modifier.target === "sense" || modifier.target === "senseBonus",
-    );
-    const keys = new Set(senses.map((modifier) => ("key" in modifier ? modifier.key : "")));
-    const targets = senses.map((modifier) => modifier.target);
-    return (
-      senses.length === activation.modifiers.length &&
-      senses.length > 0 &&
-      keys.size === 1 &&
-      new Set(targets).size === targets.length
-    );
-  };
   const toggles = section<Activation>(
     hooks,
     t("Toggles"),
     t("Add toggle"),
     source.activations ?? [],
-    representableToggle,
-    (entry) => describeActivation(entry, t),
     (node, entry) => {
-      const minimum = entry?.modifiers.find((modifier) => modifier.target === "sense"),
-        bonus = entry?.modifiers.find((modifier) => modifier.target === "senseBonus");
-      const key =
-        (minimum && "key" in minimum ? minimum.key : undefined) ??
-        (bonus && "key" in bonus ? bonus.key : undefined) ??
-        "darkvision";
+      node.classList.add("hb-toggle-row");
+      const changes = element(document, "ol", "hb-effect-list hb-toggle-changes");
+      const changeRows: Row<Modifier>[] = [];
+      const addChange = (modifier: Modifier): void => {
+        const row = element(document, "li", "hb-effect-row hb-toggle-change");
+        row.dataset["uiToolbar"] = "";
+        const draw = (current: Modifier): void => {
+          const target = selectField(
+            document,
+            t("Change"),
+            "change-target",
+            current.target,
+            modifierTargets.map((target) => [target, t(modifierLabels[target])] as const),
+          );
+          target.querySelector("select")!.addEventListener("change", (event) => {
+            draw(
+              defaultModifier((event.target as HTMLSelectElement).value as ModifierTarget, current),
+            );
+            changed();
+            restructured();
+          });
+          row.replaceChildren(
+            target,
+            ...modifierFields(hooks, current, () => {
+              draw(readModifier(row));
+              changed();
+              restructured();
+            }),
+            actionButton(document, t("Remove change"), () => {
+              changeRows.splice(
+                changeRows.findIndex((change) => change.node === row),
+                1,
+              );
+              row.remove();
+              changed();
+              restructured();
+            }),
+          );
+        };
+        draw(modifier);
+        changeRows.push({ node: row, read: () => readModifier(row) });
+        changes.append(row);
+      };
+      for (const modifier of entry?.modifiers ?? [defaultModifier("senseBonus")])
+        addChange(modifier);
       node.append(
         textField(document, t("Name"), "toggle-name", entry?.name ?? "", {
           maxLength: 120,
@@ -688,44 +895,25 @@ export function grantsEditor(
           maxLength: 200,
           placeholder: t("Optional"),
         }),
-        selectField(document, t("Sense"), "toggle-sense", key, [
-          ...Object.keys(senseLabels).map((sense) => [sense, t(senseLabels[sense]!)] as const),
-          ...(senseLabels[key] ? [] : [[key, titleOf(key)] as const]),
-        ]),
-        numberField(
-          document,
-          t("Range at least (ft)"),
-          "toggle-minimum",
-          minimum?.target === "sense" ? minimum.value : 0,
-          { min: 0, max: 1000 },
-        ),
-        numberField(
-          document,
-          t("Range extended by (ft)"),
-          "toggle-bonus",
-          bonus?.target === "senseBonus" ? bonus.add : 0,
-          { min: 0, max: 1000 },
-        ),
+        changes,
+        actionButton(document, t("Add change"), () => {
+          addChange(defaultModifier("advantage"));
+          changed();
+          restructured();
+        }),
       );
       return () => {
-        const name = value(node, "toggle-name"),
-          condition = value(node, "toggle-condition"),
-          sense = value(node, "toggle-sense"),
-          floor = count(node, "toggle-minimum"),
-          extension = count(node, "toggle-bonus");
+        const condition = value(node, "toggle-condition");
         return {
           id: entry?.id ?? "",
-          name,
+          name: value(node, "toggle-name"),
           ...(condition ? { condition } : {}),
-          modifiers: [
-            ...(extension !== 0
-              ? [{ target: "senseBonus" as const, key: sense, add: extension }]
-              : []),
-            ...(floor !== 0 ? [{ target: "sense" as const, key: sense, value: floor }] : []),
-          ],
+          modifiers: changeRows.map((row) => row.read()),
         };
       };
     },
+    undefined,
+    t("Remove toggle"),
   );
 
   const passive = element(document, "div", "hb-grants-section");
@@ -801,7 +989,7 @@ function withChoiceIds(spells: SpellGrant[]): SpellGrant[] {
   const taken = new Set(spells.flatMap((spell) => (spell.id === undefined ? [] : [spell.id])));
   return spells.map((spell) => {
     if (spell.ids !== undefined || spell.id !== undefined) return spell;
-    const id = freeId("cantrip", taken);
+    const id = freeId(spell.spellLevel === 0 ? "cantrip" : "spell-choice", taken);
     taken.add(id);
     return { id, ...spell };
   });

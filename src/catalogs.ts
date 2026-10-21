@@ -67,8 +67,12 @@ export const cs: Readonly<Record<string, string>> = {
   "Used in saved characters; it cannot change after the first save.":
     "Používá se v uložených postavách; po prvním uložení ho nelze změnit.",
   "Name prefix": "Předpona názvu",
-  "Shown before each item's name, for example Cursed Card: Defense.":
-    "Zobrazí se před názvem každého předmětu, například Prokletá karta: Obrana.",
+  "Shown before each item's name, for example Elemental Ring: Fire.":
+    "Zobrazí se před názvem každého předmětu, například Živelný prsten: Oheň.",
+  "Leave it empty to make one from the name. Saved characters use it, so it cannot change after the first save.":
+    "Nechte prázdné a vytvoří se z názvu. Používají ho uložené postavy, proto ho po prvním uložení nelze změnit.",
+  "This id is already in use. Choose another id.":
+    "Tento identifikátor se už používá. Zvolte jiný.",
   "Item type": "Typ předmětu",
   Rarity: "Vzácnost",
   "Requires attunement": "Vyžaduje sladění",
@@ -104,15 +108,11 @@ export const cs: Readonly<Record<string, string>> = {
   Description: "Popis",
   "The effect as players read it on their character sheet.":
     "Účinek tak, jak ho hráči uvidí na deníku postavy.",
-  Mechanics: "Mechanika",
-  "Text only: the sheet shows the description": "Pouze text: deník zobrazí popis",
-  "Automated: the sheet applies the effects and properties":
-    "Automatizovaný: deník použije účinky a schopnosti",
   Effects: "Účinky",
   "Add effect": "Přidat účinek",
   "Remove effect": "Odebrat účinek",
-  "Effects apply while the item is equipped, and attuned when it requires attunement.":
-    "Účinky platí, dokud je předmět vybavený, a sladěný, pokud sladění vyžaduje.",
+  "Effects and properties apply while the item is equipped, and attuned when it requires attunement. An item with neither is text only: the sheet shows its description.":
+    "Účinky a schopnosti platí, dokud je předmět vybavený, a sladěný, pokud sladění vyžaduje. Předmět bez nich je pouze textový: deník zobrazí jeho popis.",
   Properties: "Schopnosti předmětu",
   "Advantages, limited uses, spells, toggles and resistances, on the same terms. Item spells never use spell slots.":
     "Výhody, omezená použití, kouzla, přepínače a odolnosti, za stejných podmínek. Kouzla předmětů nikdy nespotřebují pozice kouzel.",
@@ -131,6 +131,9 @@ export const cs: Readonly<Record<string, string>> = {
   "Deleting a published item withdraws it at the next publish; characters holding it then show a missing-source problem. Retire it instead to keep it on their sheets. Delete {name}?":
     "Smazání zveřejněného předmětu ho při příštím zveřejnění stáhne; postavy, které ho mají, pak ukážou problém s chybějícím zdrojem. Chcete-li ho na denících zachovat, raději ho vyřaďte. Smazat {name}?",
   "Delete {name}?": "Smazat {name}?",
+  Duplicate: "Duplikovat",
+  "{name} (copy)": "{name} (kopie)",
+  "Save and add another": "Uložit a přidat další",
   "This id was used by a deleted draft. Choose another id.":
     "Tento identifikátor patřil smazanému konceptu. Zvolte jiný.",
   "Someone else changed this draft. Reload to see their version.":
@@ -195,8 +198,6 @@ export const cs: Readonly<Record<string, string>> = {
   Survival: "Přežití",
   // Properties
   Remove: "Odebrat",
-  "Kept as imported; edit the file to change it.":
-    "Zachováno z importu; změníte ho úpravou souboru.",
   Advantages: "Výhody",
   "Add advantage": "Přidat výhodu",
   Roll: "Hod",
@@ -214,7 +215,29 @@ export const cs: Readonly<Record<string, string>> = {
   Spells: "Kouzla",
   "Add spell": "Přidat kouzlo",
   "How it is cast": "Jak se sesílá",
-  Cantrips: "Počet triků",
+  "These spells": "Tato kouzla",
+  "The player's choice": "Podle volby hráče",
+  "With a use": "Za použití",
+  "At will": "Libovolně",
+  "As a cantrip, without a use": "Jako trik, bez použití",
+  "How many": "Kolik",
+  "Spell level": "Úroveň kouzla",
+  "Or lower": "Nebo nižší",
+  "From class lists": "Ze seznamů povolání",
+  "Class ids, separated by commas.": "Identifikátory povolání oddělené čárkami.",
+  Any: "Jakékoli",
+  Schools: "Školy",
+  "Only these spells": "Jen tato kouzla",
+  "Rituals only": "Jen rituály",
+  "Uses per cast": "Použití za seslání",
+  Abjuration: "Odvracení",
+  Conjuration: "Vyvolávání",
+  Divination: "Věštění",
+  Enchantment: "Očarování",
+  Evocation: "Zaklínání",
+  Illusion: "Iluze",
+  Necromancy: "Nekromancie",
+  Transmutation: "Přeměna",
   "Spell ids": "Identifikátory kouzel",
   "Ids from the rules data, separated by commas.":
     "Identifikátory z dat pravidel oddělené čárkami.",
@@ -231,6 +254,17 @@ export const cs: Readonly<Record<string, string>> = {
   Sense: "Smysl",
   "Range at least (ft)": "Dosah nejméně (stopy)",
   "Range extended by (ft)": "Prodloužení dosahu (stopy)",
+  Change: "Změna",
+  "Add change": "Přidat změnu",
+  "Remove toggle": "Odebrat přepínač",
+  "Remove change": "Odebrat změnu",
+  "Advantage or Disadvantage": "Výhoda nebo nevýhoda",
+  "Sense range at least": "Dosah smyslu nejméně",
+  "Sense range extended": "Prodloužení dosahu smyslu",
+  Resistance: "Odolnost",
+  "Damage immunity": "Imunita vůči zranění",
+  "Condition immunity": "Imunita vůči stavu",
+  "Damage type": "Druh zranění",
   "Resistances and immunities": "Odolnosti a imunity",
   Resistances: "Odolnosti",
   "Damage immunities": "Imunity vůči zranění",
@@ -240,10 +274,6 @@ export const cs: Readonly<Record<string, string>> = {
   "Attack rolls": "Hody na útok",
   "Concentration saving throws": "Záchranné hody na soustředění",
   "Death saving throws": "Záchranné hody proti smrti",
-  "Cast with a use": "Sesílá se za použití",
-  "Cast at will": "Sesílá se libovolně",
-  Cantrip: "Trik",
-  "Player picks a cantrip": "Hráč si vybere trik",
   "Short Rest": "Krátký odpočinek",
   "Long Rest": "Dlouhý odpočinek",
   Acid: "Kyselinové",

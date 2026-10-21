@@ -44,6 +44,8 @@ export function textField(
     readonly placeholder?: string;
     readonly readOnly?: boolean;
     readonly hint?: string;
+    /** Values the browser offers while typing; any other text stays allowed. */
+    readonly suggestions?: readonly string[];
   } = {},
 ): HTMLLabelElement {
   const wrapper = field(document, name);
@@ -54,6 +56,13 @@ export function textField(
   if (options.placeholder) input.placeholder = options.placeholder;
   if (options.readOnly) input.readOnly = true;
   wrapper.append(element(document, "span", "", label), input);
+  if (options.suggestions) {
+    const list = document.createElement("datalist");
+    list.id = fieldId();
+    input.setAttribute("list", list.id);
+    for (const suggestion of options.suggestions) list.append(option(document, suggestion, ""));
+    wrapper.append(list);
+  }
   if (options.hint) wrapper.append(help(document, options.hint));
   return wrapper;
 }

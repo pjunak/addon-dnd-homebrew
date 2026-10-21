@@ -37,9 +37,11 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 
 1. **Homebrew Items** (DM sidebar): create a class, add items to it, or import a
    file. Drafts are private to the DM and never touch character sheets.
-2. Pick **Automated** for an item whose effect the Engine supports and add its
-   effects and properties; otherwise keep **Text only**, and the sheet shows
-   the description.
+   **Save and add another** keeps the class for the next item, and
+   **Duplicate** starts a new item from an existing one.
+2. Add the item's effects and properties where the Engine supports them. An
+   item with neither is **Text only** and the sheet shows its description; the
+   editor decides this from what the item declares.
 3. **Publish** reviews the changes and writes them for character sheets. Every
    character sheet then asks its owner to adopt the new rules on its next save,
    so publish batches of edits rather than every keystroke.
@@ -63,9 +65,9 @@ With D&D Engine 5.4.0 or later, an item's **properties** also apply
 | --- | --- |
 | Advantage or Disadvantage, always or only in a situation | Death Saving Throws; Wisdom saves to resist the Charmed condition |
 | Limited uses that come back on a Short or Long Rest | Destiny: 1 use per Long Rest |
-| Spells cast with one of those uses, at will, or as a cantrip; or a cantrip the player picks | Bless once per Long Rest, without a spell slot |
+| Spells cast with one of those uses, at will, or as a cantrip; or spells the player picks by level, class list, school or ritual | Bless once per Long Rest, without a spell slot |
 | Spellcasting ability for those spells | the player picks Intelligence, Wisdom or Charisma |
-| Toggles the player switches on the sheet | Under open sky: Darkvision 60 ft, or 30 ft more |
+| Toggles the player switches on the sheet: Advantage, senses, resistances and immunities | In darkness: Darkvision 60 ft, or 30 ft more |
 | Resistances and immunities | fire resistance, immunity to the Frightened condition |
 
 A class may also give a **condition** whose level is the number of its items in
