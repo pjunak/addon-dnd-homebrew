@@ -161,6 +161,9 @@
   border: 1px solid var(--border-subtle, #ffffff12);
   border-radius: var(--radius, 6px);
   background: var(--bg-surface, #1a1409);
+  /* Fieldsets default to min-inline-size: min-content and refuse to shrink,
+     which overflows the form wherever fonts render wider (CI Chromium). */
+  min-width: 0;
 }
 .hb-effects-fieldset[hidden] {
   display: none;
