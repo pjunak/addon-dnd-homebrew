@@ -65,6 +65,8 @@ type ItemSet struct {
 	// Condition is given by every item of the set; its level on a sheet is
 	// the number of the set's items in effect.
 	Condition *Condition `json:"condition,omitempty"`
+	// WeightLb is each item's weight in pounds unless the item overrides it.
+	WeightLb *float64 `json:"weightLb,omitempty"`
 }
 
 // Overrides replace the set defaults for one item; an absent field inherits.
@@ -73,6 +75,7 @@ type Overrides struct {
 	Rarity         *string   `json:"rarity,omitempty"`
 	Attunement     *bool     `json:"attunement,omitempty"`
 	BodyPlacements *[]string `json:"bodyPlacements,omitempty"`
+	WeightLb       *float64  `json:"weightLb,omitempty"`
 }
 
 type Item struct {
@@ -90,24 +93,31 @@ type Item struct {
 	UpdatedAt          int64     `json:"updatedAt"`
 	// Grants is absent (nil) or an allowlisted object; see ValidateGrants.
 	Grants map[string]any `json:"grants,omitempty"`
+	// AttunementPrerequisites is absent (nil) or who may attune; see
+	// ValidateRequirement.
+	AttunementPrerequisites map[string]any `json:"attunementPrerequisites,omitempty"`
+	Container               *Container     `json:"container,omitempty"`
 }
 
 // Record is the magic-item record served as dnd5e.rules-data.
 type Record struct {
-	Kind               string         `json:"kind"`
-	ID                 string         `json:"id"`
-	Name               string         `json:"name"`
-	Edition            string         `json:"edition"`
-	Book               string         `json:"book"`
-	ItemType           string         `json:"itemType"`
-	Rarity             string         `json:"rarity"`
-	Attunement         bool           `json:"attunement"`
-	Tags               []string       `json:"tags"`
-	Text               string         `json:"text"`
-	CharacterMechanics string         `json:"characterMechanics"`
-	CharacterEffects   []Effect       `json:"characterEffects"`
-	BodyPlacements     []string       `json:"bodyPlacements,omitempty"`
-	Grants             map[string]any `json:"grants,omitempty"`
+	Kind                    string         `json:"kind"`
+	ID                      string         `json:"id"`
+	Name                    string         `json:"name"`
+	Edition                 string         `json:"edition"`
+	Book                    string         `json:"book"`
+	ItemType                string         `json:"itemType"`
+	Rarity                  string         `json:"rarity"`
+	Attunement              bool           `json:"attunement"`
+	Tags                    []string       `json:"tags"`
+	Text                    string         `json:"text"`
+	CharacterMechanics      string         `json:"characterMechanics"`
+	CharacterEffects        []Effect       `json:"characterEffects"`
+	BodyPlacements          []string       `json:"bodyPlacements,omitempty"`
+	Grants                  map[string]any `json:"grants,omitempty"`
+	WeightLb                *float64       `json:"weightLb,omitempty"`
+	AttunementPrerequisites map[string]any `json:"attunementPrerequisites,omitempty"`
+	Container               *Container     `json:"container,omitempty"`
 }
 
 // Published is one served record. A removed item is withdrawn rather than
@@ -231,6 +241,9 @@ func ValidateSet(set ItemSet) error {
 			return fmt.Errorf("set %s: %w", set.ID, err)
 		}
 	}
+	if set.WeightLb != nil && !ValidWeight(*set.WeightLb) {
+		return fmt.Errorf("set %s: %w", set.ID, errWeight)
+	}
 	return nil
 }
 
@@ -257,6 +270,9 @@ func ValidateItem(item Item) error {
 		if err := validPlacements(*overrides.BodyPlacements); err != nil {
 			return fmt.Errorf("item %s: %w", item.ID, err)
 		}
+	}
+	if err := validCarrying(item.Overrides.WeightLb, item.Container, item.AttunementPrerequisites); err != nil {
+		return fmt.Errorf("item %s: %w", item.ID, err)
 	}
 	if err := validTags(item.Tags); err != nil {
 		return fmt.Errorf("item %s: %w", item.ID, err)
@@ -307,6 +323,12 @@ func ValidatePublished(published Published) error {
 		if err := validPlacements(record.BodyPlacements); err != nil {
 			return fmt.Errorf("published record %s: %w", published.ID, err)
 		}
+	}
+	if err := validCarrying(record.WeightLb, record.Container, record.AttunementPrerequisites); err != nil {
+		return fmt.Errorf("published record %s: %w", published.ID, err)
+	}
+	if record.AttunementPrerequisites != nil && !record.Attunement {
+		return fmt.Errorf("published record %s: %w", published.ID, errRequirementNeedsAttunement)
 	}
 	if err := ValidateMechanics(record.CharacterMechanics, record.CharacterEffects, record.Grants); err != nil {
 		return fmt.Errorf("published record %s: %w", published.ID, err)

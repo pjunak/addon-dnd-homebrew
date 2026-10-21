@@ -14,7 +14,7 @@ func TestTheSampleFileIsValid(t *testing.T) {
 	if err := run([]string{"../../docs/examples/sample-items.json"}, &out); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(out.String(), "VALID: 13 new, 0 changed, 0 unchanged, 0 removed (merge).") {
+	if !strings.HasPrefix(out.String(), "VALID: 14 new, 0 changed, 0 unchanged, 0 removed (merge).") {
 		t.Fatalf("report:\n%s", out.String())
 	}
 }

@@ -109,6 +109,7 @@ const mount = (tag: string, query: [string, string][] = []): FixtureElement => {
 };
 const catalog = mount(catalogTag),
   ringCatalog = mount(catalogTag),
+  lanternCatalog = mount(catalogTag),
   gallery = mount(galleryTag),
   linked = mount(galleryTag, [["id", "hb.ring-of-wit"]]);
 
@@ -136,6 +137,21 @@ for (
   ?.click();
 for (let attempt = 0; attempt < 60 && !ringCatalog.querySelector(".hb-grant-row"); attempt++)
   await frame();
+for (
+  let attempt = 0;
+  attempt < 60 && lanternCatalog.querySelectorAll(".hb-tree-item").length < 6;
+  attempt++
+)
+  await frame();
+[...lanternCatalog.querySelectorAll<HTMLButtonElement>(".hb-tree-item")]
+  .find((button) => button.textContent?.startsWith("Lantern"))
+  ?.click();
+for (
+  let attempt = 0;
+  attempt < 60 && !lanternCatalog.querySelector('[name="requirementClasses"]');
+  attempt++
+)
+  await frame();
 const lines = (root: Element, selector: string): string[] =>
   [...root.querySelectorAll(`${selector} li`)].map((node) => node.textContent ?? "");
 const fateTouched = "Condition Fate-Touched: one level for each item in effect that gives it";
@@ -161,9 +177,17 @@ globalThis.runRenderingContract = () => {
   check(
     "tree lists sets and their items by name",
     JSON.stringify(names) ===
-      JSON.stringify(["Cursed Cards", "Defense", "Omens", "Destiny", "Ring of Wit", "Trinket"]),
+      JSON.stringify([
+        "Cursed Cards",
+        "Defense",
+        "Omens",
+        "Destiny",
+        "Lantern",
+        "Ring of Wit",
+        "Trinket",
+      ]),
     names,
-    ["Cursed Cards", "Defense", "Omens", "Destiny", "Ring of Wit", "Trinket"],
+    ["Cursed Cards", "Defense", "Omens", "Destiny", "Lantern", "Ring of Wit", "Trinket"],
   );
   const trinket = [...catalog.querySelectorAll(".hb-tree-item")].find((node) =>
     node.textContent?.startsWith("Trinket"),
@@ -177,9 +201,9 @@ globalThis.runRenderingContract = () => {
   const status = catalog.querySelector(".hb-status")?.textContent ?? "";
   check(
     "status counts pending changes",
-    status.includes("Unpublished changes: 1."),
+    status.includes("Unpublished changes: 2."),
     status,
-    "…Unpublished changes: 1.",
+    "…Unpublished changes: 2.",
   );
   const preview = catalog.querySelector(".hb-preview-name")?.textContent;
   check(
@@ -205,6 +229,32 @@ globalThis.runRenderingContract = () => {
     JSON.stringify(sections) === JSON.stringify([1, 1, 2, 1, 0]),
     sections,
     [1, 1, 2, 1, 0],
+  );
+  const shown = (name: string): string | undefined => {
+    const control = lanternCatalog.querySelector<HTMLInputElement>(`[name="${name}"]`);
+    return control?.closest<HTMLElement>("[data-ui-field]")?.hidden ? undefined : control?.value;
+  };
+  const carrying = [
+    shown("requirement"),
+    shown("requirementClasses"),
+    shown("requirementText"),
+    shown("containerCapacity"),
+    shown("overrideWeight"),
+  ];
+  const expectedCarrying = ["classes", "cleric, wizard", undefined, "1", "2"];
+  check(
+    "the editor shows who can attune, the container and the weight",
+    JSON.stringify(carrying) === JSON.stringify(expectedCarrying),
+    carrying,
+    expectedCarrying,
+  );
+  const header =
+    lanternCatalog.querySelector(".hb-preview codex-addon-markdown")?.textContent ?? "";
+  check(
+    "the published text names who can attune",
+    header.startsWith("*Wondrous Item, Common (Requires Attunement by a Cleric or Wizard)*"),
+    header,
+    "*Wondrous Item, Common (Requires Attunement by a Cleric or Wizard)*…",
   );
   const changes = ringCatalog.querySelectorAll(".hb-toggle-row .hb-toggle-change").length;
   check("the toggle lists each of its changes", changes === 2, changes, 2);

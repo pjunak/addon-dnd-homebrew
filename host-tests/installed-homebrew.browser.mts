@@ -207,10 +207,10 @@ void test("the DM imports the sample items through the add-on's own worker", asy
   const document = JSON.parse(await readFile(resolve(homebrewRoot, "docs/examples/sample-items.json"), "utf8"));
   const preview = await importer("preview", { contractVersion: "import-preview.v1", format: "dnd-homebrew-items", document });
   assert.equal(preview.status, 200, JSON.stringify(preview.body));
-  assert.deepEqual(preview.body.result.summary, { creates: 13, updates: 0, skips: 0, deletes: 0 });
+  assert.deepEqual(preview.body.result.summary, { creates: 14, updates: 0, skips: 0, deletes: 0 });
   const commit = await importer("commit", { contractVersion: "import-commit.v1", token: preview.body.result.token }, "import-1");
   assert.equal(commit.status, 200, JSON.stringify(commit.body));
-  assert.equal((await all("homebrew_items")).documents.length, 12);
+  assert.equal((await all("homebrew_items")).documents.length, 13);
   const playerImporter = await connect(player, playerCsrf, "dnd-homebrew", { contract: "codex.import-adapter", own: true });
   const refused = await playerImporter("describe", {});
   assert.notEqual(refused.status, 200, "a player must not use the importer");
@@ -220,7 +220,7 @@ void test("published items apply on DM and player sheets", async () => {
   const dmEngine = await engineAs(dm, dmCsrf);
   const before = (await dmEngine("query-records", { contractVersion: "rules-engine-query.v1", kind: "magic-item", limit: 200 })).body.result;
   assert.equal(before.records.filter((record: { id: string }) => record.id.startsWith("hb.")).length, 0, "drafts reached the engine");
-  assert.equal(await publish(), 13);
+  assert.equal(await publish(), 14);
   const records: { id: string }[] = [];
   let cursor: string | undefined;
   do {
@@ -228,7 +228,7 @@ void test("published items apply on DM and player sheets", async () => {
     records.push(...page.records);
     cursor = page.nextCursor;
   } while (cursor);
-  assert.equal(records.filter((record) => record.id.startsWith("hb.")).length, 12);
+  assert.equal(records.filter((record) => record.id.startsWith("hb.")).length, 13);
   assert.ok(records.some((record) => record.id === "ring-of-protection"), "compendium items are still there");
 
   for (const [request, csrf] of [[dm, dmCsrf], [player, playerCsrf]] as const) {
@@ -268,6 +268,26 @@ void test("item properties reach the sheet: an advantage, an item spell, a use a
   // own tests cast item spells. Here the item only has to offer its choice.
   const choice = result.spellOptions.castingAbilityChoices.find((entry: any) => fromItem(entry, "blessing"));
   assert.deepEqual(choice?.options, ["INT", "WIS", "CHA"], JSON.stringify(result.spellOptions.castingAbilityChoices));
+});
+
+void test("weights, a weightless container and an attunement requirement reach the sheet", async () => {
+  const engine = await engineAs(dm, dmCsrf);
+  const request = inputs([
+    card("hb.lantern-of-embers", { attuned: true }),
+    card("hb.bottomless-satchel"),
+    card("hb.ward", { location: "carried", containerId: "satchel" }),
+  ]);
+  (request.inputs.play as Record<string, unknown>).containers = [{ id: "satchel", name: "Bottomless Satchel", itemId: "inv-hb.bottomless-satchel" }];
+  const call = await engine("evaluate-character", request);
+  assert.equal(call.status, 200, JSON.stringify(call.body));
+  const result = (call.body.result as Evaluation).evaluation;
+  const carrying = result.sheet.carrying;
+  assert.equal(carrying?.items?.["inv-hb.ward"]?.eachLb, 0.5, JSON.stringify(carrying));
+  assert.equal(carrying.itemsLb, 3, "the lantern and the satchel count");
+  assert.equal(carrying.weightlessLb, 0.5, "the stone inside the satchel does not");
+  assert.deepEqual(carrying.containers.satchel, { loadLb: 0.5, weightless: true, stored: false, capacityLb: 100 });
+  const requirement = result.issues.find((issue) => issue.id === "attunement:inv-hb.lantern-of-embers");
+  assert.equal(requirement?.severity, "blocker", "a fighter cannot attune to a sorcerer's or wizard's lantern");
 });
 
 void test("a republish changes the rules identity and a withdrawn item blocks its holder", async () => {

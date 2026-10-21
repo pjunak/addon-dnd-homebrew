@@ -133,5 +133,37 @@
       { "name": "a condition with a level cap", "grants": {"conditions": [{"id": "fate-touched", "name": "Fate-Touched", "summary": "", "maximumLevel": 6}]} },
       { "name": "a null value", "grants": {"advantages": [{"on": "save", "when": null}]} }
     ]
+  },
+  "carrying": {
+    "weights": { "valid": [0, 0.25, 5, 100000], "invalid": [-1, 100000.5] },
+    "containers": {
+      "valid": [{ "capacityLb": 30 }, { "weightless": true }, { "capacityLb": 500, "weightless": true }, { "capacityLb": 0.5 }],
+      "invalid": [{}, { "capacityLb": 0 }, { "capacityLb": -1 }, { "capacityLb": 100001 }, { "weightless": false }, { "volume": 2 }]
+    },
+    "requirements": {
+      "valid": [
+        { "spellcaster": true },
+        { "classes": { "wizard": 1 } },
+        { "classes": { "paladin": 5 } },
+        { "any": [{ "classes": { "cleric": 1 } }, { "classes": { "paladin": 1 } }] },
+        { "text": "a Dwarf" }
+      ],
+      "invalid": [
+        {},
+        { "spellcaster": false },
+        { "classes": {} },
+        { "classes": { "wizard": 0 } },
+        { "classes": { "wizard": 21 } },
+        { "classes": { "wizard": 1, "cleric": 1 } },
+        { "classes": { "Wizard": 1 } },
+        { "any": [{ "classes": { "cleric": 1 } }] },
+        { "any": [{ "classes": { "cleric": 1 } }, { "classes": { "cleric": 1 } }] },
+        { "any": [{ "spellcaster": true }, { "classes": { "cleric": 1 } }] },
+        { "text": "" },
+        { "text": "two\nlines" },
+        { "spellcaster": true, "text": "a Dwarf" },
+        { "level": 5 }
+      ]
+    }
   }
 }

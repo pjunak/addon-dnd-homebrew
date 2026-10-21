@@ -156,6 +156,7 @@ export const idPrefix = "hb.";
 export const maxMarkdown = 20000;
 export const maxEffects = 40;
 export const maxConditionSummary = 2000;
+export const maxWeight = 100000;
 export const importFormat = "dnd-homebrew-items";
 
 export interface Effect {
@@ -246,13 +247,29 @@ export interface ItemSet {
   readonly updatedAt: number;
   /** Given by every item of the set. */
   readonly condition?: GrantedCondition;
+  /** Each item's weight in pounds unless the item overrides it. */
+  readonly weightLb?: number;
 }
 export interface Overrides {
   readonly itemType?: string;
   readonly rarity?: Rarity;
   readonly attunement?: boolean;
   readonly bodyPlacements?: readonly BodyPlacement[];
+  readonly weightLb?: number;
 }
+/** What an item holds: a capacity in pounds and/or contents that weigh nothing. */
+export interface Container {
+  readonly capacityLb?: number;
+  readonly weightless?: true;
+}
+/** One class at a minimum level, as the Engine's prerequisites name it. */
+export type ClassLevel = Readonly<Record<string, number>>;
+/** Who may attune: the subset of the Engine's prerequisites the Compendium uses. */
+export type AttunementRequirement =
+  | { readonly spellcaster: true }
+  | { readonly classes: ClassLevel }
+  | { readonly any: readonly { readonly classes: ClassLevel }[] }
+  | { readonly text: string };
 export interface Item {
   readonly id: string;
   readonly schemaVersion: 1;
@@ -267,6 +284,8 @@ export interface Item {
   readonly retired: boolean;
   readonly updatedAt: number;
   readonly grants?: Grants;
+  readonly attunementPrerequisites?: AttunementRequirement;
+  readonly container?: Container;
 }
 /** The magic-item record served to the D&D Engine. */
 export interface ServedRecord {
@@ -284,6 +303,9 @@ export interface ServedRecord {
   readonly characterEffects: readonly Effect[];
   readonly bodyPlacements?: readonly BodyPlacement[];
   readonly grants?: Grants;
+  readonly weightLb?: number;
+  readonly attunementPrerequisites?: AttunementRequirement;
+  readonly container?: Container;
 }
 /**
  * A removed item is withdrawn, never deleted: the browser cannot learn a
@@ -775,6 +797,107 @@ export function grantsProblem(value: unknown): Problem | undefined {
   return undefined;
 }
 
+// --- Carrying and attunement ------------------------------------------------
+
+// internal/homebrew/carrying.go enforces the same rules; the shared fixture
+// tests/fixtures/effects.json ("carrying") keeps the two in step.
+
+export function weightProblem(value: unknown): Problem | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= maxWeight
+    ? undefined
+    : problem("A weight is a number of pounds from 0 to {count}.", { count: maxWeight });
+}
+
+export function containerProblem(value: unknown): Problem | undefined {
+  const shape = exactFields(value, [], ["capacityLb", "weightless"]);
+  if (shape) return shape;
+  const entry = value as Json,
+    capacity = entry["capacityLb"];
+  if (capacity === undefined && entry["weightless"] === undefined)
+    return problem("A container has a capacity, weightless contents or both.");
+  if (
+    capacity !== undefined &&
+    (typeof capacity !== "number" ||
+      !Number.isFinite(capacity) ||
+      capacity <= 0 ||
+      capacity > maxWeight)
+  )
+    return problem("A container's capacity is more than 0 and at most {count} pounds.", {
+      count: maxWeight,
+    });
+  if (entry["weightless"] !== undefined && entry["weightless"] !== true)
+    return problem("Weightless contents are either set or left out.");
+  return undefined;
+}
+
+/** The class of `{"<class id>": <minimum level>}`, or undefined when malformed. */
+function classOfLevel(value: unknown): string | undefined {
+  if (!isRecord(value)) return undefined;
+  const entries = Object.entries(value);
+  if (entries.length !== 1) return undefined;
+  const [id, level] = entries[0]!;
+  return validId(id) && isInteger(level, 1, 20) ? id : undefined;
+}
+
+/** Who may attune: a spellcaster, one class, any of several classes, or words. */
+export function requirementProblem(value: unknown): Problem | undefined {
+  if (!isRecord(value) || Object.keys(value).length !== 1)
+    return problem("Choose a spellcaster, classes or a requirement in words.");
+  const classProblem = problem("Name each class by its id, with a minimum level from 1 to 20.");
+  if ("spellcaster" in value)
+    return value["spellcaster"] === true
+      ? undefined
+      : problem("Choose a spellcaster, classes or a requirement in words.");
+  if ("classes" in value) return classOfLevel(value["classes"]) ? undefined : classProblem;
+  if ("any" in value) {
+    const list = value["any"];
+    if (!Array.isArray(list) || list.length < 2 || list.length > 13)
+      return problem("List 2 to 13 classes.");
+    const ids = list.map((entry) =>
+      exactFields(entry, ["classes"]) === undefined
+        ? classOfLevel((entry as Json)["classes"])
+        : undefined,
+    );
+    if (ids.some((id) => id === undefined)) return classProblem;
+    return distinct(ids) ? undefined : problem("List each class once.");
+  }
+  if ("text" in value)
+    return validName(value["text"], 300)
+      ? undefined
+      : problem("Describe the requirement in one line of at most 300 characters.");
+  return problem("Choose a spellcaster, classes or a requirement in words.");
+}
+
+/** A class or spell id as words: cure-wounds reads "Cure Wounds". */
+export function titleOf(id: string): string {
+  return id
+    .split("-")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/** Who may attune, as published text says it after "Requires Attunement by". */
+export function requirementWords(requirement: AttunementRequirement): string {
+  if ("spellcaster" in requirement) return "a Spellcaster";
+  if ("text" in requirement) return requirement.text;
+  const names = (
+    "classes" in requirement ? [requirement.classes] : requirement.any.map((entry) => entry.classes)
+  ).map((entry) => {
+    const [id, level] = Object.entries(entry)[0]!;
+    return level > 1 ? `${titleOf(id)} of level ${level} or higher` : titleOf(id);
+  });
+  const list =
+    names.length <= 2 ? names.join(" or ") : `${names.slice(0, -1).join(", ")}, or ${names.at(-1)}`;
+  return `${/^[AEIOU]/u.test(list) ? "an" : "a"} ${list}`;
+}
+
+/** Rules that span a flattened record: a requirement needs attunement. */
+export function recordProblem(record: ServedRecord): Problem | undefined {
+  return record.attunementPrerequisites !== undefined && !record.attunement
+    ? problem("Only an item that requires attunement can have an attunement requirement.")
+    : undefined;
+}
+
 // --- Drafts ----------------------------------------------------------------
 
 export function setProblem(value: ItemSet): Problem | undefined {
@@ -796,7 +919,8 @@ export function setProblem(value: ItemSet): Problem | undefined {
   return (
     placementsProblem(value.bodyPlacements) ??
     tagsProblem(value.tags) ??
-    (value.condition === undefined ? undefined : conditionProblem(value.condition))
+    (value.condition === undefined ? undefined : conditionProblem(value.condition)) ??
+    (value.weightLb === undefined ? undefined : weightProblem(value.weightLb))
   );
 }
 
@@ -827,6 +951,11 @@ export function itemProblem(value: Item): Problem | undefined {
     return problem("Conditions come from the item's set.");
   return (
     tagsProblem(value.tags) ??
+    (overrides.weightLb === undefined ? undefined : weightProblem(overrides.weightLb)) ??
+    (value.attunementPrerequisites === undefined
+      ? undefined
+      : requirementProblem(value.attunementPrerequisites)) ??
+    (value.container === undefined ? undefined : containerProblem(value.container)) ??
     mechanicsProblem(value.characterMechanics, value.characterEffects, value.grants)
   );
 }
@@ -860,7 +989,7 @@ const itemFields = [
   "retired",
   "updatedAt",
 ] as const;
-const overrideFields = ["itemType", "rarity", "attunement", "bodyPlacements"] as const;
+const overrideFields = ["itemType", "rarity", "attunement", "bodyPlacements", "weightLb"] as const;
 
 function exactFields(
   value: unknown,
@@ -890,14 +1019,15 @@ function effectsShapeProblem(value: unknown): Problem | undefined {
 /** Checks an untrusted value as a stored set and returns it. */
 export function parseSet(value: unknown): ItemSet {
   const failure =
-    exactFields(value, setFields, ["condition"]) ?? setProblem(value as unknown as ItemSet);
+    exactFields(value, setFields, ["condition", "weightLb"]) ??
+    setProblem(value as unknown as ItemSet);
   if (failure) throw new HomebrewError(failure.text, failure.params);
   return value as unknown as ItemSet;
 }
 /** Checks an untrusted value as a stored item draft and returns it. */
 export function parseItem(value: unknown): Item {
   const failure =
-    exactFields(value, itemFields, ["grants"]) ??
+    exactFields(value, itemFields, ["grants", "attunementPrerequisites", "container"]) ??
     exactFields((value as Record<string, unknown>)["overrides"], [], overrideFields) ??
     effectsShapeProblem((value as Record<string, unknown>)["characterEffects"]) ??
     itemProblem(value as unknown as Item);
@@ -936,7 +1066,7 @@ export function parsePublished(value: unknown): Published {
       "characterMechanics",
       "characterEffects",
     ],
-    ["bodyPlacements", "grants"],
+    ["bodyPlacements", "grants", "weightLb", "attunementPrerequisites", "container"],
   );
   if (shape) throw new HomebrewError(shape.text, shape.params);
   const served = published.record;
@@ -965,6 +1095,11 @@ export function parsePublished(value: unknown): Published {
       (served.bodyPlacements.length > 0 &&
         placementsProblem(served.bodyPlacements) === undefined)) &&
     effectsShapeProblem(served.characterEffects) === undefined &&
+    (served.weightLb === undefined || weightProblem(served.weightLb) === undefined) &&
+    (served.attunementPrerequisites === undefined ||
+      requirementProblem(served.attunementPrerequisites) === undefined) &&
+    (served.container === undefined || containerProblem(served.container) === undefined) &&
+    recordProblem(served) === undefined &&
     mechanicsProblem(served.characterMechanics, served.characterEffects, served.grants) ===
       undefined;
   if (!valid) throw new HomebrewError("A published record is invalid.");
@@ -1053,7 +1188,10 @@ export function flatten(itemSet: ItemSet | undefined, item: Item): Published {
     attunement = overrides.attunement ?? itemSet?.attunement ?? false,
     placements = overrides.bodyPlacements ?? itemSet?.bodyPlacements ?? [],
     prefix = itemSet?.namePrefix ?? "";
-  const header = `*${itemType}, ${rarity}${attunement ? " (Requires Attunement)" : ""}*`;
+  const requirement = item.attunementPrerequisites,
+    weight = overrides.weightLb ?? itemSet?.weightLb;
+  const by = requirement ? ` by ${requirementWords(requirement)}` : "";
+  const header = `*${itemType}, ${rarity}${attunement ? ` (Requires Attunement${by})` : ""}*`;
   const curse = itemSet?.curse.trim() ?? "";
   const grants = publishedGrants(item.grants, itemSet?.condition);
   const text = [
@@ -1092,6 +1230,13 @@ export function flatten(itemSet: ItemSet | undefined, item: Item): Published {
     })),
     ...(placements.length > 0 ? { bodyPlacements: [...placements] } : {}),
     ...(grants ? { grants } : {}),
+    ...(weight !== undefined ? { weightLb: weight } : {}),
+    ...(requirement
+      ? {
+          attunementPrerequisites: JSON.parse(JSON.stringify(requirement)) as AttunementRequirement,
+        }
+      : {}),
+    ...(item.container ? { container: { ...item.container } } : {}),
   };
   return {
     id: record.id,
@@ -1186,7 +1331,10 @@ export function planPublish(
       problems.push({ itemId: item.id, problem: failure });
       continue;
     }
-    desired.set(idPrefix + item.id, flatten(bySet.get(item.setId), item));
+    const published = flatten(bySet.get(item.setId), item);
+    const crossing = recordProblem(published.record);
+    if (crossing) problems.push({ itemId: item.id, problem: crossing });
+    else desired.set(idPrefix + item.id, published);
   }
   const changes: PublishChange[] = [],
     mutations: CollectionMutation[] = [];
@@ -1431,9 +1579,12 @@ function normalize(
   const base = existing && isRecord(existing.value) ? existing.value : defaults;
   const fields: Record<string, unknown> = { ...base, ...raw };
   // An empty object clears the optional field, as [] clears effects.
-  const optional = item ? "grants" : "condition";
-  const cleared = raw[optional];
-  if (isRecord(cleared) && Object.keys(cleared).length === 0) delete fields[optional];
+  for (const optional of item
+    ? ["grants", "attunementPrerequisites", "container"]
+    : ["condition"]) {
+    const cleared = raw[optional];
+    if (isRecord(cleared) && Object.keys(cleared).length === 0) delete fields[optional];
+  }
   if (item && raw["characterMechanics"] === undefined)
     fields["characterMechanics"] =
       (Array.isArray(fields["characterEffects"]) && fields["characterEffects"].length > 0) ||

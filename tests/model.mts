@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
   canonical,
+  containerProblem,
   effectProblem,
   exportDocument,
   flatten,
@@ -16,7 +17,9 @@ import {
   parsePublished,
   planImport,
   planPublish,
+  requirementProblem,
   slug,
+  weightProblem,
   type Effect,
   type Item,
   type ItemSet,
@@ -33,6 +36,11 @@ interface EffectFixture {
   invalidSets: Effect[][];
   validSets: Effect[][];
   grants: { valid: GrantsCase[]; invalid: GrantsCase[] };
+  carrying: {
+    weights: { valid: number[]; invalid: number[] };
+    containers: { valid: unknown[]; invalid: unknown[] };
+    requirements: { valid: unknown[]; invalid: unknown[] };
+  };
 }
 interface GrantsCase {
   name: string;
@@ -67,6 +75,59 @@ void test("effects follow the shared Engine vocabulary fixture", async () => {
   assert.ok(mechanicsProblem("narrative", [effects.valid[0]!]));
   assert.ok(mechanicsProblem("complete", []));
   assert.equal(mechanicsProblem("narrative", []), undefined);
+});
+
+void test("weights, containers and attunement requirements follow the shared fixture", async () => {
+  const { carrying } = await fixture<EffectFixture>("effects.json");
+  for (const [check, cases] of [
+    [weightProblem, carrying.weights],
+    [containerProblem, carrying.containers],
+    [requirementProblem, carrying.requirements],
+  ] as const) {
+    for (const value of cases.valid)
+      assert.equal(check(value as never), undefined, JSON.stringify(value));
+    for (const value of cases.invalid) assert.ok(check(value as never), JSON.stringify(value));
+  }
+});
+
+void test("a requirement reads after 'by' and needs an item that requires attunement", () => {
+  const item = (overrides: Item["overrides"], extra: Partial<Item> = {}): Item => ({
+    id: "staff",
+    schemaVersion: 1,
+    setId: "",
+    name: "Staff",
+    text: "",
+    overrides,
+    tags: [],
+    characterMechanics: "narrative",
+    characterEffects: [],
+    playerVisible: false,
+    retired: false,
+    updatedAt: 1,
+    ...extra,
+  });
+  const anyOf = {
+    any: [{ classes: { artificer: 1 } }, { classes: { cleric: 1 } }, { classes: { druid: 3 } }],
+  };
+  const staff = flatten(
+    undefined,
+    item({ attunement: true, weightLb: 4 }, { attunementPrerequisites: anyOf }),
+  );
+  assert.ok(
+    staff.record.text.startsWith(
+      "*Wondrous Item, Common (Requires Attunement by an Artificer, Cleric, or Druid of level 3 or higher)*",
+    ),
+    staff.record.text,
+  );
+  assert.equal(staff.record.weightLb, 4);
+  assert.deepEqual(staff.record.attunementPrerequisites, anyOf);
+  assert.deepEqual(parsePublished(staff), staff);
+  const unattuned = item({}, { attunementPrerequisites: { spellcaster: true } });
+  const plan = planPublish([], [unattuned], new Map(), undefined, 1);
+  assert.equal(plan.problems.length, 1);
+  assert.equal(plan.mutations.length, 0);
+  const bag = flatten(undefined, item({}, { container: { capacityLb: 500, weightless: true } }));
+  assert.deepEqual(bag.record.container, { capacityLb: 500, weightless: true });
 });
 
 void test("grants follow the shared Engine allowlist fixture", async () => {
@@ -152,16 +213,16 @@ void test("a set condition reaches every item, even a text-only one", async () =
   assert.ok(itemProblem(drafted), "a draft takes its conditions from the set");
 });
 
-void test("the sample file imports 1 set and 12 items, 11 automated", async () => {
+void test("the sample file imports 1 set and 13 items, 11 automated", async () => {
   const document = JSON.parse(
     await readFile(new URL("../docs/examples/sample-items.json", import.meta.url), "utf8"),
   ) as unknown;
   const plan = planImport(document, new Map(), new Map(), 1);
-  assert.equal(plan.summary.creates, 13);
+  assert.equal(plan.summary.creates, 14);
   const items = plan.mutations
     .filter((mutation) => mutation.dataId === "homebrew_items" && mutation.operation === "put")
     .map((mutation) => (mutation.operation === "put" ? parseItem(mutation.value) : undefined));
-  assert.equal(items.length, 12);
+  assert.equal(items.length, 13);
   assert.equal(items.filter((item) => item?.characterMechanics === "complete").length, 11);
   assert.equal(items.filter((item) => item?.grants !== undefined).length, 7);
   const setWrite = plan.mutations.find((mutation) => mutation.dataId === "homebrew_sets");
@@ -171,7 +232,11 @@ void test("the sample file imports 1 set and 12 items, 11 automated", async () =
   const records = items.map(
     (item) => parsePublished(flatten(item!.setId ? itemSet : undefined, item!)).record,
   );
-  assert.ok(records.every((record) => record.characterMechanics === "complete"));
+  assert.ok(
+    records
+      .filter((record) => record.id !== "hb.bottomless-satchel")
+      .every((record) => record.characterMechanics === "complete"),
+  );
   const record = (id: string) => records.find((entry) => entry.id === `hb.${id}`)!;
   assert.deepEqual(record("fortune").grants?.resources, [
     { key: "uses", name: "Fortune", fixed: 1, recharge: "long" },
@@ -180,6 +245,10 @@ void test("the sample file imports 1 set and 12 items, 11 automated", async () =
   assert.deepEqual(record("echo").grants, { conditions: [itemSet.condition] });
   assert.equal(record("lantern-of-embers").grants?.conditions, undefined);
   assert.equal(record("lantern-of-embers").rarity, "Rare");
+  assert.equal(record("lantern-of-embers").weightLb, 2);
+  assert.match(record("lantern-of-embers").text, /Requires Attunement by a Sorcerer or Wizard/u);
+  assert.equal(record("ward").weightLb, 0.5, "the set's weight");
+  assert.deepEqual(record("bottomless-satchel").container, { capacityLb: 100, weightless: true });
   const lore = flatten(
     itemSet,
     items.find((item) => item?.id === "lore")!,
@@ -194,8 +263,8 @@ void test("publishing writes only changes and always moves the metadata revision
   const items = publish.cases.map((testCase) => testCase.item);
   const first = planPublish(sets, items, new Map(), undefined, 50);
   assert.deepEqual(first.problems, []);
-  assert.equal(first.recordCount, 4);
-  assert.equal(first.mutations.length, 5);
+  assert.equal(first.recordCount, 5);
+  assert.equal(first.mutations.length, 6);
   const meta = first.mutations.at(-1)!;
   assert.equal(meta.dataId, "homebrew_meta");
   assert.equal(meta.expectedRevision, 0);
@@ -203,7 +272,7 @@ void test("publishing writes only changes and always moves the metadata revision
     schemaVersion: 1,
     revision: 1,
     publishedAt: 50,
-    recordCount: 4,
+    recordCount: 5,
   });
 
   const stored = new Map<string, Stored<Published>>(
@@ -213,7 +282,7 @@ void test("publishing writes only changes and always moves the metadata revision
     ]),
   );
   const metaStored = {
-    value: { schemaVersion: 1 as const, revision: 1, publishedAt: 50, recordCount: 4 },
+    value: { schemaVersion: 1 as const, revision: 1, publishedAt: 50, recordCount: 5 },
     revision: 7,
   };
   assert.equal(
@@ -260,9 +329,9 @@ void test("an export imports back unchanged", async () => {
   const items = publish.cases.map((testCase) => testCase.item);
   const document = JSON.parse(JSON.stringify(exportDocument(publish.sets, items, 9))) as unknown;
   const fresh = planImport(document, new Map(), new Map(), 10);
-  assert.deepEqual(fresh.summary, { creates: 6, updates: 0, skips: 0, deletes: 0 });
+  assert.deepEqual(fresh.summary, { creates: 7, updates: 0, skips: 0, deletes: 0 });
   const stored = <T extends { id: string }>(values: readonly T[]) =>
     new Map(values.map((value) => [value.id, { value: value as unknown, revision: 1 }]));
   const again = planImport(document, stored(publish.sets), stored(items), 10);
-  assert.deepEqual(again.summary, { creates: 0, updates: 0, skips: 6, deletes: 0 });
+  assert.deepEqual(again.summary, { creates: 0, updates: 0, skips: 7, deletes: 0 });
 });

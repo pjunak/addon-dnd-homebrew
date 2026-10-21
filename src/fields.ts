@@ -66,23 +66,37 @@ export function textField(
   if (options.hint) wrapper.append(help(document, options.hint));
   return wrapper;
 }
+/** A number input; `undefined` leaves it empty, and `step: "any"` allows fractions. */
 export function numberField(
   document: Document,
   label: string,
   name: string,
-  value: number,
-  limits: { readonly min: number; readonly max: number } = { min: -100000, max: 100000 },
+  value: number | undefined,
+  limits: {
+    readonly min: number;
+    readonly max: number;
+    readonly step?: string;
+    readonly placeholder?: string;
+    readonly hint?: string;
+  } = { min: -100000, max: 100000 },
 ): HTMLLabelElement {
   const wrapper = field(document, name);
   const input = document.createElement("input");
   input.type = "number";
   input.name = name;
-  input.step = "1";
+  input.step = limits.step ?? "1";
   input.min = String(limits.min);
   input.max = String(limits.max);
-  input.value = String(value);
+  input.value = value === undefined ? "" : String(value);
+  if (limits.placeholder) input.placeholder = limits.placeholder;
   wrapper.append(element(document, "span", "", label), input);
+  if (limits.hint) wrapper.append(help(document, limits.hint));
   return wrapper;
+}
+/** A typed number, or undefined for an empty field; validation names bad values. */
+export function formNumber(data: FormData, name: string): number | undefined {
+  const text = formText(data, name).trim();
+  return text === "" ? undefined : Number(text);
 }
 export function textArea(
   document: Document,

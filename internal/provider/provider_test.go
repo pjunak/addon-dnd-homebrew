@@ -217,7 +217,7 @@ func TestServesPublishedRecordsLikeTheEngineExpects(t *testing.T) {
 	handler, _ := New(data, nil)
 	set := catalogSet(t, handler)
 	assertEngineCatalog(t, set)
-	if set["kinds"].(map[string]any)["magic-item"].(float64) != 4 {
+	if set["kinds"].(map[string]any)["magic-item"].(float64) != 5 {
 		t.Fatalf("kinds %v", set["kinds"])
 	}
 	revision := set["revision"].(string)
@@ -250,7 +250,7 @@ func TestServesPublishedRecordsLikeTheEngineExpects(t *testing.T) {
 		}
 		cursor = next
 	}
-	if strings.Join(seen, ",") != "hb.defense,hb.destiny,hb.ring-of-wit,hb.trinket" {
+	if strings.Join(seen, ",") != "hb.defense,hb.destiny,hb.lantern,hb.ring-of-wit,hb.trinket" {
 		t.Fatalf("records %v", seen)
 	}
 
@@ -312,7 +312,7 @@ func TestCachesUntilRepublished(t *testing.T) {
 
 	publish(t, data, records[2:])
 	second := catalogSet(t, handler)
-	if second["revision"] == first || second["recordCount"].(float64) != 4 {
+	if second["revision"] == first || second["recordCount"].(float64) != 5 {
 		t.Fatalf("republish not observed: %v", second)
 	}
 	failure := callError(t, handler, "query", `{"setId":"rules","kind":"magic-item","limit":1,"cursor":"`+staleCursor+`"}`)
@@ -332,7 +332,7 @@ func TestRepublishDuringScanIsRetried(t *testing.T) {
 	}
 	handler, _ := New(data, nil)
 	set := catalogSet(t, handler)
-	if set["recordCount"].(float64) != 4 {
+	if set["recordCount"].(float64) != 5 {
 		t.Fatalf("a scan racing a publish must settle on the later publish: %v", set)
 	}
 }
@@ -345,7 +345,7 @@ func publishLocked(data *fakeData, records []json.RawMessage) {
 		_ = json.Unmarshal(record, &identity)
 		data.put(homebrew.PublishedCollection, identity.ID, record)
 	}
-	data.put(homebrew.MetaCollection, homebrew.MetaKey, json.RawMessage(`{"schemaVersion":1,"revision":2,"publishedAt":2,"recordCount":4}`))
+	data.put(homebrew.MetaCollection, homebrew.MetaKey, json.RawMessage(`{"schemaVersion":1,"revision":2,"publishedAt":2,"recordCount":5}`))
 }
 
 func TestRejectsMalformedRequests(t *testing.T) {
@@ -377,7 +377,7 @@ func TestWithdrawnRecordsAreNotServed(t *testing.T) {
 	publish(t, data, append([]json.RawMessage{withdrawn}, records[1:]...))
 	var log bytes.Buffer
 	handler, _ := New(data, &log)
-	if count := catalogSet(t, handler)["recordCount"].(float64); count != 3 {
+	if count := catalogSet(t, handler)["recordCount"].(float64); count != 4 {
 		t.Fatalf("served %v records", count)
 	}
 	if failure := callError(t, handler, "get", `{"setId":"rules","kind":"magic-item","id":"hb.defense"}`); failure.Data.Kind != workerrpc.KindNotFound {

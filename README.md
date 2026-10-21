@@ -70,10 +70,16 @@ With D&D Engine 5.4.0 or later, an item's **properties** also apply
 | Toggles the player switches on the sheet: Advantage, senses, resistances and immunities | In darkness: Darkvision 60 ft, or 30 ft more |
 | Resistances and immunities | fire resistance, immunity to the Frightened condition |
 
+Items can also have a **weight** (the sheet adds it to the character's load),
+**hold other items** (with a capacity, and weightless contents like a Bag of
+Holding) and say **who can attune**: a spellcaster, members of certain classes,
+or a requirement in words that the DM confirms on the sheet.
+
 A set may also give a **condition** whose level is the number of its items in
 effect; what each level does stays text. Other conditional effects stay in the
 description. The [sample file](docs/examples/sample-items.json) shows each
-kind: a set of runestones with a condition, and a lantern without a set.
+kind: a set of runestones with a condition, and a lantern and a satchel
+without a set.
 
 ### Change and remove published items
 

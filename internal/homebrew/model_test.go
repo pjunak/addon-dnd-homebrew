@@ -18,6 +18,20 @@ type effectFixture struct {
 		Valid   []grantsCase `json:"valid"`
 		Invalid []grantsCase `json:"invalid"`
 	} `json:"grants"`
+	Carrying struct {
+		Weights struct {
+			Valid   []float64 `json:"valid"`
+			Invalid []float64 `json:"invalid"`
+		} `json:"weights"`
+		Containers struct {
+			Valid   []json.RawMessage `json:"valid"`
+			Invalid []json.RawMessage `json:"invalid"`
+		} `json:"containers"`
+		Requirements struct {
+			Valid   []map[string]any `json:"valid"`
+			Invalid []map[string]any `json:"invalid"`
+		} `json:"requirements"`
+	} `json:"carrying"`
 }
 
 type grantsCase struct {
@@ -58,6 +72,48 @@ func TestEffectsMatchSharedFixture(t *testing.T) {
 	for _, effects := range fixture.ValidSets {
 		if err := ValidateMechanics("complete", effects, nil); err != nil {
 			t.Errorf("%+v: %v", effects, err)
+		}
+	}
+}
+
+func TestCarryingMatchesSharedFixture(t *testing.T) {
+	carrying := loadEffectFixture(t).Carrying
+	for _, weight := range carrying.Weights.Valid {
+		if !ValidWeight(weight) {
+			t.Errorf("weight %v was refused", weight)
+		}
+	}
+	for _, weight := range carrying.Weights.Invalid {
+		if ValidWeight(weight) {
+			t.Errorf("weight %v was accepted", weight)
+		}
+	}
+	// A container is decoded exactly, as a draft or record holds it.
+	container := func(body json.RawMessage) error {
+		var value Container
+		if err := decodeExact(body, &value, nil); err != nil {
+			return err
+		}
+		return ValidateContainer(value)
+	}
+	for _, body := range carrying.Containers.Valid {
+		if err := container(body); err != nil {
+			t.Errorf("%s: %v", body, err)
+		}
+	}
+	for _, body := range carrying.Containers.Invalid {
+		if container(body) == nil {
+			t.Errorf("%s was accepted", body)
+		}
+	}
+	for _, requirement := range carrying.Requirements.Valid {
+		if err := ValidateRequirement(requirement); err != nil {
+			t.Errorf("%v: %v", requirement, err)
+		}
+	}
+	for _, requirement := range carrying.Requirements.Invalid {
+		if ValidateRequirement(requirement) == nil {
+			t.Errorf("%v was accepted", requirement)
 		}
 	}
 }

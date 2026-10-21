@@ -1,7 +1,7 @@
 {
   "sets": [
     { "id": "cursed-cards", "schemaVersion": 1, "name": "Cursed Cards", "description": "These cards bind to whoever draws them.", "curse": "You cannot willingly discard the card.", "itemType": "Wondrous Item", "rarity": "Rare", "attunement": false, "bodyPlacements": ["other"], "tags": ["card"], "namePrefix": "Cursed Card", "playerVisible": true, "updatedAt": 5, "condition": { "id": "fate-touched", "name": "Fate-Touched", "summary": "One level for each card in effect." } },
-    { "id": "omens", "schemaVersion": 1, "name": "Omens", "description": "", "curse": "", "itemType": "Wondrous Item", "rarity": "Uncommon", "attunement": true, "bodyPlacements": ["neck"], "tags": [], "namePrefix": "", "playerVisible": false, "updatedAt": 1 }
+    { "id": "omens", "schemaVersion": 1, "name": "Omens", "description": "", "curse": "", "itemType": "Wondrous Item", "rarity": "Uncommon", "attunement": true, "bodyPlacements": ["neck"], "tags": [], "namePrefix": "", "playerVisible": false, "updatedAt": 1, "weightLb": 0.5 }
   ],
   "cases": [
     {
@@ -17,12 +17,17 @@
     {
       "name": "overrides win, hidden set hides the item, retired stays served",
       "item": { "id": "destiny", "schemaVersion": 1, "setId": "omens", "name": "Destiny", "text": "Once per Long Rest, reroll a D20 Test. You must use the new roll.", "overrides": { "rarity": "Legendary", "bodyPlacements": [] }, "tags": ["luck"], "characterMechanics": "narrative", "characterEffects": [], "playerVisible": true, "retired": true, "updatedAt": 2 },
-      "published": { "id": "hb.destiny", "schemaVersion": 1, "itemId": "destiny", "setId": "omens", "setName": "Omens", "playerVisible": false, "retired": true, "withdrawn": false, "record": { "kind": "magic-item", "id": "hb.destiny", "name": "Destiny", "edition": "2024", "book": "homebrew", "itemType": "Wondrous Item", "rarity": "Legendary", "attunement": true, "tags": ["homebrew", "omens", "luck"], "text": "*Wondrous Item, Legendary (Requires Attunement)*\n\nOnce per Long Rest, reroll a D20 Test. You must use the new roll.", "characterMechanics": "narrative", "characterEffects": [] } }
+      "published": { "id": "hb.destiny", "schemaVersion": 1, "itemId": "destiny", "setId": "omens", "setName": "Omens", "playerVisible": false, "retired": true, "withdrawn": false, "record": { "kind": "magic-item", "id": "hb.destiny", "name": "Destiny", "edition": "2024", "book": "homebrew", "itemType": "Wondrous Item", "rarity": "Legendary", "attunement": true, "tags": ["homebrew", "omens", "luck"], "text": "*Wondrous Item, Legendary (Requires Attunement)*\n\nOnce per Long Rest, reroll a D20 Test. You must use the new roll.", "characterMechanics": "narrative", "characterEffects": [], "weightLb": 0.5 } }
     },
     {
       "name": "standalone item automated by grants alone takes the defaults",
       "item": { "id": "trinket", "schemaVersion": 1, "setId": "", "name": "Trinket", "text": "", "overrides": {}, "tags": [], "characterMechanics": "complete", "characterEffects": [], "playerVisible": true, "retired": false, "updatedAt": 1, "grants": { "advantages": [{ "on": "deathSave" }] } },
       "published": { "id": "hb.trinket", "schemaVersion": 1, "itemId": "trinket", "setId": "", "setName": "", "playerVisible": true, "retired": false, "withdrawn": false, "record": { "kind": "magic-item", "id": "hb.trinket", "name": "Trinket", "edition": "2024", "book": "homebrew", "itemType": "Wondrous Item", "rarity": "Common", "attunement": false, "tags": ["homebrew"], "text": "*Wondrous Item, Common*", "characterMechanics": "complete", "characterEffects": [], "grants": { "advantages": [{ "on": "deathSave" }] } } }
+    },
+    {
+      "name": "item weight, container and attunement requirement",
+      "item": { "id": "lantern", "schemaVersion": 1, "setId": "", "name": "Lantern", "text": "Holds one candle.", "overrides": { "attunement": true, "weightLb": 2 }, "tags": [], "characterMechanics": "narrative", "characterEffects": [], "playerVisible": false, "retired": false, "updatedAt": 4, "attunementPrerequisites": { "any": [{ "classes": { "cleric": 1 } }, { "classes": { "wizard": 1 } }] }, "container": { "capacityLb": 1 } },
+      "published": { "id": "hb.lantern", "schemaVersion": 1, "itemId": "lantern", "setId": "", "setName": "", "playerVisible": false, "retired": false, "withdrawn": false, "record": { "kind": "magic-item", "id": "hb.lantern", "name": "Lantern", "edition": "2024", "book": "homebrew", "itemType": "Wondrous Item", "rarity": "Common", "attunement": true, "tags": ["homebrew"], "text": "*Wondrous Item, Common (Requires Attunement by a Cleric or Wizard)*\n\nHolds one candle.", "characterMechanics": "narrative", "characterEffects": [], "weightLb": 2, "attunementPrerequisites": { "any": [{ "classes": { "cleric": 1 } }, { "classes": { "wizard": 1 } }] }, "container": { "capacityLb": 1 } } }
     }
   ]
 }

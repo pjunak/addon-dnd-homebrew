@@ -56,7 +56,7 @@ void test("drafts are read with set revisions and broken documents are reported,
   });
   const drafts = await new HomebrewRepository(context).drafts(new AbortController().signal);
   assert.equal(drafts.sets.length, 2);
-  assert.equal(drafts.items.length, 4);
+  assert.equal(drafts.items.length, 5);
   assert.deepEqual(
     drafts.unreadable.map((entry) => [entry.collection, entry.key]),
     [["homebrew_items", "broken"]],
@@ -84,7 +84,7 @@ void test("players read published records without set revisions", async () => {
     ],
   });
   const state = await new HomebrewRepository(context).published(new AbortController().signal);
-  assert.equal(state.records.size, 4);
+  assert.equal(state.records.size, 5);
   assert.equal(state.meta?.revision, 5);
   assert.equal(state.dataRevisions, undefined);
   assert.ok(queries.every((query) => query.options["includeDataRevision"] === undefined));

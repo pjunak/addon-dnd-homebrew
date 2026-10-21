@@ -13,7 +13,8 @@
         "itemType": { "$ref": "homebrew-common.schema.json#/$defs/itemType" },
         "rarity": { "$ref": "homebrew-common.schema.json#/$defs/rarity" },
         "attunement": { "type": "boolean" },
-        "bodyPlacements": { "$ref": "homebrew-common.schema.json#/$defs/bodyPlacements" }
+        "bodyPlacements": { "$ref": "homebrew-common.schema.json#/$defs/bodyPlacements" },
+        "weightLb": { "$ref": "homebrew-common.schema.json#/$defs/weightLb" }
       }
     },
     "tags": { "$ref": "homebrew-common.schema.json#/$defs/tags" },
@@ -22,7 +23,9 @@
     "playerVisible": { "type": "boolean" },
     "retired": { "type": "boolean" },
     "updatedAt": { "$ref": "homebrew-common.schema.json#/$defs/updatedAt" },
-    "grants": { "$ref": "homebrew-common.schema.json#/$defs/itemGrants" }
+    "grants": { "$ref": "homebrew-common.schema.json#/$defs/itemGrants" },
+    "attunementPrerequisites": { "$ref": "homebrew-common.schema.json#/$defs/attunementRequirement" },
+    "container": { "$ref": "homebrew-common.schema.json#/$defs/container" }
   },
   "allOf": [
     {

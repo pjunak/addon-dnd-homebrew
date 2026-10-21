@@ -83,6 +83,7 @@ takes the defaults below. Entries that match what is stored are skipped.
 | `curse` | `""` | Markdown appended as **Curse.** |
 | `playerVisible` | `false` | The set may appear in the player gallery |
 | `condition` | none | A condition every item of the set gives; see [Set condition](#set-condition) |
+| `weightLb` | none | Each item's weight in pounds, 0 to 100000 (fractions allowed); unknown when left out |
 
 ## Item
 
@@ -95,7 +96,9 @@ takes the defaults below. Entries that match what is stored are skipped.
 | `characterEffects` | `[]` | See [Effects](#effects) |
 | `grants` | none | See [Grants](#grants) |
 | `characterMechanics` | from effects and grants | `"complete"` with effects or grants, `"narrative"` with neither |
-| `overrides` | `{}` | Any of `itemType`, `rarity`, `attunement`, `bodyPlacements`, replacing the set value |
+| `overrides` | `{}` | Any of `itemType`, `rarity`, `attunement`, `bodyPlacements`, `weightLb`, replacing the set value |
+| `attunementPrerequisites` | none | Who may attune; see [Attunement requirement](#attunement-requirement) |
+| `container` | none | What the item holds: `{ "capacityLb": 30 }` (more than 0, at most 100000), `{ "weightless": true }` for contents that do not count toward the carrier's load, or both |
 | `tags` | `[]` | As for sets |
 | `playerVisible` | `false` | Listed in the gallery when its set is visible too |
 | `retired` | `false` | Hidden from the gallery; still usable on sheets |
@@ -173,7 +176,8 @@ Spells are entered by id (`bless`, `cure-wounds`); the Engine checks them
 against the rules data. A named spell with neither a use nor `atWill` counts
 as a cantrip; the Engine refuses a leveled one.
 
-In an import, `"grants": {}` removes the stored grants.
+In an import, `"grants": {}` removes the stored grants, and `"container": {}`
+or `"attunementPrerequisites": {}` removes those.
 
 ## Set condition
 
@@ -187,6 +191,24 @@ is the number of the set's items in effect; it has no automated effect, so
 lowercase words joined by hyphens and may not be a standard condition such as
 `charmed`. In an import, `"condition": {}` removes it.
 
+## Attunement requirement
+
+Who may attune to an item that requires attunement, in the D&D Engine's
+prerequisite vocabulary. Exactly one of:
+
+| Requirement | Meaning | Published text |
+| --- | --- | --- |
+| `{ "spellcaster": true }` | A character with spellcasting of its own (not from an item) | *Requires Attunement by a Spellcaster* |
+| `{ "classes": { "wizard": 1 } }` | At least that level (1–20) in the class | *by a Wizard*, or *by a Paladin of level 5 or higher* |
+| `{ "any": [{ "classes": { "cleric": 1 } }, { "classes": { "paladin": 1 } }] }` | Any of 2 to 13 classes, each listed once | *by a Cleric or Paladin* |
+| `{ "text": "a Dwarf" }` | Anything else, one line of at most 300 characters | *by a Dwarf* |
+
+Class ids are the Compendium's (`cleric`, `wizard`). The sheet checks a
+class or spellcaster requirement when the item is attuned and blocks it if the
+character does not qualify; a requirement in words always needs the DM to
+confirm it on the character. An item with a requirement must require
+attunement, through its set or its override.
+
 ## Published record
 
 Publishing combines a set and an item into one Engine `magic-item` record:
@@ -197,7 +219,9 @@ Publishing combines a set and an item into one Engine `magic-item` record:
 | `name` | `<namePrefix>: <name>`, or the name alone |
 | `itemType`, `rarity`, `attunement`, `bodyPlacements` | the item override, else the set, else `Wondrous Item`, `Common`, `false`, none |
 | `tags` | `homebrew`, the set id, set tags, item tags |
-| `text` | `*<type>, <rarity>[ (Requires Attunement)]*`, the item text, the set description, `**Curse.** <curse>` |
+| `text` | `*<type>, <rarity>[ (Requires Attunement[ by <who>])]*`, the item text, the set description, `**Curse.** <curse>` |
+| `weightLb` | the item override, else the set; absent when neither has one |
+| `attunementPrerequisites`, `container` | the item |
 | `characterEffects` | the item |
 | `grants` | the item's grants, plus the set condition as `conditions: [{ id, name, summary }]`; absent when neither exists |
 | `characterMechanics` | `complete` when the record has effects or grants, else `narrative`. A text-only item in a set with a condition is `complete` and carries only the condition. |

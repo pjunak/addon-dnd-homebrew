@@ -27,7 +27,10 @@
         "characterMechanics": { "$ref": "homebrew-common.schema.json#/$defs/mechanics" },
         "characterEffects": { "$ref": "homebrew-common.schema.json#/$defs/effects" },
         "bodyPlacements": { "allOf": [{ "$ref": "homebrew-common.schema.json#/$defs/bodyPlacements" }, { "minItems": 1 }] },
-        "grants": { "$ref": "homebrew-common.schema.json#/$defs/recordGrants" }
+        "grants": { "$ref": "homebrew-common.schema.json#/$defs/recordGrants" },
+        "weightLb": { "$ref": "homebrew-common.schema.json#/$defs/weightLb" },
+        "attunementPrerequisites": { "$ref": "homebrew-common.schema.json#/$defs/attunementRequirement" },
+        "container": { "$ref": "homebrew-common.schema.json#/$defs/container" }
       },
       "allOf": [
         {
@@ -37,6 +40,10 @@
         {
           "if": { "properties": { "characterMechanics": { "const": "complete" } } },
           "then": { "anyOf": [{ "properties": { "characterEffects": { "minItems": 1 } } }, { "required": ["grants"] }] }
+        },
+        {
+          "if": { "required": ["attunementPrerequisites"] },
+          "then": { "properties": { "attunement": { "const": true } } }
         }
       ]
     }

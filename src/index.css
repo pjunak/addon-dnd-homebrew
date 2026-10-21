@@ -165,7 +165,8 @@
      which overflows the form wherever fonts render wider (CI Chromium). */
   min-width: 0;
 }
-.hb-effects-fieldset[hidden] {
+.hb-effects-fieldset[hidden],
+.hb-form [data-ui-field][hidden] {
   display: none;
 }
 .hb-effects-fieldset legend {

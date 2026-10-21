@@ -21,6 +21,7 @@ import {
   skills,
   slug,
   spellSchools,
+  titleOf,
   type Ability,
   type Activation,
   type Advantage,
@@ -114,13 +115,6 @@ const mentalAbilities = ["INT", "WIS", "CHA"] as const;
 
 // --- Plain words -------------------------------------------------------------
 
-/** A spell or class id as words: cure-wounds reads "Cure Wounds". */
-export function titleOf(id: string): string {
-  return id
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
 const list = (values: readonly string[]): string => values.join(", ");
 const abilityList = (values: readonly string[], t: Translator): string =>
   list(values.map((value) => t(abilityNames[value] ?? value)));

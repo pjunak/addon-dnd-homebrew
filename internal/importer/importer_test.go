@@ -132,7 +132,7 @@ func TestSampleExampleImports(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.Summary.Creates != 13 || len(plan.Mutations) != 13 {
+	if plan.Summary.Creates != 14 || len(plan.Mutations) != 14 {
 		t.Fatalf("summary %+v", plan.Summary)
 	}
 	complete, granted := 0, 0

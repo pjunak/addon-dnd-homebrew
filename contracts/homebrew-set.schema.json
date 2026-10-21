@@ -15,6 +15,7 @@
     "namePrefix": { "anyOf": [{ "const": "" }, { "type": "string", "maxLength": 60, "pattern": "^\\S(?:.*\\S)?$" }] },
     "playerVisible": { "type": "boolean" },
     "updatedAt": { "$ref": "homebrew-common.schema.json#/$defs/updatedAt" },
-    "condition": { "$ref": "homebrew-common.schema.json#/$defs/condition" }
+    "condition": { "$ref": "homebrew-common.schema.json#/$defs/condition" },
+    "weightLb": { "$ref": "homebrew-common.schema.json#/$defs/weightLb" }
   }
 }

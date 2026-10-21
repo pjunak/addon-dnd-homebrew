@@ -121,6 +121,25 @@ export const cs: Readonly<Record<string, string>> = {
   Yes: "Ano",
   No: "Ne",
   "Use the set's placements": "Použít umístění sady",
+  "Weight (lb)": "Hmotnost (lb)",
+  "Each item's weight, for carrying. Leave it empty when unknown.":
+    "Hmotnost každého předmětu pro výpočet nákladu. Když ji neznáte, nechte pole prázdné.",
+  Unknown: "Neznámá",
+  "Attunement and storage": "Sladění a úložný prostor",
+  "Who can attune applies when the item requires attunement. A container's contents count toward its holder's load unless they weigh nothing.":
+    "Kdo se může sladit, platí jen pro předmět vyžadující sladění. Obsah úložného předmětu se počítá do nákladu nositele, ledaže nic neváží.",
+  "Who can attune": "Kdo se může sladit",
+  Anyone: "Kdokoli",
+  "A spellcaster": "Sesilatel kouzel",
+  "Members of these classes": "Příslušníci těchto povolání",
+  "Described in words; the DM confirms it": "Popsáno slovy; potvrdí Pán jeskyně",
+  Classes: "Povolání",
+  Requirement: "Požadavek",
+  "a Dwarf": "a Dwarf",
+  'Read after "Requires Attunement by".': "Čte se za „Requires Attunement by“.",
+  "Holds other items": "Pojme jiné předměty",
+  "Capacity (lb)": "Kapacita (lb)",
+  "Its contents weigh nothing": "Obsah nic neváží",
   "Lists the item in the player gallery when its set is visible too.":
     "Zobrazí předmět v galerii pro hráče, pokud je viditelná i jeho sada.",
   "Retired items stay usable on character sheets but leave the player gallery.":
@@ -510,6 +529,23 @@ export const cs: Readonly<Record<string, string>> = {
   "Condition {position}: {problem}": "Stav {position}: {problem}",
   "Condition {position} repeats the id {id}.": "Stav {position} opakuje identifikátor {id}.",
   "Conditions come from the item's set.": "Stavy dává sada předmětu.",
+  "A weight is a number of pounds from 0 to {count}.": "Hmotnost je počet liber od 0 do {count}.",
+  "A container has a capacity, weightless contents or both.":
+    "Úložný předmět má kapacitu, beztížný obsah nebo obojí.",
+  "A container's capacity is more than 0 and at most {count} pounds.":
+    "Kapacita úložného předmětu je větší než 0 a nejvýše {count} liber.",
+  "Weightless contents are either set or left out.":
+    "Beztížný obsah je buď zapnutý, nebo vynechaný.",
+  "Choose a spellcaster, classes or a requirement in words.":
+    "Zvolte sesilatele kouzel, povolání nebo požadavek popsaný slovy.",
+  "Name each class by its id, with a minimum level from 1 to 20.":
+    "Uveďte každé povolání identifikátorem s nejnižší úrovní od 1 do 20.",
+  "List 2 to 13 classes.": "Uveďte 2 až 13 povolání.",
+  "List each class once.": "Uveďte každé povolání jen jednou.",
+  "Describe the requirement in one line of at most 300 characters.":
+    "Popište požadavek jedním řádkem o nejvýše 300 znacích.",
+  "Only an item that requires attunement can have an attunement requirement.":
+    "Požadavek na sladění může mít jen předmět, který sladění vyžaduje.",
   "Unsupported set version.": "Nepodporovaná verze sady.",
   "Unsupported item version.": "Nepodporovaná verze předmětu.",
   "The id must be lowercase words joined by hyphens.":

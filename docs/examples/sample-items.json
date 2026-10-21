@@ -14,6 +14,7 @@
       "description": "A palm-sized stone carved with one glowing rune. It works while you carry it in a hand, a pouch or on a cord.",
       "curse": "",
       "playerVisible": true,
+      "weightLb": 0.5,
       "condition": {
         "id": "rune-bound",
         "name": "Rune-Bound",
@@ -126,7 +127,8 @@
       "id": "lantern-of-embers",
       "name": "Lantern of Embers",
       "text": "While attuned to the lantern, you know one Wizard cantrip of your choice; Intelligence is your spellcasting ability for it.\n\nAs a Bonus Action you can make the flame burn blue or return it to orange. While it burns blue, you have Resistance to Cold damage.",
-      "overrides": { "rarity": "Rare", "attunement": true },
+      "overrides": { "rarity": "Rare", "attunement": true, "weightLb": 2 },
+      "attunementPrerequisites": { "any": [{ "classes": { "sorcerer": 1 } }, { "classes": { "wizard": 1 } }] },
       "tags": ["light-source"],
       "grants": {
         "spells": [
@@ -141,6 +143,13 @@
           }
         ]
       }
+    },
+    {
+      "id": "bottomless-satchel",
+      "name": "Bottomless Satchel",
+      "text": "The satchel holds up to 100 pounds of gear, which weighs nothing while it is inside.",
+      "overrides": { "rarity": "Uncommon", "weightLb": 1 },
+      "container": { "capacityLb": 100, "weightless": true }
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { carryingFields, readCarrying } from "./carrying.js";
 import { hostLocale, problemText, translator, type Translator } from "./catalogs.js";
 import { confirmDialog, openDialog } from "./dialogs.js";
 import { downloadFile } from "./download.js";
@@ -9,10 +10,12 @@ import {
   checkField,
   chipsField,
   element,
+  formNumber,
   formText,
   formValues,
   markdown,
   messageBlock,
+  numberField,
   selectField,
   textArea,
   textField,
@@ -34,11 +37,13 @@ import {
   itemProblem,
   maxConditionSummary,
   maxMarkdown,
+  maxWeight,
   newSet,
   newItem,
   planImport,
   planPublish,
   rarities,
+  recordProblem,
   slug,
   type BodyPlacement,
   type Item,
@@ -94,6 +99,8 @@ export function defineCatalogElement(generation?: string): string {
     #message: { text: string; kind: "status" | "alert" } | undefined;
     #editorMessage: { text: string; kind: "status" | "alert" } | undefined;
     #effects: EffectsEditor | undefined;
+    /** The item each open form started from, for values its controls do not show. */
+    readonly #formItems = new WeakMap<HTMLFormElement, Item>();
     #grants: GrantsEditor | undefined;
     readonly #header = document.createElement("div");
     readonly #tree = document.createElement("nav");
@@ -564,6 +571,12 @@ export function defineCatalogElement(generation?: string): string {
           rarities.map((rarity) => [rarity, t(rarity)] as const),
         ),
         checkField(document, t("Requires attunement"), "attunement", value.attunement),
+        numberField(document, t("Weight (lb)"), "weightLb", value.weightLb, {
+          min: 0,
+          max: maxWeight,
+          step: "any",
+          hint: t("Each item's weight, for carrying. Leave it empty when unknown."),
+        }),
         chipsField(
           document,
           t("Body placements"),
@@ -662,6 +675,7 @@ export function defineCatalogElement(generation?: string): string {
       const data = new FormData(form);
       const name = formText(data, "name").trim();
       const taken = this.#setIds();
+      const weight = formNumber(data, "weightLb");
       const conditionName = formText(data, "conditionName").trim(),
         conditionId = formText(data, "conditionId").trim(),
         conditionSummary = formText(data, "conditionSummary").trim();
@@ -688,6 +702,7 @@ export function defineCatalogElement(generation?: string): string {
         playerVisible: data.get("playerVisible") !== null,
         updatedAt: Date.now(),
         ...(condition ? { condition } : {}),
+        ...(weight === undefined ? {} : { weightLb: weight }),
       };
     }
     async #saveSet(form: HTMLFormElement, stored: Stored<ItemSet> | undefined): Promise<void> {
@@ -718,6 +733,7 @@ export function defineCatalogElement(generation?: string): string {
       const t = this.#t;
       const value = stored?.value ?? template ?? newItem("", "", setId ?? "", Date.now());
       const form = this.#form(stored ? value.name : t("New item"));
+      this.#formItems.set(form, value);
       const sets = [...(this.#drafts?.sets ?? [])].sort((a, b) =>
         compare(fold(a.value.name), fold(b.value.name)),
       );
@@ -831,9 +847,17 @@ export function defineCatalogElement(generation?: string): string {
           value.overrides.bodyPlacements ?? inherited?.bodyPlacements ?? [],
           bodyPlacements.map((placement) => [placement, t(placement)] as const),
         ),
+        numberField(document, t("Weight (lb)"), "overrideWeight", value.overrides.weightLb, {
+          min: 0,
+          max: maxWeight,
+          step: "any",
+          placeholder:
+            inherited?.weightLb === undefined ? t("Unknown") : fromSet(String(inherited.weightLb)),
+        }),
       );
       form.append(
         defaults,
+        carryingFields(document, t, value),
         textField(document, t("Tags"), "tags", value.tags.join(", "), {
           hint: t("Lowercase words joined by hyphens, separated by commas."),
         }),
@@ -910,7 +934,8 @@ export function defineCatalogElement(generation?: string): string {
         effects.length > 0 || grants !== undefined ? "complete" : "narrative";
       const itemType = formText(data, "overrideItemType").trim(),
         rarity = formText(data, "overrideRarity"),
-        attunement = formText(data, "overrideAttunement");
+        attunement = formText(data, "overrideAttunement"),
+        weight = formNumber(data, "overrideWeight");
       const overrides: Overrides = {
         ...(itemType ? { itemType } : {}),
         ...(rarity ? { rarity: rarity as Rarity } : {}),
@@ -918,6 +943,7 @@ export function defineCatalogElement(generation?: string): string {
         ...(data.get("inheritPlacements") === null
           ? { bodyPlacements: formValues(data, "overridePlacements") as BodyPlacement[] }
           : {}),
+        ...(weight === undefined ? {} : { weightLb: weight }),
       };
       return {
         id: stored?.value.id ?? (formText(data, "id").trim() || freeId(name, this.#itemIds())),
@@ -933,6 +959,7 @@ export function defineCatalogElement(generation?: string): string {
         retired: data.get("retired") !== null,
         updatedAt: Date.now(),
         ...(grants ? { grants } : {}),
+        ...readCarrying(data, this.#formItems.get(form) ?? stored?.value),
       };
     }
     #updatePreview(form: HTMLFormElement, stored: Stored<Item> | undefined): void {
@@ -942,7 +969,9 @@ export function defineCatalogElement(generation?: string): string {
       const item = this.#readItem(form, stored);
       const itemSet = this.#drafts?.sets.find((entry) => entry.value.id === item.setId)?.value;
       const published = flatten(itemSet, { ...item, name: item.name || t("New item") });
-      const failure = itemProblem({ ...item, id: item.id || "item", name: item.name || "item" });
+      const failure =
+        itemProblem({ ...item, id: item.id || "item", name: item.name || "item" }) ??
+        recordProblem(published.record);
       preview.replaceChildren(
         element(document, "h3", "", t("As published")),
         element(document, "p", "hb-preview-name", published.record.name),
