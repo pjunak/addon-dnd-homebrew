@@ -10,22 +10,47 @@ shape. Files are limited to 2 MiB and 256 changes per import.
   "schemaVersion": 1,
   "mode": "merge",
   "classes": [
-    { "id": "cursed-cards", "name": "Cursed Cards", "namePrefix": "Cursed Card",
-      "itemType": "Wondrous Item", "rarity": "Rare", "bodyPlacements": ["other"],
+    { "id": "runestones", "name": "Runestones", "namePrefix": "Runestone",
+      "itemType": "Wondrous Item", "rarity": "Uncommon", "bodyPlacements": ["other"],
       "playerVisible": true }
   ],
   "items": [
-    { "id": "defense", "classId": "cursed-cards", "name": "Defense",
-      "text": "+1 permanent bonus to Armor Class.",
+    { "id": "ward", "classId": "runestones", "name": "Ward",
+      "text": "You gain a +1 bonus to Armor Class.",
       "characterEffects": [{ "target": "armorClass", "mode": "add", "value": 1 }] },
-    { "id": "destiny", "classId": "cursed-cards", "name": "Destiny",
-      "text": "Once per Long Rest, reroll a D20 Test. You must use the new roll.",
-      "grants": { "resources": [{ "key": "uses", "name": "Destiny", "fixed": 1, "recharge": "long" }] } }
+    { "id": "fortune", "classId": "runestones", "name": "Fortune",
+      "text": "Once per Long Rest, you can reroll a D20 Test. You must use the new roll.",
+      "grants": { "resources": [{ "key": "uses", "name": "Fortune", "fixed": 1, "recharge": "long" }] } }
   ]
 }
 ```
 
-[`examples/cursed-cards.json`](examples/cursed-cards.json) is a complete file.
+[`examples/sample-items.json`](examples/sample-items.json) is a complete file
+with every kind of effect and property.
+
+## Write many items at once
+
+A file can hold a whole card pack or treasure list, up to 256 changes per
+import. To turn notes, a PDF or a conversation into a file, by hand or with an
+AI assistant:
+
+1. **Export** the current drafts from Homebrew Items, so ids and classes that
+   already exist are reused rather than duplicated.
+2. Give the writer this page, the [sample](examples/sample-items.json), the
+   export and the source text. Ask for a `merge` file with only the classes and
+   items to add or change, effects and grants only where the item's rule
+   matches them exactly, and the rest of the rule in `text`.
+3. Check the file offline from a clone of this repository, and fix every
+   problem it names until it prints `VALID`:
+
+   ```text
+   go run ./cmd/check-homebrew items.json homebrew-items-<date>.json
+   ```
+
+   The second file is the export; leave it out for an empty campaign. The
+   report lists what the import would create, change, skip or remove.
+4. Import the file and read the review before saving. Imports write drafts;
+   **Publish** when the items are ready for character sheets.
 
 ## Document
 
@@ -153,7 +178,7 @@ In an import, `"grants": {}` removes the stored grants.
 ## Class condition
 
 ```json
-"condition": { "id": "fate-touched", "name": "Fate-Touched", "summary": "" }
+"condition": { "id": "rune-bound", "name": "Rune-Bound", "summary": "Level 3 or more: …" }
 ```
 
 Every item of the class gives this condition. On a character sheet its level

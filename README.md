@@ -28,7 +28,7 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
   are equipped (and attuned, when they require attunement). Neither the Engine
   nor Character Sheets changes.
 - The add-on also provides a `magic-item` wiki provider: a sheet's rule details
-  for a homebrew item show its text, and `[[Cursed Card: Defense]]` links in
+  for a homebrew item show its text, and `[[Runestone: Ward]]` links in
   campaign articles resolve to the gallery.
 - Install it next to the D&D 2024 Compendium, which supplies the ruleset. This
   add-on never publishes a ruleset.
@@ -64,7 +64,7 @@ With D&D Engine 5.4.0 or later, an item's **properties** also apply
 | Property | Example |
 | --- | --- |
 | Advantage or Disadvantage, always or only in a situation | Death Saving Throws; Wisdom saves to resist the Charmed condition |
-| Limited uses that come back on a Short or Long Rest | Destiny: 1 use per Long Rest |
+| Limited uses that come back on a Short or Long Rest | Fortune: 1 use per Long Rest |
 | Spells cast with one of those uses, at will, or as a cantrip; or spells the player picks by level, class list, school or ritual | Bless once per Long Rest, without a spell slot |
 | Spellcasting ability for those spells | the player picks Intelligence, Wisdom or Charisma |
 | Toggles the player switches on the sheet: Advantage, senses, resistances and immunities | In darkness: Darkvision 60 ft, or 30 ft more |
@@ -72,8 +72,8 @@ With D&D Engine 5.4.0 or later, an item's **properties** also apply
 
 A class may also give a **condition** whose level is the number of its items in
 effect; what each level does stays text. Other conditional effects stay in the
-description. The bundled [cursed cards](docs/examples/cursed-cards.json)
-automate 38 of 44 cards, and every card adds a level of Fate-Touched.
+description. The [sample file](docs/examples/sample-items.json) shows each
+kind: a class of runestones with a condition, and a lantern without a class.
 
 ### Change and remove published items
 
@@ -92,9 +92,17 @@ Import a `dnd-homebrew-items` JSON file from **Homebrew Items → Import file** 
 from the DM Tools Import Center. The page checks the file first and names the
 exact entry that is wrong; the worker then shows a review of what will change.
 **Export** downloads every draft in the same format. See the
-[format reference](docs/FORMAT.md).
+[format reference](docs/FORMAT.md), which also explains how to write a large
+file (by hand or with an AI assistant) and check it offline with
+`go run ./cmd/check-homebrew`.
 
 ## Data
+
+Homebrew content is campaign data, not code. Drafts and published records live
+in the site's add-on collections, like planning notes and character sheets, so
+site backups include them and each campaign has its own. This repository holds
+only the [sample file](docs/examples/sample-items.json); keep your own import
+files outside it, and use **Export** to take a copy of a campaign's drafts.
 
 The permanent add-on namespace is `dnd-homebrew`.
 
@@ -127,6 +135,6 @@ build output.
 
 [`host-tests/installed-homebrew.browser.mts`](host-tests/installed-homebrew.browser.mts)
 installs the Compendium, Engine, Character Sheets and this package on a
-disposable host, imports and publishes the cursed cards, checks DM and player
+disposable host, imports and publishes the sample items, checks DM and player
 sheets, withdrawal, and the real UI. It uses the host's installed-suite
 fixtures; the file header shows how to run it from a host checkout.

@@ -123,8 +123,8 @@ func mutationValue(t *testing.T, plan importPlan, collection, key string) map[st
 	return nil
 }
 
-func TestCursedCardsExampleImports(t *testing.T) {
-	body, err := os.ReadFile("../../docs/examples/cursed-cards.json")
+func TestSampleExampleImports(t *testing.T) {
+	body, err := os.ReadFile("../../docs/examples/sample-items.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +132,7 @@ func TestCursedCardsExampleImports(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.Summary.Creates != 45 || len(plan.Mutations) != 45 {
+	if plan.Summary.Creates != 13 || len(plan.Mutations) != 13 {
 		t.Fatalf("summary %+v", plan.Summary)
 	}
 	complete, granted := 0, 0
@@ -142,7 +142,7 @@ func TestCursedCardsExampleImports(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if class.Condition == nil || class.Condition.ID != "fate-touched" {
+			if class.Condition == nil || class.Condition.ID != "rune-bound" {
 				t.Fatalf("class condition %+v", class.Condition)
 			}
 			continue
@@ -158,8 +158,8 @@ func TestCursedCardsExampleImports(t *testing.T) {
 			granted++
 		}
 	}
-	if complete != 38 || granted != 27 {
-		t.Fatalf("%d automated cards and %d with grants, want 38 and 27", complete, granted)
+	if complete != 11 || granted != 7 {
+		t.Fatalf("%d automated items and %d with grants, want 11 and 7", complete, granted)
 	}
 }
 

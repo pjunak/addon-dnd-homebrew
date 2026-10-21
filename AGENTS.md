@@ -14,6 +14,7 @@ friendly and the code clear. Old formats and extra hardening are low priority.
 | --- | --- |
 | What it does, setup and commands | [README.md](README.md) |
 | Import format, flattening and effects | [docs/FORMAT.md](docs/FORMAT.md) |
+| Writing or checking an import file | [Write many items at once](docs/FORMAT.md#write-many-items-at-once) (`cmd/check-homebrew`) |
 | Publish revision, withdrawal, visibility and limits | [docs/DESIGN.md](docs/DESIGN.md) |
 | Host integration, manifests and lifecycle | The host's [add-on guide](https://github.com/pjunak/ttrpg-codex/blob/main/examples/addons/AUTHORING.md) and [API reference](https://github.com/pjunak/ttrpg-codex/blob/main/examples/addons/API_V3.md) |
 | What the Engine accepts | `addon-dnd-engine/internal/provider/client.go` (provider contract) and `internal/rules/character_items.go` (effects and the item grants allowlist) |

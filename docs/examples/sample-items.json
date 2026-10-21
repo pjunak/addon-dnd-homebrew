@@ -1,0 +1,146 @@
+{
+  "format": "dnd-homebrew-items",
+  "schemaVersion": 1,
+  "mode": "merge",
+  "classes": [
+    {
+      "id": "runestones",
+      "name": "Runestones",
+      "namePrefix": "Runestone",
+      "itemType": "Wondrous Item",
+      "rarity": "Uncommon",
+      "bodyPlacements": ["other"],
+      "tags": ["stone"],
+      "description": "A palm-sized stone carved with one glowing rune. It works while you carry it in a hand, a pouch or on a cord.",
+      "curse": "",
+      "playerVisible": true,
+      "condition": {
+        "id": "rune-bound",
+        "name": "Rune-Bound",
+        "summary": "Level 3 or more: faint runes glow on your skin, and you have Disadvantage on Dexterity (Stealth) checks in darkness."
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "ward",
+      "classId": "runestones",
+      "name": "Ward",
+      "text": "You gain a +1 bonus to Armor Class.",
+      "characterEffects": [{ "target": "armorClass", "mode": "add", "value": 1 }]
+    },
+    {
+      "id": "lore",
+      "classId": "runestones",
+      "name": "Lore",
+      "text": "Your Intelligence score increases by 1, to a maximum of 20.",
+      "characterEffects": [
+        { "target": "abilityScore", "key": "INT", "mode": "add", "value": 1 },
+        { "target": "abilityScore", "key": "INT", "mode": "maximum", "value": 20 }
+      ]
+    },
+    {
+      "id": "clarity",
+      "classId": "runestones",
+      "name": "Clarity",
+      "text": "You gain proficiency in the Insight skill.",
+      "characterEffects": [{ "target": "proficiency", "key": "insight", "mode": "set", "value": 1 }]
+    },
+    {
+      "id": "vigor",
+      "classId": "runestones",
+      "name": "Vigor",
+      "text": "Your Hit Point maximum increases by 5.",
+      "characterEffects": [{ "target": "maxHp", "mode": "add", "value": 5 }]
+    },
+    {
+      "id": "fortune",
+      "classId": "runestones",
+      "name": "Fortune",
+      "text": "Once per Long Rest, you can reroll a D20 Test. You must use the new roll.",
+      "grants": {
+        "resources": [{ "key": "uses", "name": "Fortune", "fixed": 1, "recharge": "long" }]
+      }
+    },
+    {
+      "id": "endurance",
+      "classId": "runestones",
+      "name": "Endurance",
+      "text": "You have Advantage on Death Saving Throws.",
+      "grants": { "advantages": [{ "on": "deathSave" }] }
+    },
+    {
+      "id": "calm",
+      "classId": "runestones",
+      "name": "Calm",
+      "text": "You have Advantage on Wisdom saving throws to resist the Charmed condition.",
+      "grants": {
+        "advantages": [
+          { "on": "save", "abilities": ["WIS"], "when": "to resist the Charmed condition" }
+        ]
+      }
+    },
+    {
+      "id": "blessing",
+      "classId": "runestones",
+      "name": "Blessing",
+      "text": "Once per Long Rest, you can cast *Bless* without a spell slot. Intelligence, Wisdom or Charisma is your spellcasting ability for it (choose when you first carry the stone).",
+      "grants": {
+        "resources": [{ "key": "uses", "name": "Blessing", "fixed": 1, "recharge": "long" }],
+        "spells": [{ "ids": ["bless"], "resource": "uses" }],
+        "castingAbility": { "id": "casting", "choose": ["INT", "WIS", "CHA"] }
+      }
+    },
+    {
+      "id": "night-eye",
+      "classId": "runestones",
+      "name": "Night Eye",
+      "text": "While you stand in darkness, you have Darkvision with a range of 60 feet, or the range of your Darkvision increases by 30 feet.",
+      "grants": {
+        "activations": [
+          {
+            "id": "in-darkness",
+            "name": "In darkness",
+            "modifiers": [
+              { "target": "senseBonus", "key": "darkvision", "add": 30 },
+              { "target": "sense", "key": "darkvision", "value": 60 }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "flame-ward",
+      "classId": "runestones",
+      "name": "Flame Ward",
+      "text": "You have Resistance to Fire damage.",
+      "grants": { "resistances": ["fire"] }
+    },
+    {
+      "id": "echo",
+      "classId": "runestones",
+      "name": "Echo",
+      "text": "The stone hums softly whenever a creature within 10 feet of you tells a deliberate lie. The DM decides what you notice."
+    },
+    {
+      "id": "lantern-of-embers",
+      "name": "Lantern of Embers",
+      "text": "While attuned to the lantern, you know one Wizard cantrip of your choice; Intelligence is your spellcasting ability for it.\n\nAs a Bonus Action you can make the flame burn blue or return it to orange. While it burns blue, you have Resistance to Cold damage.",
+      "overrides": { "rarity": "Rare", "attunement": true },
+      "tags": ["light-source"],
+      "grants": {
+        "spells": [
+          { "id": "cantrip", "choose": 1, "spellLevel": 0, "from": { "class": ["wizard"] } }
+        ],
+        "castingAbility": { "fixed": "INT" },
+        "activations": [
+          {
+            "id": "blue-flame",
+            "name": "Blue flame",
+            "modifiers": [{ "target": "resistance", "value": "cold" }]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -72,7 +72,7 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 		}
 	}
 
-	example, err := os.ReadFile("../../docs/examples/cursed-cards.json")
+	example, err := os.ReadFile("../../docs/examples/sample-items.json")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -152,39 +152,40 @@ void test("a class condition reaches every item, even a text-only one", async ()
   assert.ok(itemProblem(drafted), "a draft takes its conditions from the class");
 });
 
-void test("the cursed cards example imports 1 class and 44 cards, 38 automated", async () => {
+void test("the sample file imports 1 class and 12 items, 11 automated", async () => {
   const document = JSON.parse(
-    await readFile(new URL("../docs/examples/cursed-cards.json", import.meta.url), "utf8"),
+    await readFile(new URL("../docs/examples/sample-items.json", import.meta.url), "utf8"),
   ) as unknown;
   const plan = planImport(document, new Map(), new Map(), 1);
-  assert.equal(plan.summary.creates, 45);
+  assert.equal(plan.summary.creates, 13);
   const items = plan.mutations
     .filter((mutation) => mutation.dataId === "homebrew_items" && mutation.operation === "put")
     .map((mutation) => (mutation.operation === "put" ? parseItem(mutation.value) : undefined));
-  assert.equal(items.length, 44);
-  assert.equal(items.filter((item) => item?.characterMechanics === "complete").length, 38);
-  assert.equal(items.filter((item) => item?.grants !== undefined).length, 27);
+  assert.equal(items.length, 12);
+  assert.equal(items.filter((item) => item?.characterMechanics === "complete").length, 11);
+  assert.equal(items.filter((item) => item?.grants !== undefined).length, 7);
   const classWrite = plan.mutations.find((mutation) => mutation.dataId === "homebrew_classes");
   assert.ok(classWrite?.operation === "put");
   const itemClass = parseClass(classWrite.value);
-  assert.equal(itemClass.condition?.id, "fate-touched");
-  const records = items.map((item) => parsePublished(flatten(itemClass, item!)).record);
-  assert.ok(records.every((record) => record.characterMechanics === "complete"));
-  assert.ok(records.every((record) => record.grants?.conditions?.[0]?.id === "fate-touched"));
-  const record = (id: string) => records.find((entry) => entry.id === `hb.${id}`)!;
-  assert.deepEqual(record("blessed-day").grants?.resources, [
-    { key: "uses", name: "Blessed Day", fixed: 1, recharge: "long" },
-  ]);
-  assert.deepEqual(record("divine-guidance").grants?.spells, [
-    { ids: ["bless"], resource: "uses" },
-  ]);
-  assert.deepEqual(record("success").grants, { conditions: [itemClass.condition] });
-  const knowledge = flatten(
-    itemClass,
-    items.find((item) => item?.id === "knowledge")!,
+  assert.equal(itemClass.condition?.id, "rune-bound");
+  const records = items.map(
+    (item) => parsePublished(flatten(item!.classId ? itemClass : undefined, item!)).record,
   );
-  assert.equal(knowledge.record.name, "Cursed Card: Knowledge");
-  assert.equal(knowledge.playerVisible, false);
+  assert.ok(records.every((record) => record.characterMechanics === "complete"));
+  const record = (id: string) => records.find((entry) => entry.id === `hb.${id}`)!;
+  assert.deepEqual(record("fortune").grants?.resources, [
+    { key: "uses", name: "Fortune", fixed: 1, recharge: "long" },
+  ]);
+  assert.deepEqual(record("blessing").grants?.spells, [{ ids: ["bless"], resource: "uses" }]);
+  assert.deepEqual(record("echo").grants, { conditions: [itemClass.condition] });
+  assert.equal(record("lantern-of-embers").grants?.conditions, undefined);
+  assert.equal(record("lantern-of-embers").rarity, "Rare");
+  const lore = flatten(
+    itemClass,
+    items.find((item) => item?.id === "lore")!,
+  );
+  assert.equal(lore.record.name, "Runestone: Lore");
+  assert.equal(lore.playerVisible, false);
 });
 
 void test("publishing writes only changes and always moves the metadata revision", async () => {

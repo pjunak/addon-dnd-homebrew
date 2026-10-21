@@ -51,7 +51,7 @@ before(async () => {
   const [engine, sheets, compendium, homebrew] = await Promise.all(paths.map((path) => readFile(resolve(required(path)))));
   await mkdir(output, { recursive: true });
   directory = await mkdtemp(resolve(output, "host-"));
-  const binary = resolve(directory, "codex");
+  const binary = resolve(directory, process.platform === "win32" ? "codex.exe" : "codex");
   await promisify(execFile)("go", ["build", "-o", binary, "./cmd/codex"], { cwd: root, timeout: 300_000 });
   const probe = createServer();
   probe.listen(0, "127.0.0.1");
@@ -202,25 +202,25 @@ type Evaluation = {
   evaluation: { inputs: unknown; sheet: Record<string, any>; spellOptions: Record<string, any>; issues: { id: string; severity: string }[] };
 };
 
-void test("the DM imports the cursed cards through the add-on's own worker", async () => {
+void test("the DM imports the sample items through the add-on's own worker", async () => {
   const importer = await connect(dm, dmCsrf, "dnd-homebrew", { contract: "codex.import-adapter", own: true });
-  const document = JSON.parse(await readFile(resolve(homebrewRoot, "docs/examples/cursed-cards.json"), "utf8"));
+  const document = JSON.parse(await readFile(resolve(homebrewRoot, "docs/examples/sample-items.json"), "utf8"));
   const preview = await importer("preview", { contractVersion: "import-preview.v1", format: "dnd-homebrew-items", document });
   assert.equal(preview.status, 200, JSON.stringify(preview.body));
-  assert.deepEqual(preview.body.result.summary, { creates: 45, updates: 0, skips: 0, deletes: 0 });
+  assert.deepEqual(preview.body.result.summary, { creates: 13, updates: 0, skips: 0, deletes: 0 });
   const commit = await importer("commit", { contractVersion: "import-commit.v1", token: preview.body.result.token }, "import-1");
   assert.equal(commit.status, 200, JSON.stringify(commit.body));
-  assert.equal((await all("homebrew_items")).documents.length, 44);
+  assert.equal((await all("homebrew_items")).documents.length, 12);
   const playerImporter = await connect(player, playerCsrf, "dnd-homebrew", { contract: "codex.import-adapter", own: true });
   const refused = await playerImporter("describe", {});
   assert.notEqual(refused.status, 200, "a player must not use the importer");
 });
 
-void test("published cards apply on DM and player sheets", async () => {
+void test("published items apply on DM and player sheets", async () => {
   const dmEngine = await engineAs(dm, dmCsrf);
   const before = (await dmEngine("query-records", { contractVersion: "rules-engine-query.v1", kind: "magic-item", limit: 200 })).body.result;
   assert.equal(before.records.filter((record: { id: string }) => record.id.startsWith("hb.")).length, 0, "drafts reached the engine");
-  assert.equal(await publish(), 45);
+  assert.equal(await publish(), 13);
   const records: { id: string }[] = [];
   let cursor: string | undefined;
   do {
@@ -228,13 +228,13 @@ void test("published cards apply on DM and player sheets", async () => {
     records.push(...page.records);
     cursor = page.nextCursor;
   } while (cursor);
-  assert.equal(records.filter((record) => record.id.startsWith("hb.")).length, 44);
+  assert.equal(records.filter((record) => record.id.startsWith("hb.")).length, 12);
   assert.ok(records.some((record) => record.id === "ring-of-protection"), "compendium items are still there");
 
   for (const [request, csrf] of [[dm, dmCsrf], [player, playerCsrf]] as const) {
     const evaluate = await engineAs(request, csrf);
     const plain = (await evaluate("evaluate-character", inputs([]))).body.result as Evaluation;
-    const call = await evaluate("evaluate-character", inputs([card("hb.defense"), card("hb.knowledge"), card("hb.mindfulness"), card("hb.growth-of-energy"), card("hb.destiny")]));
+    const call = await evaluate("evaluate-character", inputs([card("hb.ward"), card("hb.lore"), card("hb.clarity"), card("hb.vigor"), card("hb.fortune")]));
     assert.equal(call.status, 200, JSON.stringify(call.body));
     const equipped = call.body.result as Evaluation;
     const sheet = equipped.evaluation.sheet, base = plain.evaluation.sheet;
@@ -243,46 +243,46 @@ void test("published cards apply on DM and player sheets", async () => {
     assert.equal(sheet.abilities.INT.score, Math.min(20, base.abilities.INT.score + 1));
     assert.equal(sheet.skills.insight.proficient, true);
     const itemIssues = equipped.evaluation.issues.filter((issue) => /^(item-|placement-)/u.test(issue.id));
-    assert.deepEqual(itemIssues, [], "cards must not raise item blockers");
+    assert.deepEqual(itemIssues, [], "items must not raise item blockers");
   }
 });
 
-void test("card properties reach the sheet: an advantage, an item spell, a use and Fate-Touched", async () => {
+void test("item properties reach the sheet: an advantage, an item spell, a use and Rune-Bound", async () => {
   const engine = await engineAs(dm, dmCsrf);
-  const call = await engine("evaluate-character", inputs([card("hb.resilience"), card("hb.divine-guidance"), card("hb.good-fortune")]));
+  const call = await engine("evaluate-character", inputs([card("hb.endurance"), card("hb.blessing"), card("hb.fortune")]));
   assert.equal(call.status, 200, JSON.stringify(call.body));
   const result = (call.body.result as Evaluation).evaluation;
   const fromItem = (entry: any, id: string) => entry?.source?.type === "item" && entry.source.id === `inv-hb.${id}`;
   const blockers = (issues: { id: string; severity: string }[]) => issues.filter((issue) => issue.severity === "blocker").map((issue) => issue.id).sort();
   const bare = ((await engine("evaluate-character", inputs([]))).body.result as Evaluation).evaluation;
-  assert.deepEqual(blockers(result.issues), blockers(bare.issues), "equipping cards adds no blockers to the unfinished test build");
-  assert.ok(result.sheet.advantages?.some((entry: any) => entry.on === "deathSave" && fromItem(entry, "resilience")), JSON.stringify(result.sheet.advantages));
+  assert.deepEqual(blockers(result.issues), blockers(bare.issues), "equipping items adds no blockers to the unfinished test build");
+  assert.ok(result.sheet.advantages?.some((entry: any) => entry.on === "deathSave" && fromItem(entry, "endurance")), JSON.stringify(result.sheet.advantages));
   assert.equal(result.sheet.deathSaveAdvantage, true);
-  const fortune = result.sheet.resources.find((entry: any) => fromItem(entry, "good-fortune"));
+  const fortune = result.sheet.resources.find((entry: any) => fromItem(entry, "fortune"));
   assert.equal(fortune?.max, 1, JSON.stringify(result.sheet.resources));
-  const fate = result.sheet.conditions?.find((row: any) => row.id === "fate-touched");
-  assert.equal(fate?.level, 3, JSON.stringify(result.sheet.conditions));
-  assert.equal(fate?.granted, true);
+  const bound = result.sheet.conditions?.find((row: any) => row.id === "rune-bound");
+  assert.equal(bound?.level, 3, JSON.stringify(result.sheet.conditions));
+  assert.equal(bound?.granted, true);
 
   // Play changes need a finished build, which this fixture is not; the Engine's
-  // own tests cast item spells. Here the card only has to offer its choice.
-  const choice = result.spellOptions.castingAbilityChoices.find((entry: any) => fromItem(entry, "divine-guidance"));
+  // own tests cast item spells. Here the item only has to offer its choice.
+  const choice = result.spellOptions.castingAbilityChoices.find((entry: any) => fromItem(entry, "blessing"));
   assert.deepEqual(choice?.options, ["INT", "WIS", "CHA"], JSON.stringify(result.spellOptions.castingAbilityChoices));
 });
 
-void test("a republish changes the rules identity and a withdrawn card blocks its holder", async () => {
+void test("a republish changes the rules identity and a withdrawn item blocks its holder", async () => {
   const evaluate = await engineAs(dm, dmCsrf);
-  const before = (await evaluate("evaluate-character", inputs([card("hb.luna")]))).body.result as Evaluation;
+  const before = (await evaluate("evaluate-character", inputs([card("hb.echo")]))).body.result as Evaluation;
   const items = await all("homebrew_items");
-  const luna = items.documents.find((document) => document.key === "luna")!;
+  const echo = items.documents.find((document) => document.key === "echo")!;
   await data("transactions", {
     contractVersion: "addon-data-transaction.v1",
-    mutations: [{ operation: "delete", kind: "collection", dataId: "homebrew_items", key: "luna", expectedRevision: luna.revision }],
+    mutations: [{ operation: "delete", kind: "collection", dataId: "homebrew_items", key: "echo", expectedRevision: echo.revision }],
   });
   assert.equal(await publish(), 2, "one withdrawal and the metadata");
-  const after = (await evaluate("evaluate-character", inputs([card("hb.luna")]))).body.result as Evaluation;
+  const after = (await evaluate("evaluate-character", inputs([card("hb.echo")]))).body.result as Evaluation;
   assert.notEqual(after.identity.contentRevision, before.identity.contentRevision);
-  assert.ok(after.evaluation.issues.some((issue) => issue.id === "item-source:inv-hb.luna" && issue.severity === "blocker"), JSON.stringify(after.evaluation.issues));
+  assert.ok(after.evaluation.issues.some((issue) => issue.id === "item-source:inv-hb.echo" && issue.severity === "blocker"), JSON.stringify(after.evaluation.issues));
   assert.equal(await publish(), 0, "an unchanged publish writes nothing");
 });
 
@@ -300,21 +300,26 @@ void test("the real UI edits, publishes and shows the gallery", async () => {
     await page.goto(`${(await dm.get("/api/health")).url().replace("/api/health", "")}/#/addons/dnd-homebrew/homebrew`);
     await page.getByRole("heading", { name: "Homebrew Items" }).waitFor();
     assert.equal(await page.locator('a[href="#/addons/dnd-homebrew/homebrew"]').count(), 1);
-    await page.getByRole("button", { name: /^Defense/u }).click();
+    await page.getByRole("button", { name: /^Ward/u }).click();
     await page.locator(".hb-effect-row").first().waitFor();
     if (shots) await page.screenshot({ path: `${shots}/ui-editor.png`, fullPage: true });
+    await page.getByRole("button", { name: /^Lantern of Embers/u }).click();
+    await page.locator(".hb-toggle-change").first().waitFor();
+    if (shots) await page.screenshot({ path: `${shots}/ui-properties.png`, fullPage: true });
+    await page.getByRole("button", { name: /^Ward/u }).click();
+    await page.locator(".hb-effect-row").first().waitFor();
     const description = page.locator('textarea[name="text"]');
-    await description.fill("+1 permanent bonus to Armor Class while you carry this card.");
+    await description.fill("You gain a +1 bonus to Armor Class while you carry this stone.");
     await page.locator(".hb-editor-actions").getByRole("button", { name: "Save" }).click();
     await page.getByText("Unpublished changes: 1.").waitFor();
     await page.getByRole("button", { name: "Publish changes (1)" }).click();
     const dialog = page.getByRole("dialog");
-    await dialog.getByText("Cursed Card: Defense").waitFor();
+    await dialog.getByText("Runestone: Ward").waitFor();
     if (shots) await page.screenshot({ path: `${shots}/ui-publish.png` });
     await dialog.getByRole("button", { name: "Publish" }).click();
     await page.getByText("Everything is published.").waitFor();
-    const published = (await all("homebrew_published")).documents.find((document) => document.key === "hb.defense")!;
-    assert.match(JSON.stringify(published.value), /while you carry this card/u);
+    const published = (await all("homebrew_published")).documents.find((document) => document.key === "hb.ward")!;
+    assert.match(JSON.stringify(published.value), /while you carry this stone/u);
 
     const playerPage = await (await browser.newContext({ storageState: await player.storageState(), viewport: { width: 1360, height: 950 } })).newPage();
     playerPage.on("pageerror", (error) => errors.push(error.message));
@@ -323,13 +328,31 @@ void test("the real UI edits, publishes and shows the gallery", async () => {
     await playerPage.getByText("No items have been revealed yet.").waitFor();
     assert.equal(await playerPage.locator('a[href="#/addons/dnd-homebrew/homebrew-gallery"]').count(), 1);
     assert.equal(await playerPage.locator('a[href="#/addons/dnd-homebrew/homebrew"]').count(), 0);
-    await playerPage.goto(`${origin}/#/addons/dnd-homebrew/homebrew-gallery?id=hb.defense`);
-    await playerPage.locator(".hb-card.focused").getByText("Cursed Card: Defense").waitFor();
+    await playerPage.goto(`${origin}/#/addons/dnd-homebrew/homebrew-gallery?id=hb.ward`);
+    await playerPage.locator(".hb-card.focused").getByText("Runestone: Ward").waitFor();
     if (shots) await playerPage.screenshot({ path: `${shots}/ui-gallery.png`, fullPage: true });
+    // A new draft named like a deleted one gets the next free id automatically.
+    const temp = { id: "temp", schemaVersion: 1, classId: "", name: "Temp", text: "", overrides: {}, tags: [], characterMechanics: "narrative", characterEffects: [], playerVisible: false, retired: false, updatedAt: 1 };
+    await data("transactions", { contractVersion: "addon-data-transaction.v1", mutations: [{ operation: "put", kind: "collection", dataId: "homebrew_items", key: "temp", expectedRevision: 0, value: temp }] });
+    const created = (await all("homebrew_items")).documents.find((document) => document.key === "temp")!;
+    await data("transactions", { contractVersion: "addon-data-transaction.v1", mutations: [{ operation: "delete", kind: "collection", dataId: "homebrew_items", key: "temp", expectedRevision: created.revision }] });
+    await page.reload();
+    await page.getByRole("heading", { name: "Homebrew Items" }).waitFor();
+    await page.getByRole("button", { name: "New item" }).click();
+    await page.locator('input[name="name"]').fill("Temp");
+    await page.locator(".hb-editor-actions").getByRole("button", { name: "Save and add another" }).click();
+    await page.getByRole("button", { name: /^Temp/u }).waitFor();
+    assert.equal(await page.locator('input[name="name"]').inputValue(), "", "the editor is ready for the next item");
+    const keys = (await all("homebrew_items")).documents.map((document) => document.key);
+    assert.ok(keys.includes("temp-2") && !keys.includes("temp"), JSON.stringify(keys));
+
     await playerPage.goto(`${origin}/#/addons/dnd-homebrew/homebrew`);
     await playerPage.waitForTimeout(500);
     assert.equal(await playerPage.locator(".hb-tree").count(), 0, "players must not reach the DM editor");
-    assert.deepEqual(errors, []);
+    // Saving over the deleted draft's key is refused once before the retry.
+    const conflicts = errors.filter((error) => /status of 409/u.test(error));
+    assert.ok(conflicts.length <= 1, JSON.stringify(conflicts));
+    assert.deepEqual(errors.filter((error) => !conflicts.includes(error)), []);
   } finally {
     await browser.close();
   }

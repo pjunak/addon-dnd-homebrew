@@ -66,10 +66,9 @@ skips invalid ones with a diagnostic, and the next publish rewrites them.
   without a use or `atWill` is refused there, not here.
 - A class condition only counts levels. What each level does stays text in
   its summary, and conditional rules beyond toggles stay in the description;
-  the DM can add a linked adjustment on a character instead (as for the Cursed
-  Card *Success*).
+  the DM can add a linked adjustment on a character instead.
 - If the worker stops, the Engine cannot read its rules sources and character
   editing pauses; saved sheets stay readable. Disable the add-on to remove it
   from the Engine's sources.
 - The Import Center shows a generic message when a preview fails; the Homebrew
-  Items page names the exact problem.
+  Items page and `cmd/check-homebrew` name the exact problem.

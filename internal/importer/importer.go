@@ -262,6 +262,47 @@ func buildPlan(body json.RawMessage, storedClasses, storedItems map[string]store
 	return plan, nil
 }
 
+// Report is what a preview would show for a document: the mode, counts,
+// warnings and every change, without the mutations behind them.
+type Report struct {
+	Mode     string   `json:"mode"`
+	Summary  summary  `json:"summary"`
+	Warnings []string `json:"warnings"`
+	Changes  []change `json:"changes"`
+}
+
+// Check plans an import offline with the same rules as preview. current is an
+// Export of the drafts the import will meet (the page's Export file), or nil
+// for an empty campaign. Tombstones of deleted drafts are not known offline;
+// the worker resolves them at preview.
+func Check(document, current []byte, now int64) (Report, error) {
+	classes, items := map[string]stored{}, map[string]stored{}
+	if current != nil {
+		export, err := decodeDocument(current)
+		if err != nil {
+			return Report{}, fmt.Errorf("the current export: %w", err)
+		}
+		for _, list := range []struct {
+			raw    []json.RawMessage
+			target map[string]stored
+			label  string
+		}{{export.Classes, classes, "classes"}, {export.Items, items, "items"}} {
+			for index, raw := range list.raw {
+				id := idOf(raw)
+				if id == "" {
+					return Report{}, fmt.Errorf("the current export: %s[%d] has no id", list.label, index)
+				}
+				list.target[id] = stored{body: raw, revision: 1}
+			}
+		}
+	}
+	plan, err := buildPlan(document, classes, items, now)
+	if err != nil {
+		return Report{}, err
+	}
+	return Report{Mode: plan.Mode, Summary: plan.Summary, Warnings: plan.Warnings, Changes: plan.Changes}, nil
+}
+
 var classDefaults = map[string]json.RawMessage{"description": json.RawMessage(`""`), "curse": json.RawMessage(`""`), "attunement": json.RawMessage(`false`), "bodyPlacements": json.RawMessage(`[]`), "tags": json.RawMessage(`[]`), "namePrefix": json.RawMessage(`""`), "playerVisible": json.RawMessage(`false`)}
 
 func (plan *importPlan) add(collection, id, name string, normalized json.RawMessage, existing stored, exists bool) {
