@@ -1,9 +1,12 @@
 import type { AddonContext, ServiceHandle } from "./sdk.js";
+import type { ReferenceLoader } from "./references.js";
 import type { HomebrewRepository } from "./repository.js";
 export interface HomebrewRuntime {
   readonly repository: HomebrewRepository;
   /** This package's own worker import adapter; it has no provider while the worker is down. */
   readonly importer: ServiceHandle;
+  /** Spells and classes from the Compendium, for the editor's pickers. */
+  readonly references: ReferenceLoader;
   readonly signal: AbortSignal;
   readonly ui: AddonContext["ui"];
 }

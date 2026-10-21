@@ -325,6 +325,14 @@ void test("the real UI edits, publishes and shows the gallery", async () => {
     if (shots) await page.screenshot({ path: `${shots}/ui-editor.png`, fullPage: true });
     await page.getByRole("button", { name: /^Lantern of Embers/u }).click();
     await page.locator(".hb-toggle-change").first().waitFor();
+    // The pickers read the installed Compendium's classes and spells.
+    const classes = page.locator('select[name="requirementClasses"]');
+    await classes.waitFor({ state: "attached" });
+    assert.deepEqual(
+      await classes.evaluate((select: HTMLSelectElement) => [...select.selectedOptions].map((entry) => entry.value)),
+      ["sorcerer", "wizard"],
+    );
+    assert.ok((await classes.locator("option").count()) >= 12, "the Compendium's classes are offered");
     if (shots) await page.screenshot({ path: `${shots}/ui-properties.png`, fullPage: true });
     await page.getByRole("button", { name: /^Ward/u }).click();
     await page.locator(".hb-effect-row").first().waitFor();

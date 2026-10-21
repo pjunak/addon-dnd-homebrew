@@ -1,5 +1,6 @@
 import { defineCatalogElement } from "./catalog-element.js";
 import { defineGalleryElement } from "./gallery-element.js";
+import { ReferenceLoader } from "./references.js";
 import { HomebrewRepository } from "./repository.js";
 import { registerRuntime } from "./runtime.js";
 import type { AddonContext, Disposable } from "./sdk.js";
@@ -14,11 +15,22 @@ export async function activate(context: AddonContext): Promise<Disposable> {
   context.signal.throwIfAborted();
   const importer = await context.services.own("codex.import-adapter", { signal: context.signal });
   const repository = new HomebrewRepository(context);
+  // Connected on first use: the pickers are optional and the Compendium may come later.
+  const rules = new ReferenceLoader(
+    () =>
+      context.services.connect("dnd5e.rules-data", {
+        range: "^3.0.0",
+        cardinality: "many",
+        signal: context.signal,
+      }),
+    context.signal,
+  );
   const references = new PublishedCache(repository, context.signal);
   const unsubscribe = repository.subscribe(() => references.invalidate(), context.signal);
   const unregister = registerRuntime(context.addon.generation, {
     repository,
     importer,
+    references: rules,
     signal: context.signal,
     ui: context.ui,
   });

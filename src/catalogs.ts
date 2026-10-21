@@ -256,7 +256,7 @@ export const cs: Readonly<Record<string, string>> = {
   Illusion: "Iluze",
   Necromancy: "Nekromancie",
   Transmutation: "Přeměna",
-  "Spell ids": "Identifikátory kouzel",
+  "Which spells": "Která kouzla",
   "Ids from the rules data, separated by commas.":
     "Identifikátory z dat pravidel oddělené čárkami.",
   Use: "Použití",

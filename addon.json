@@ -12,8 +12,14 @@
     "workerProtocol": "^1.0.0"
   },
   "capabilities": {
-    "required": ["data.transactions", "services.own", "ui.contributions",
-      "ui.controls.v1", "ui.markdown", "worker.native"],
+    "required": [
+      "data.transactions",
+      "services.own",
+      "ui.contributions",
+      "ui.controls.v1",
+      "ui.markdown",
+      "worker.native"
+    ],
     "optional": []
   },
   "runtime": {
@@ -31,22 +37,99 @@
   "permissions": [],
   "rules": { "supports": ["dnd-2024"] },
   "contributions": [
-    { "id": "homebrew.route", "surface": "route", "label": "Homebrew Items", "roles": ["dm"], "config": { "path": "homebrew", "labels": { "cs": "Vlastní předměty" } } },
-    { "id": "homebrew.sidebar", "surface": "sidebar", "label": "Homebrew Items", "roles": ["dm"], "order": 220, "config": { "route": "homebrew.route", "labels": { "cs": "Vlastní předměty" } } },
-    { "id": "gallery.route", "surface": "route", "label": "Item Gallery", "roles": ["dm", "player"], "config": { "path": "homebrew-gallery", "labels": { "cs": "Galerie předmětů" } } },
-    { "id": "gallery.sidebar", "surface": "sidebar", "label": "Item Gallery", "roles": ["dm", "player"], "order": 221, "config": { "route": "gallery.route", "labels": { "cs": "Galerie předmětů" } } },
-    { "id": "homebrew.wiki", "surface": "wiki-kind", "label": "Homebrew items", "roles": ["dm", "player"], "config": { "contractVersion": 1, "kinds": ["magic-item"], "search": true } }
+    {
+      "id": "homebrew.route",
+      "surface": "route",
+      "label": "Homebrew Items",
+      "roles": ["dm"],
+      "config": { "path": "homebrew", "labels": { "cs": "Vlastní předměty" } }
+    },
+    {
+      "id": "homebrew.sidebar",
+      "surface": "sidebar",
+      "label": "Homebrew Items",
+      "roles": ["dm"],
+      "order": 220,
+      "config": { "route": "homebrew.route", "labels": { "cs": "Vlastní předměty" } }
+    },
+    {
+      "id": "gallery.route",
+      "surface": "route",
+      "label": "Item Gallery",
+      "roles": ["dm", "player"],
+      "config": { "path": "homebrew-gallery", "labels": { "cs": "Galerie předmětů" } }
+    },
+    {
+      "id": "gallery.sidebar",
+      "surface": "sidebar",
+      "label": "Item Gallery",
+      "roles": ["dm", "player"],
+      "order": 221,
+      "config": { "route": "gallery.route", "labels": { "cs": "Galerie předmětů" } }
+    },
+    {
+      "id": "homebrew.wiki",
+      "surface": "wiki-kind",
+      "label": "Homebrew items",
+      "roles": ["dm", "player"],
+      "config": { "contractVersion": 1, "kinds": ["magic-item"], "search": true }
+    }
   ],
   "collections": [
-    { "id": "homebrew_sets", "keyed": true, "visibility": "dm", "schema": "contracts/homebrew-set.schema.json", "schemaVersion": "1.0.0" },
-    { "id": "homebrew_items", "keyed": true, "visibility": "dm", "schema": "contracts/homebrew-item.schema.json", "schemaVersion": "1.0.0", "indexes": [{ "path": "/setId" }] },
-    { "id": "homebrew_published", "keyed": true, "visibility": "public", "schema": "contracts/published-record.schema.json", "schemaVersion": "1.0.0", "indexes": [{ "path": "/setId" }, { "path": "/playerVisible" }] },
-    { "id": "homebrew_meta", "keyed": true, "visibility": "public", "schema": "contracts/publish-meta.schema.json", "schemaVersion": "1.0.0" }
+    {
+      "id": "homebrew_sets",
+      "keyed": true,
+      "visibility": "dm",
+      "schema": "contracts/homebrew-set.schema.json",
+      "schemaVersion": "1.0.0"
+    },
+    {
+      "id": "homebrew_items",
+      "keyed": true,
+      "visibility": "dm",
+      "schema": "contracts/homebrew-item.schema.json",
+      "schemaVersion": "1.0.0",
+      "indexes": [{ "path": "/setId" }]
+    },
+    {
+      "id": "homebrew_published",
+      "keyed": true,
+      "visibility": "public",
+      "schema": "contracts/published-record.schema.json",
+      "schemaVersion": "1.0.0",
+      "indexes": [{ "path": "/setId" }, { "path": "/playerVisible" }]
+    },
+    {
+      "id": "homebrew_meta",
+      "keyed": true,
+      "visibility": "public",
+      "schema": "contracts/publish-meta.schema.json",
+      "schemaVersion": "1.0.0"
+    }
   ],
   "services": {
     "provides": [
-      { "contract": "dnd5e.rules-data", "version": "3.0.0", "transport": "worker", "schema": "contracts/rules-data.service.json" },
-      { "contract": "codex.import-adapter", "version": "2.0.0", "transport": "worker", "schema": "contracts/import-adapter.service.json" }
+      {
+        "contract": "dnd5e.rules-data",
+        "version": "3.0.0",
+        "transport": "worker",
+        "schema": "contracts/rules-data.service.json"
+      },
+      {
+        "contract": "codex.import-adapter",
+        "version": "2.0.0",
+        "transport": "worker",
+        "schema": "contracts/import-adapter.service.json"
+      }
+    ],
+    "consumes": [
+      {
+        "contract": "dnd5e.rules-data",
+        "range": "^3.0.0",
+        "cardinality": "many",
+        "required": false,
+        "selection": "all-compatible"
+      }
     ]
   }
 }

@@ -1,5 +1,6 @@
 import { defineCatalogElement } from "#web/catalog-element";
 import { defineGalleryElement } from "#web/gallery-element";
+import { ReferenceLoader } from "#web/references";
 import { HomebrewRepository } from "#web/repository";
 import { registerRuntime } from "#web/runtime";
 import type {
@@ -91,7 +92,40 @@ const ui: AddonContext["ui"] = {
   },
 };
 const generation = "c".repeat(64);
-registerRuntime(generation, { ui, repository, importer, signal });
+// A Compendium answering the pickers' catalog and queries.
+const rules: ServiceHandle = {
+  contract: "dnd5e.rules-data",
+  range: "^3.0.0",
+  cardinality: "many",
+  available: true,
+  providers: [
+    { addonId: "compendium", contractVersion: "3.0.0", generation: "g", bindingRevision: 1 },
+  ],
+  async call<T>(method: string, params: unknown): Promise<T> {
+    if (method === "catalog")
+      return { sets: [{ id: "rules", kinds: { spell: 2, class: 3 } }] } as T;
+    const record = (kind: string, id: string, name: string, level?: number) => ({
+      kind,
+      id,
+      value: { id, kind, name, ...(level === undefined ? {} : { level, school: "Divination" }) },
+    });
+    return {
+      records:
+        (params as { kind: string }).kind === "spell"
+          ? [
+              record("spell", "detect-magic", "Detect Magic", 1),
+              record("spell", "bless", "Bless", 1),
+            ]
+          : [
+              record("class", "cleric", "Cleric"),
+              record("class", "sorcerer", "Sorcerer"),
+              record("class", "wizard", "Wizard"),
+            ],
+    } as T;
+  },
+};
+const references = new ReferenceLoader(async () => rules, signal);
+registerRuntime(generation, { ui, repository, importer, references, signal });
 const catalogTag = defineCatalogElement(generation),
   galleryTag = defineGalleryElement(generation);
 const context = (query: [string, string][]): ContributionContext => ({
@@ -148,7 +182,7 @@ for (
   ?.click();
 for (
   let attempt = 0;
-  attempt < 60 && !lanternCatalog.querySelector('[name="requirementClasses"]');
+  attempt < 60 && !lanternCatalog.querySelector('select[name="requirementClasses"]');
   attempt++
 )
   await frame();
@@ -231,8 +265,13 @@ globalThis.runRenderingContract = () => {
     [1, 1, 2, 1, 0],
   );
   const shown = (name: string): string | undefined => {
-    const control = lanternCatalog.querySelector<HTMLInputElement>(`[name="${name}"]`);
-    return control?.closest<HTMLElement>("[data-ui-field]")?.hidden ? undefined : control?.value;
+    const control = lanternCatalog.querySelector<HTMLInputElement | HTMLSelectElement>(
+      `[name="${name}"]`,
+    );
+    if (!control || control.closest<HTMLElement>("[data-ui-field]")?.hidden) return undefined;
+    return control instanceof HTMLSelectElement && control.multiple
+      ? [...control.selectedOptions].map((entry) => entry.value).join(", ")
+      : control.value;
   };
   const carrying = [
     shown("requirement"),
@@ -255,6 +294,15 @@ globalThis.runRenderingContract = () => {
     header.startsWith("*Wondrous Item, Common (Requires Attunement by a Cleric or Wizard)*"),
     header,
     "*Wondrous Item, Common (Requires Attunement by a Cleric or Wizard)*…",
+  );
+  const picked = [
+    ...ringCatalog.querySelectorAll<HTMLSelectElement>('select[name="spell-ids"]'),
+  ].map((select) => [...select.selectedOptions].map((entry) => entry.textContent));
+  check(
+    "named spells are picked from the rules data by name",
+    JSON.stringify(picked) === JSON.stringify([["Detect Magic"]]),
+    picked,
+    [["Detect Magic"]],
   );
   const changes = ringCatalog.querySelectorAll(".hb-toggle-row .hb-toggle-change").length;
   check("the toggle lists each of its changes", changes === 2, changes, 2);

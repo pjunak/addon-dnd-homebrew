@@ -1,10 +1,13 @@
 import type { Translator } from "./catalogs.js";
+import { pickerOptions, type References } from "./references.js";
 import { abilityNames, skillName } from "./effects.js";
 import {
   actionButton,
   checkField,
   chipsField,
   element,
+  fieldIds,
+  idsField,
   numberField,
   option,
   selectField,
@@ -318,13 +321,6 @@ function count(node: HTMLElement, name: string): number {
 function checked(node: HTMLElement, name: string): boolean {
   return node.querySelector<HTMLInputElement>(`input[name="${name}"]`)?.checked ?? false;
 }
-/** Ids typed as a comma-separated list. */
-function idList(text: string): string[] {
-  return text
-    .split(",")
-    .map((id) => id.trim())
-    .filter((id) => id !== "");
-}
 
 /** One list of rows with an Add button; every row ends with its Remove button. */
 function section<T>(
@@ -553,8 +549,11 @@ export function grantsEditor(
   changed: () => void,
   restructured: () => void,
   useName: () => string,
+  references?: References,
 ): GrantsEditor {
   const hooks: Hooks = { document, t, changed, restructured };
+  const spellOptions = references && pickerOptions(references.spells),
+    classOptions = references && pickerOptions(references.classes);
   const root = element(document, "div", "hb-grants");
   const source = initial ?? {};
 
@@ -640,7 +639,7 @@ export function grantsEditor(
         };
         const sourceField = selectField(
           document,
-          t("Spells"),
+          t("Which spells"),
           "spell-source",
           named ? "named" : "pick",
           (["named", "pick"] as const).map(
@@ -664,8 +663,7 @@ export function grantsEditor(
         const fields: HTMLElement[] = [sourceField];
         if (named)
           fields.push(
-            textField(document, t("Spell ids"), "spell-ids", (current.ids ?? []).join(", "), {
-              maxLength: 1300,
+            idsField(document, t("Spells"), "spell-ids", current.ids ?? [], spellOptions, {
               placeholder: "bless",
               hint: t("Ids from the rules data, separated by commas."),
             }),
@@ -684,16 +682,13 @@ export function grantsEditor(
               { min: 0, max: 9 },
             ),
             checkField(document, t("Or lower"), "spell-lower", current.maxSpellLevel !== undefined),
-            textField(
+            idsField(
               document,
               t("From class lists"),
               "spell-classes",
-              (current.from?.class ?? []).join(", "),
-              {
-                maxLength: 1300,
-                placeholder: t("Any"),
-                hint: t("Class ids, separated by commas."),
-              },
+              current.from?.class ?? [],
+              classOptions,
+              { placeholder: t("Any"), hint: t("Class ids, separated by commas.") },
             ),
             chipsField(
               document,
@@ -702,12 +697,13 @@ export function grantsEditor(
               current.from?.school ?? [],
               spellSchools.map((school) => [school, t(titleOf(school))] as const),
             ),
-            textField(
+            idsField(
               document,
               t("Only these spells"),
               "spell-only",
-              (current.from?.ids ?? []).join(", "),
-              { maxLength: 1300, placeholder: t("Any") },
+              current.from?.ids ?? [],
+              spellOptions,
+              { placeholder: t("Any") },
             ),
             checkField(document, t("Rituals only"), "spell-ritual", current.from?.ritual === true),
           );
@@ -770,11 +766,11 @@ export function grantsEditor(
               : how === "use"
                 ? { resource: cost > 1 ? { key: resource, cost } : resource }
                 : {};
-          if (named) return { ids: idList(value(node, "spell-ids")), ...castPart };
+          if (named) return { ids: fieldIds(node, "spell-ids"), ...castPart };
           const level = count(node, "spell-level"),
-            classes = idList(value(node, "spell-classes")),
+            classes = fieldIds(node, "spell-classes"),
             schools = selected(node, "spell-schools") as SpellSchool[],
-            only = idList(value(node, "spell-only"));
+            only = fieldIds(node, "spell-only");
           const from: SpellFilter = {
             ...(classes.length > 0 ? { class: classes } : {}),
             ...(schools.length > 0 ? { school: schools } : {}),

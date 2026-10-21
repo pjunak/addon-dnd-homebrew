@@ -1,6 +1,15 @@
 import type { Translator } from "./catalogs.js";
-import { checkField, element, formText, numberField, selectField, textField } from "./fields.js";
+import {
+  checkField,
+  element,
+  formText,
+  idsField,
+  numberField,
+  selectField,
+  textField,
+} from "./fields.js";
 import { maxWeight, type AttunementRequirement, type Container, type Item } from "./model.js";
+import { pickerOptions, type References } from "./references.js";
 
 type Who = "" | "spellcaster" | "classes" | "text";
 
@@ -21,7 +30,12 @@ function classLevels(requirement: AttunementRequirement | undefined): Map<string
  * Who may attune and what the item holds. The controls for one choice are
  * shown only while it applies; reading takes the form's current values.
  */
-export function carryingFields(document: Document, t: Translator, item: Item): HTMLFieldSetElement {
+export function carryingFields(
+  document: Document,
+  t: Translator,
+  item: Item,
+  references?: References,
+): HTMLFieldSetElement {
   const fieldset = element(document, "fieldset", "hb-effects-fieldset");
   const requirement = item.attunementPrerequisites;
   const who: Who =
@@ -38,12 +52,13 @@ export function carryingFields(document: Document, t: Translator, item: Item): H
     ["classes", t("Members of these classes")],
     ["text", t("Described in words; the DM confirms it")],
   ]);
-  const classes = textField(
+  const classes = idsField(
     document,
     t("Classes"),
     "requirementClasses",
-    [...classLevels(requirement).keys()].join(", "),
-    { maxLength: 1300, placeholder: "cleric, paladin", hint: t("Class ids, separated by commas.") },
+    [...classLevels(requirement).keys()],
+    references && pickerOptions(references.classes),
+    { placeholder: "cleric, paladin", hint: t("Class ids, separated by commas.") },
   );
   const words = textField(
     document,
@@ -121,10 +136,12 @@ export function readCarrying(
       break;
     case "classes": {
       // A saved minimum level survives editing the list; new classes need level 1.
+      // A picker sends one value per class; a typed list sends one comma-separated value.
       const ids = [
         ...new Set(
-          formText(data, "requirementClasses")
-            .split(",")
+          data
+            .getAll("requirementClasses")
+            .flatMap((entry) => (typeof entry === "string" ? entry.split(",") : []))
             .map((id) => id.trim().toLowerCase())
             .filter((id) => id !== ""),
         ),

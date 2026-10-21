@@ -159,13 +159,13 @@ export function checkField(
   if (hint) wrapper.append(help(document, hint));
   return wrapper;
 }
-/** A multi-select of fixed choices, rendered as host chips. */
+/** A multi-select of fixed choices, rendered as host chips; a third entry is the option's details. */
 export function chipsField(
   document: Document,
   label: string,
   name: string,
   selected: readonly string[],
-  options: readonly (readonly [string, string])[],
+  options: readonly (readonly [string, string, string?])[],
 ): HTMLDivElement {
   const wrapper = document.createElement("div");
   wrapper.dataset["uiField"] = "";
@@ -178,13 +178,45 @@ export function chipsField(
   input.name = name;
   input.multiple = true;
   input.dataset["ui"] = "chips";
-  for (const [value, optionLabel] of options) {
+  for (const [value, optionLabel, details] of options) {
     const entry = option(document, value, optionLabel);
     entry.selected = selected.includes(value);
+    if (details) entry.title = details;
+    entry.dataset["uiKeywords"] = value;
     input.append(entry);
   }
   wrapper.append(text, input);
   return wrapper;
+}
+/**
+ * Ids picked from `known` as searchable chips, or typed and comma-separated
+ * when no list is available. Saved ids missing from the list stay selected.
+ */
+export function idsField(
+  document: Document,
+  label: string,
+  name: string,
+  ids: readonly string[],
+  known: readonly (readonly [string, string, string?])[] | undefined,
+  typed: { readonly placeholder?: string; readonly hint?: string },
+): HTMLElement {
+  if (!known)
+    return textField(document, label, name, ids.join(", "), { maxLength: 1300, ...typed });
+  const missing = ids
+    .filter((id) => !known.some(([value]) => value === id))
+    .map((id) => [id, id] as const);
+  return chipsField(document, label, name, ids, [...known, ...missing]);
+}
+/** The ids an idsField holds, whichever form it took. */
+export function fieldIds(root: ParentNode, name: string): string[] {
+  const control = root.querySelector(`[name="${name}"]`);
+  const values =
+    control instanceof HTMLSelectElement
+      ? [...control.selectedOptions].map((entry) => entry.value)
+      : control instanceof HTMLInputElement
+        ? control.value.split(",")
+        : [];
+  return [...new Set(values.map((id) => id.trim().toLowerCase()).filter((id) => id !== ""))];
 }
 export function messageBlock(
   document: Document,

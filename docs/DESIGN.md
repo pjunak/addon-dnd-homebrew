@@ -60,10 +60,12 @@ skips invalid ones with a diagnostic, and the next publish rewrites them.
   `internal/rules/character_items.go`. Anything else needs Engine support
   first, then its contract README, the Compendium schema and the sheet's
   display. Grants need Engine 5.4.0; an older Engine ignores them.
-- Spells are entered by id. A spell picker would need this add-on to consume
-  `dnd5e.rules-data` as well as provide it, so for now the Engine checks the
-  ids: an unknown spell is unavailable on the sheet, and a leveled spell
-  without a use or `atWill` is refused there, not here.
+- The editor picks spells and classes from the other `dnd5e.rules-data`
+  providers (the Compendium), which the browser reads once per page through
+  an optional consumer that excludes this add-on's own records. Without a
+  Compendium they are typed as ids. Either way the Engine checks them: an
+  unknown spell is unavailable on the sheet, and a leveled spell without a use
+  or `atWill` is refused there, not here.
 - A set condition only counts levels. What each level does stays text in
   its summary, and conditional rules beyond toggles stay in the description;
   the DM can add a linked adjustment on a character instead.

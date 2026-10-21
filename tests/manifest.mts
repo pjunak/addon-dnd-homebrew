@@ -50,7 +50,16 @@ void test("manifest serves rules data from a worker and keeps drafts DM-only", (
       ["codex.import-adapter", "2.0.0", "worker"],
     ],
   );
-  assert.equal(manifest.services.consumes, undefined);
+  // The editor's pickers read the Compendium; the add-on works without it.
+  assert.deepEqual(manifest.services.consumes, [
+    {
+      contract: "dnd5e.rules-data",
+      range: "^3.0.0",
+      cardinality: "many",
+      required: false,
+      selection: "all-compatible",
+    },
+  ]);
   assert.deepEqual(manifest.permissions, []);
   const roles = Object.fromEntries(manifest.contributions.map(({ id, roles }) => [id, roles]));
   assert.deepEqual(roles["homebrew.route"], ["dm"]);

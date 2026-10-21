@@ -54,6 +54,7 @@ import {
   type Rarity,
   type Stored,
 } from "./model.js";
+import type { References } from "./references.js";
 import type { Drafts, PublishedState } from "./repository.js";
 import { runtimeFor, type HomebrewRuntime } from "./runtime.js";
 import type { ContributionContext } from "./sdk.js";
@@ -101,6 +102,8 @@ export function defineCatalogElement(generation?: string): string {
     #effects: EffectsEditor | undefined;
     /** The item each open form started from, for values its controls do not show. */
     readonly #formItems = new WeakMap<HTMLFormElement, Item>();
+    /** Pickers' records; undefined until loaded, or when no Compendium answers. */
+    #references: References | undefined;
     #grants: GrantsEditor | undefined;
     readonly #header = document.createElement("div");
     readonly #tree = document.createElement("nav");
@@ -177,6 +180,7 @@ export function defineCatalogElement(generation?: string): string {
       this.#message = { text: "Loading homebrew items…", kind: "status" };
       this.#renderHeader();
       void this.#load();
+      void this.#loadReferences(runtime);
     }
     async #load(): Promise<void> {
       const runtime = this.#runtime;
@@ -203,6 +207,21 @@ export function defineCatalogElement(generation?: string): string {
           kind: "alert",
         };
         this.#renderHeader();
+      }
+    }
+
+    /** Turns typed ids into pickers once the rules data arrives, unless an edit is open. */
+    async #loadReferences(runtime: HomebrewRuntime): Promise<void> {
+      try {
+        const references = await runtime.references.load();
+        if (this.#runtime !== runtime) return;
+        this.#references = references;
+        if (!this.#dirty && !this.#busy) {
+          this.#renderEditor();
+          this.#controls?.refresh();
+        }
+      } catch {
+        // Without a Compendium the editor keeps typed ids.
       }
     }
 
@@ -801,6 +820,7 @@ export function defineCatalogElement(generation?: string): string {
         },
         () => this.#controls?.refresh(),
         () => form.querySelector<HTMLInputElement>('input[name="name"]')?.value.trim() ?? "",
+        this.#references,
       );
       grants.append(this.#grants.root);
       form.append(effects, grants);
@@ -857,7 +877,7 @@ export function defineCatalogElement(generation?: string): string {
       );
       form.append(
         defaults,
-        carryingFields(document, t, value),
+        carryingFields(document, t, value, this.#references),
         textField(document, t("Tags"), "tags", value.tags.join(", "), {
           hint: t("Lowercase words joined by hyphens, separated by commas."),
         }),
