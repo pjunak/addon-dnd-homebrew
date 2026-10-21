@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "revision", "publishedAt", "recordCount"],
+  "properties": {
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "revision": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "publishedAt": { "$ref": "homebrew-common.schema.json#/$defs/updatedAt" },
+    "recordCount": { "type": "integer", "minimum": 0, "maximum": 10000 }
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "classRef": { "anyOf": [{ "const": "" }, { "$ref": "#/$defs/id" }] },
+    "schemaVersion": { "const": 1 },
+    "updatedAt": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^\\S(?:.*\\S)?$" },
+    "markdown": { "type": "string", "maxLength": 20000 },
+    "itemType": { "type": "string", "minLength": 1, "maxLength": 120, "pattern": "^\\S(?:.*\\S)?$" },
+    "rarity": { "enum": ["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact", "Rarity Varies"] },
+    "bodyPlacements": {
+      "type": "array", "maxItems": 11, "uniqueItems": true,
+      "items": { "enum": ["head", "body", "wrists", "legs", "feet", "face", "neck", "shoulders", "waist", "gloves", "other"] }
+    },
+    "tags": {
+      "type": "array", "maxItems": 20, "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 60, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }
+    },
+    "mechanics": { "enum": ["complete", "narrative"] },
+    "ability": { "enum": ["STR", "DEX", "CON", "INT", "WIS", "CHA"] },
+    "skill": {
+      "enum": ["acrobatics", "animalHandling", "arcana", "athletics", "deception", "history", "insight", "intimidation",
+        "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleightOfHand",
+        "stealth", "survival"]
+    },
+    "mode": { "enum": ["set", "add", "minimum", "maximum"] },
+    "value": { "type": "integer", "minimum": -100000, "maximum": 100000 },
+    "effect": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false, "required": ["target", "key", "mode", "value"],
+          "properties": { "target": { "enum": ["abilityScore", "abilityCap", "savingThrow"] }, "key": { "$ref": "#/$defs/ability" }, "mode": { "$ref": "#/$defs/mode" }, "value": { "$ref": "#/$defs/value" } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["target", "mode", "value"],
+          "properties": { "target": { "enum": ["armorClass", "initiative", "speed", "maxHp", "attunementLimit"] }, "mode": { "$ref": "#/$defs/mode" }, "value": { "$ref": "#/$defs/value" } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["target", "key", "mode", "value"],
+          "properties": { "target": { "const": "proficiency" }, "key": { "anyOf": [{ "$ref": "#/$defs/skill" }, { "$ref": "#/$defs/ability" }] }, "mode": { "const": "set" }, "value": { "const": 1 } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["target", "key", "mode", "value"],
+          "properties": { "target": { "enum": ["sense", "resourceMax"] }, "key": { "type": "string", "minLength": 1, "maxLength": 60, "pattern": "^[a-z][A-Za-z0-9]*(?:[-_][A-Za-z0-9]+)*$" }, "mode": { "$ref": "#/$defs/mode" }, "value": { "$ref": "#/$defs/value" } }
+        }
+      ]
+    },
+    "effects": { "type": "array", "maxItems": 40, "items": { "$ref": "#/$defs/effect" } },
+    "situation": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^\\S(?:.*\\S)?$" },
+    "damageType": { "enum": ["acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic", "radiant", "slashing", "thunder"] },
+    "conditionId": {
+      "enum": ["blinded", "charmed", "deafened", "exhaustion", "frightened", "grappled", "incapacitated", "invisible", "paralyzed",
+        "petrified", "poisoned", "prone", "restrained", "stunned", "unconscious"]
+    },
+    "abilityList": { "type": "array", "minItems": 1, "maxItems": 6, "uniqueItems": true, "items": { "$ref": "#/$defs/ability" } },
+    "idList": { "type": "array", "minItems": 1, "maxItems": 20, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "advantageFields": {
+      "properties": {
+        "on": { "enum": ["save", "check", "attack", "initiative", "concentration", "deathSave"] },
+        "mode": { "enum": ["advantage", "disadvantage"] },
+        "abilities": { "$ref": "#/$defs/abilityList" },
+        "skills": { "type": "array", "minItems": 1, "maxItems": 18, "uniqueItems": true, "items": { "$ref": "#/$defs/skill" } },
+        "when": { "$ref": "#/$defs/situation" }
+      },
+      "required": ["on"],
+      "allOf": [
+        { "if": { "required": ["abilities"] }, "then": { "properties": { "on": { "enum": ["save", "check"] } } } },
+        { "if": { "required": ["skills"] }, "then": { "properties": { "on": { "const": "check" } } } }
+      ]
+    },
+    "advantage": { "type": "object", "allOf": [{ "$ref": "#/$defs/advantageFields" }], "unevaluatedProperties": false },
+    "castingAbility": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": ["fixed"], "properties": { "fixed": { "$ref": "#/$defs/ability" } } },
+        { "type": "object", "additionalProperties": false, "required": ["id", "choose"], "properties": { "id": { "$ref": "#/$defs/id" }, "choose": { "$ref": "#/$defs/abilityList" } } }
+      ]
+    },
+    "resource": {
+      "type": "object", "additionalProperties": false, "required": ["key", "name", "fixed", "recharge"],
+      "properties": { "key": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/name" }, "fixed": { "type": "integer", "minimum": 1, "maximum": 100 }, "recharge": { "enum": ["short", "long"] } }
+    },
+    "spellLevel": { "type": "integer", "minimum": 0, "maximum": 9 },
+    "spellResource": {
+      "anyOf": [
+        { "$ref": "#/$defs/id" },
+        { "type": "object", "additionalProperties": false, "required": ["key"], "properties": { "key": { "$ref": "#/$defs/id" }, "cost": { "type": "integer", "minimum": 1, "maximum": 100 } } }
+      ]
+    },
+    "spell": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false, "required": ["ids"],
+          "properties": { "ids": { "$ref": "#/$defs/idList" }, "resource": { "$ref": "#/$defs/spellResource" }, "atWill": { "const": true } },
+          "not": { "required": ["resource", "atWill"] }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["id", "choose"],
+          "properties": {
+            "id": { "$ref": "#/$defs/id" }, "choose": { "type": "integer", "minimum": 1, "maximum": 10 },
+            "spellLevel": { "$ref": "#/$defs/spellLevel" }, "maxSpellLevel": { "$ref": "#/$defs/spellLevel" },
+            "from": {
+              "type": "object", "additionalProperties": false, "minProperties": 1,
+              "properties": {
+                "class": { "$ref": "#/$defs/idList" },
+                "school": { "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": { "enum": ["abjuration", "conjuration", "divination", "enchantment", "evocation", "illusion", "necromancy", "transmutation"] } },
+                "ids": { "$ref": "#/$defs/idList" },
+                "ritual": { "const": true }
+              }
+            },
+            "resource": { "$ref": "#/$defs/spellResource" }, "atWill": { "const": true }
+          },
+          "oneOf": [{ "required": ["spellLevel"] }, { "required": ["maxSpellLevel"] }],
+          "not": { "required": ["resource", "atWill"] },
+          "if": {
+            "anyOf": [
+              { "required": ["spellLevel"], "properties": { "spellLevel": { "minimum": 1 } } },
+              { "required": ["maxSpellLevel"], "properties": { "maxSpellLevel": { "minimum": 1 } } }
+            ]
+          },
+          "then": { "anyOf": [{ "required": ["resource"] }, { "required": ["atWill"] }] }
+        }
+      ]
+    },
+    "modifier": {
+      "oneOf": [
+        { "type": "object", "allOf": [{ "$ref": "#/$defs/advantageFields" }], "required": ["target"], "properties": { "target": { "const": "advantage" } }, "unevaluatedProperties": false },
+        {
+          "type": "object", "additionalProperties": false, "required": ["target", "key", "value"],
+          "properties": { "target": { "const": "sense" }, "key": { "$ref": "#/$defs/id" }, "value": { "type": "integer", "minimum": 1, "maximum": 1000 } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["target", "key", "add"],
+          "properties": { "target": { "const": "senseBonus" }, "key": { "$ref": "#/$defs/id" }, "add": { "type": "integer", "minimum": 1, "maximum": 1000 } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["target", "value"],
+          "properties": { "target": { "enum": ["resistance", "damageImmunity"] }, "value": { "$ref": "#/$defs/damageType" } }
+        },
+        {
+          "type": "object", "additionalProperties": false, "required": ["target", "value"],
+          "properties": { "target": { "const": "conditionImmunity" }, "value": { "$ref": "#/$defs/conditionId" } }
+        }
+      ]
+    },
+    "activation": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "modifiers"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/name" }, "condition": { "$ref": "#/$defs/situation" },
+        "modifiers": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "$ref": "#/$defs/modifier" } }
+      }
+    },
+    "condition": {
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "summary"],
+      "properties": {
+        "id": { "allOf": [{ "$ref": "#/$defs/id" }, { "not": { "$ref": "#/$defs/conditionId" } }] },
+        "name": { "$ref": "#/$defs/name" },
+        "summary": { "type": "string", "maxLength": 2000 }
+      }
+    },
+    "grantFields": {
+      "type": "object", "minProperties": 1,
+      "properties": {
+        "advantages": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "$ref": "#/$defs/advantage" } },
+        "castingAbility": { "$ref": "#/$defs/castingAbility" },
+        "resources": { "type": "array", "minItems": 1, "maxItems": 10, "items": { "$ref": "#/$defs/resource" } },
+        "spells": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "$ref": "#/$defs/spell" } },
+        "activations": { "type": "array", "minItems": 1, "maxItems": 10, "items": { "$ref": "#/$defs/activation" } },
+        "resistances": { "type": "array", "minItems": 1, "maxItems": 13, "uniqueItems": true, "items": { "$ref": "#/$defs/damageType" } },
+        "damageImmunities": { "type": "array", "minItems": 1, "maxItems": 13, "uniqueItems": true, "items": { "$ref": "#/$defs/damageType" } },
+        "conditionImmunities": { "type": "array", "minItems": 1, "maxItems": 15, "uniqueItems": true, "items": { "$ref": "#/$defs/conditionId" } }
+      },
+      "dependentRequired": { "castingAbility": ["spells"] }
+    },
+    "itemGrants": { "allOf": [{ "$ref": "#/$defs/grantFields" }], "unevaluatedProperties": false },
+    "recordGrants": {
+      "allOf": [{ "$ref": "#/$defs/grantFields" }],
+      "properties": { "conditions": { "type": "array", "minItems": 1, "maxItems": 10, "items": { "$ref": "#/$defs/condition" } } },
+      "unevaluatedProperties": false
+    }
+  }
+}

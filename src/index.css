@@ -1,0 +1,321 @@
+.hb-shell {
+  display: grid;
+  gap: 1rem;
+  color: var(--text-light, #d4c49a);
+  font: inherit;
+  min-width: 0;
+}
+.hb-shell h1,
+.hb-shell h2,
+.hb-shell h3 {
+  margin: 0;
+  font-family: var(--font-title, Georgia, serif);
+  color: var(--accent-gold, #c8a040);
+}
+.hb-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1rem;
+}
+.hb-title p,
+.hb-status,
+.hb-hint {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted, #9a8660);
+}
+.hb-hint {
+  font-size: 0.85rem;
+}
+.hb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.hb-message {
+  margin: 0;
+}
+.hb-message ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+.hb-layout {
+  display: grid;
+  grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.hb-tree {
+  display: grid;
+  gap: 0.75rem;
+  position: sticky;
+  top: var(--space-4, 1rem);
+  max-height: calc(100vh - 8rem);
+  overflow: auto;
+  padding: 0.75rem;
+  background: var(--bg-raised, #241c0d);
+  border: 1px solid var(--border-subtle, #ffffff12);
+  border-radius: var(--radius-lg, 10px);
+}
+.hb-tree-groups {
+  display: grid;
+  gap: 0.75rem;
+}
+.hb-group h2.hb-group-head {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #9a8660);
+  font-family: var(--font-ui, inherit);
+  padding: 0.25rem 0.5rem;
+}
+.hb-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.5rem;
+  display: grid;
+  gap: 0.15rem;
+}
+.hb-tree-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  text-align: start;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius, 6px);
+  cursor: pointer;
+}
+.hb-tree-item.hb-group-head {
+  font-weight: 700;
+  color: var(--text-parchment, #f5edd8);
+}
+.hb-tree-item:hover {
+  background: var(--bg-surface, #1a1409);
+}
+.hb-tree-item:focus-visible {
+  outline: 2px solid var(--accent-gold, #c8a040);
+  outline-offset: 1px;
+}
+.hb-tree-item[aria-current="true"] {
+  border-color: var(--accent-gold-dim, #8a6f2e);
+  background: rgba(var(--accent-gold-rgb, 200, 160, 64), 0.12);
+}
+.hb-tree-name {
+  flex: 1 1 8rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hb-badge {
+  display: inline-block;
+  padding: 0 0.4rem;
+  font-size: 0.7rem;
+  line-height: 1.5;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle, #ffffff12);
+  color: var(--text-light, #d4c49a);
+  white-space: nowrap;
+}
+.hb-badge.muted {
+  color: var(--text-muted, #9a8660);
+}
+.hb-badge.accent {
+  color: var(--accent-gold, #c8a040);
+  border-color: var(--accent-gold-dim, #8a6f2e);
+}
+.hb-badge.warn {
+  color: var(--color-danger, #d07a5a);
+  border-color: var(--color-danger, #d07a5a);
+}
+.hb-editor {
+  min-width: 0;
+}
+.hb-form {
+  display: grid;
+  gap: 0.85rem;
+  max-width: 52rem;
+}
+.hb-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.hb-check .hb-hint {
+  flex-basis: 100%;
+  margin: 0;
+}
+.hb-effects-fieldset,
+.hb-defaults,
+.hb-preview {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border-subtle, #ffffff12);
+  border-radius: var(--radius, 6px);
+  background: var(--bg-surface, #1a1409);
+}
+.hb-effects-fieldset[hidden] {
+  display: none;
+}
+.hb-effects-fieldset legend {
+  padding: 0 0.35rem;
+  color: var(--accent-gold, #c8a040);
+}
+.hb-defaults summary {
+  cursor: pointer;
+  color: var(--accent-gold, #c8a040);
+}
+.hb-effects {
+  display: grid;
+  gap: 0.5rem;
+}
+.hb-effect-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hb-effect-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed var(--border-subtle, #ffffff12);
+}
+.hb-effect-row > [data-ui-field] {
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+.hb-grants,
+.hb-grants-section {
+  display: grid;
+  gap: 0.5rem;
+}
+.hb-grants {
+  gap: 1rem;
+}
+.hb-grants-heading {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text-parchment, #f5edd8);
+}
+.hb-grants-casting[hidden] {
+  display: none;
+}
+.hb-grant-kept {
+  align-items: center;
+}
+.hb-grant-kept .hb-grant-text {
+  flex: 1 1 14rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hb-preview-name {
+  margin: 0;
+  font-weight: 700;
+  color: var(--text-parchment, #f5edd8);
+}
+.hb-effect-summary,
+.hb-card-effects ul,
+.hb-change-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+.hb-editor-actions,
+.hb-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.hb-dialog {
+  width: min(40rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 4rem);
+  padding: var(--space-5, 1.25rem);
+  color: var(--text-light, #d4c49a);
+  background: var(--bg-base, #120d05);
+  border: 1px solid var(--border-subtle, #ffffff12);
+  border-radius: var(--radius-lg, 10px);
+}
+.hb-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.hb-dialog-body {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.hb-dialog-body p {
+  margin: 0;
+}
+.hb-gallery-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.hb-gallery-filters input[type="search"] {
+  flex: 1 1 16rem;
+}
+.hb-gallery-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 0.75rem;
+}
+.hb-gallery-list > .hb-message {
+  grid-column: 1 / -1;
+}
+.hb-card {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  padding: 0.85rem;
+  background: var(--bg-raised, #241c0d);
+  border: 1px solid var(--border-subtle, #ffffff12);
+  border-radius: var(--radius-lg, 10px);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hb-card.focused {
+  border-color: var(--accent-gold, #c8a040);
+  box-shadow: 0 0 0 1px var(--accent-gold, #c8a040);
+}
+.hb-card h2 {
+  font-size: 1.1rem;
+}
+.hb-card-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #9a8660);
+}
+.hb-card-effects {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle, #ffffff12);
+  font-size: 0.9rem;
+}
+.hb-card-effects p {
+  margin: 0 0 0.25rem;
+  color: var(--accent-gold, #c8a040);
+}
+@media (max-width: 48rem) {
+  .hb-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hb-tree {
+    position: static;
+    max-height: 40vh;
+  }
+}

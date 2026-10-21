@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "sets"],
+  "properties": {
+    "contractVersion": { "const": "content-catalog.v1" },
+    "sets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "revision", "schemaSha256", "recordCount", "kinds"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "revision": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "schemaSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "recordCount": { "type": "integer", "minimum": 0, "maximum": 100000 },
+          "kinds": {
+            "type": "object",
+            "propertyNames": { "type": "string", "minLength": 1, "maxLength": 100 },
+            "additionalProperties": { "type": "integer", "minimum": 1 }
+          },
+          "groups": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field", "label"],
+            "properties": {
+              "field": { "type": "string", "minLength": 1 },
+              "additionalField": { "type": "string", "minLength": 1 },
+              "label": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

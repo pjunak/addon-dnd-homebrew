@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["id", "schemaVersion", "classId", "name", "text", "overrides", "tags", "characterMechanics", "characterEffects", "playerVisible", "retired", "updatedAt"],
+  "properties": {
+    "id": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "classId": { "$ref": "homebrew-common.schema.json#/$defs/classRef" },
+    "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+    "text": { "$ref": "homebrew-common.schema.json#/$defs/markdown" },
+    "overrides": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "itemType": { "$ref": "homebrew-common.schema.json#/$defs/itemType" },
+        "rarity": { "$ref": "homebrew-common.schema.json#/$defs/rarity" },
+        "attunement": { "type": "boolean" },
+        "bodyPlacements": { "$ref": "homebrew-common.schema.json#/$defs/bodyPlacements" }
+      }
+    },
+    "tags": { "$ref": "homebrew-common.schema.json#/$defs/tags" },
+    "characterMechanics": { "$ref": "homebrew-common.schema.json#/$defs/mechanics" },
+    "characterEffects": { "$ref": "homebrew-common.schema.json#/$defs/effects" },
+    "playerVisible": { "type": "boolean" },
+    "retired": { "type": "boolean" },
+    "updatedAt": { "$ref": "homebrew-common.schema.json#/$defs/updatedAt" },
+    "grants": { "$ref": "homebrew-common.schema.json#/$defs/itemGrants" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "characterMechanics": { "const": "narrative" } } },
+      "then": { "properties": { "characterEffects": { "maxItems": 0 } }, "not": { "required": ["grants"] } }
+    },
+    {
+      "if": { "properties": { "characterMechanics": { "const": "complete" } } },
+      "then": { "anyOf": [{ "properties": { "characterEffects": { "minItems": 1 } } }, { "required": ["grants"] }] }
+    }
+  ]
+}

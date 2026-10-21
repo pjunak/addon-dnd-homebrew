@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "setId", "revision", "records"],
+  "properties": {
+    "contractVersion": { "const": "content-query-result.v1" },
+    "setId": { "const": "rules" },
+    "revision": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "records": {
+      "type": "array",
+      "maxItems": 200,
+      "items": { "$ref": "content-record.schema.json" }
+    },
+    "nextCursor": { "type": "string", "minLength": 1, "maxLength": 32 }
+  }
+}

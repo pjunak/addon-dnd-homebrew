@@ -1,0 +1,30 @@
+# Secrets and private keys
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_ed25519
+
+# Generated and local development state
+node_modules/
+.npm-cache/
+dist/
+/web/
+/worker/
+
+# Local agent state, verification output and branch recovery bundles
+.codex/
+.claude/
+test-results/
+playwright-report/
+*.bundle
+
+# Local multi-repository development (go work init . ../ttrpg-codex)
+go.work
+go.work.sum

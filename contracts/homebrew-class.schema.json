@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["id", "schemaVersion", "name", "description", "curse", "itemType", "rarity", "attunement", "bodyPlacements", "tags", "namePrefix", "playerVisible", "updatedAt"],
+  "properties": {
+    "id": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+    "description": { "$ref": "homebrew-common.schema.json#/$defs/markdown" },
+    "curse": { "$ref": "homebrew-common.schema.json#/$defs/markdown" },
+    "itemType": { "$ref": "homebrew-common.schema.json#/$defs/itemType" },
+    "rarity": { "$ref": "homebrew-common.schema.json#/$defs/rarity" },
+    "attunement": { "type": "boolean" },
+    "bodyPlacements": { "$ref": "homebrew-common.schema.json#/$defs/bodyPlacements" },
+    "tags": { "$ref": "homebrew-common.schema.json#/$defs/tags" },
+    "namePrefix": { "anyOf": [{ "const": "" }, { "type": "string", "maxLength": 60, "pattern": "^\\S(?:.*\\S)?$" }] },
+    "playerVisible": { "type": "boolean" },
+    "updatedAt": { "$ref": "homebrew-common.schema.json#/$defs/updatedAt" },
+    "condition": { "$ref": "homebrew-common.schema.json#/$defs/condition" }
+  }
+}

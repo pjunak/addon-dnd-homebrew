@@ -1,0 +1,528 @@
+import { fill, type Problem } from "./model.js";
+
+export type Locale = "en" | "cs";
+export type Translator = (
+  text: string,
+  params?: Readonly<Record<string, string | number>>,
+) => string;
+
+export function hostLocale(host: unknown): Locale {
+  return typeof host === "object" && host !== null && "locale" in host && host.locale === "cs"
+    ? "cs"
+    : "en";
+}
+/** Messages are keyed by their English text; a missing translation shows English. */
+export function translator(locale: Locale): Translator {
+  return (text, params) => fill(locale === "cs" ? (cs[text] ?? text) : text, params);
+}
+export function problemText(t: Translator, problem: Problem): string {
+  const params: Record<string, string | number> = {};
+  for (const [key, value] of Object.entries(problem.params ?? {}))
+    params[key] = typeof value === "string" && key === "problem" ? t(value) : value;
+  return t(problem.text, params);
+}
+
+export const cs: Readonly<Record<string, string>> = {
+  // Page
+  "Homebrew Items": "Vlastní předměty",
+  "Item Gallery": "Galerie předmětů",
+  "Create item classes and items, then publish them to use them on character sheets.":
+    "Vytvářejte třídy předmětů a předměty a pak je zveřejněte, aby šly použít na deníkách postav.",
+  "Items the DM has revealed to the party.": "Předměty, které Pán jeskyně odhalil družině.",
+  "Loading homebrew items…": "Načítání vlastních předmětů…",
+  "This page belongs to an add-on version that is no longer active. Reload the page.":
+    "Tato stránka patří k verzi doplňku, která už není aktivní. Načtěte stránku znovu.",
+  "Homebrew items could not be loaded. Reload to try again.":
+    "Vlastní předměty se nepodařilo načíst. Načtěte stránku znovu.",
+  "New class": "Nová třída",
+  "New item": "Nový předmět",
+  "Import file": "Importovat soubor",
+  Export: "Exportovat",
+  Publish: "Zveřejnit",
+  "Publish changes ({count})": "Zveřejnit změny ({count})",
+  "Everything is published.": "Vše je zveřejněno.",
+  "Never published.": "Zatím nezveřejněno.",
+  "Published revision {revision}, items: {count}.":
+    "Zveřejněná revize {revision}, předmětů: {count}.",
+  "Unpublished changes: {count}.": "Nezveřejněné změny: {count}.",
+  "Search items": "Hledat předměty",
+  "Items without a class": "Předměty bez třídy",
+  "No items yet. Create a class or import a file to begin.":
+    "Zatím žádné předměty. Začněte vytvořením třídy nebo importem souboru.",
+  "Choose a class or an item to edit it.": "Vyberte třídu nebo předmět k úpravě.",
+  "Items: {count}": "Předmětů: {count}",
+  "Some stored drafts could not be read:": "Některé uložené koncepty nelze přečíst:",
+  // Badges
+  Automated: "Automatizovaný",
+  "Text only": "Pouze text",
+  Hidden: "Skrytý",
+  Retired: "Vyřazený",
+  Unpublished: "Nezveřejněný",
+  Changed: "Změněný",
+  Visible: "Viditelný",
+  // Class editor
+  "Item class": "Třída předmětů",
+  Name: "Název",
+  Id: "Identifikátor",
+  "Used in saved characters; it cannot change after the first save.":
+    "Používá se v uložených postavách; po prvním uložení ho nelze změnit.",
+  "Name prefix": "Předpona názvu",
+  "Shown before each item's name, for example Cursed Card: Defense.":
+    "Zobrazí se před názvem každého předmětu, například Prokletá karta: Obrana.",
+  "Item type": "Typ předmětu",
+  Rarity: "Vzácnost",
+  "Requires attunement": "Vyžaduje sladění",
+  "Body placements": "Umístění na těle",
+  Tags: "Štítky",
+  "Lowercase words joined by hyphens, separated by commas.":
+    "Malá slova spojená pomlčkami, oddělená čárkami.",
+  "Shared description": "Společný popis",
+  "Added to every item in the class.": "Připojí se ke každému předmětu ve třídě.",
+  Curse: "Kletba",
+  "Added to every item as its curse.": "Připojí se ke každému předmětu jako jeho kletba.",
+  "Visible to players": "Viditelné pro hráče",
+  "Lists the class in the player gallery. Each item also needs its own switch.":
+    "Zobrazí třídu v galerii pro hráče. Každý předmět potřebuje i vlastní přepínač.",
+  Save: "Uložit",
+  Saving: "Ukládání",
+  Delete: "Smazat",
+  "Add item to this class": "Přidat předmět do této třídy",
+  "Saved.": "Uloženo.",
+  "Move or delete this class's items first.": "Nejprve přesuňte nebo smažte předměty této třídy.",
+  Condition: "Stav",
+  "Every item of the class gives this condition. Its level on the sheet is the number of the class's items in effect. Leave the name empty for none.":
+    "Každý předmět třídy dává tento stav. Jeho úroveň na deníku odpovídá počtu účinných předmětů třídy. Bez názvu třída žádný stav nedává.",
+  "Condition name": "Název stavu",
+  "Condition id": "Identifikátor stavu",
+  "Filled from the name when empty.": "Když zůstane prázdný, vytvoří se z názvu.",
+  "Condition summary": "Popis stavu",
+  "What each level does, as players read it.": "Co dělá každá úroveň, jak to uvidí hráči.",
+  // Item editor
+  Item: "Předmět",
+  Class: "Třída",
+  "No class": "Bez třídy",
+  Description: "Popis",
+  "The effect as players read it on their character sheet.":
+    "Účinek tak, jak ho hráči uvidí na deníku postavy.",
+  Mechanics: "Mechanika",
+  "Text only: the sheet shows the description": "Pouze text: deník zobrazí popis",
+  "Automated: the sheet applies the effects and properties":
+    "Automatizovaný: deník použije účinky a schopnosti",
+  Effects: "Účinky",
+  "Add effect": "Přidat účinek",
+  "Remove effect": "Odebrat účinek",
+  "Effects apply while the item is equipped, and attuned when it requires attunement.":
+    "Účinky platí, dokud je předmět vybavený, a sladěný, pokud sladění vyžaduje.",
+  Properties: "Schopnosti předmětu",
+  "Advantages, limited uses, spells, toggles and resistances, on the same terms. Item spells never use spell slots.":
+    "Výhody, omezená použití, kouzla, přepínače a odolnosti, za stejných podmínek. Kouzla předmětů nikdy nespotřebují pozice kouzel.",
+  "Class defaults": "Výchozí hodnoty třídy",
+  "Leave a field empty to use the class's value.": "Prázdné pole použije hodnotu třídy.",
+  "From class ({value})": "Podle třídy ({value})",
+  Yes: "Ano",
+  No: "Ne",
+  "Use the class's placements": "Použít umístění třídy",
+  "Lists the item in the player gallery when its class is visible too.":
+    "Zobrazí předmět v galerii pro hráče, pokud je viditelná i jeho třída.",
+  "Retired items stay usable on character sheets but leave the player gallery.":
+    "Vyřazené předměty zůstanou použitelné na denících postav, ale zmizí z galerie pro hráče.",
+  Preview: "Náhled",
+  "As published": "Po zveřejnění",
+  "Deleting a published item withdraws it at the next publish; characters holding it then show a missing-source problem. Retire it instead to keep it on their sheets. Delete {name}?":
+    "Smazání zveřejněného předmětu ho při příštím zveřejnění stáhne; postavy, které ho mají, pak ukážou problém s chybějícím zdrojem. Chcete-li ho na denících zachovat, raději ho vyřaďte. Smazat {name}?",
+  "Delete {name}?": "Smazat {name}?",
+  "This id was used by a deleted draft. Choose another id.":
+    "Tento identifikátor patřil smazanému konceptu. Zvolte jiný.",
+  "Someone else changed this draft. Reload to see their version.":
+    "Tento koncept mezitím změnil někdo jiný. Načtěte stránku, abyste viděli jeho verzi.",
+  "The draft could not be saved.": "Koncept se nepodařilo uložit.",
+  "Leave unsaved changes?": "Zahodit neuložené změny?",
+  "Discard changes": "Zahodit změny",
+  // Effects
+  "Ability score": "Hodnota vlastnosti",
+  "Ability score maximum": "Maximum hodnoty vlastnosti",
+  "Saving throw bonus": "Bonus k záchrannému hodu",
+  "Armor Class": "Obranné číslo",
+  Initiative: "Iniciativa",
+  "Speed (ft)": "Rychlost (stopy)",
+  "Hit Point maximum": "Maximum životů",
+  "Attunement slots": "Počet sladění",
+  Proficiency: "Zdatnost",
+  "Sense range (ft)": "Dosah smyslu (stopy)",
+  "Resource uses": "Počet použití zdroje",
+  Target: "Cíl",
+  Key: "Klíč",
+  Mode: "Způsob",
+  Value: "Hodnota",
+  Add: "Přičíst",
+  "Set to": "Nastavit na",
+  "At least": "Nejméně",
+  "At most": "Nejvýše",
+  "Sense or resource": "Smysl nebo zdroj",
+  "For example darkvision.": "Například darkvision.",
+  Strength: "Síla",
+  Dexterity: "Obratnost",
+  Constitution: "Odolnost",
+  Intelligence: "Inteligence",
+  Wisdom: "Moudrost",
+  Charisma: "Charisma",
+  "{ability} saving throws": "Záchranné hody na {ability}",
+  "{ability} score": "{ability} (hodnota)",
+  "{ability} maximum": "{ability} (maximum)",
+  "Proficiency: {name}": "Zdatnost: {name}",
+  "{label} {value}": "{label} {value}",
+  "{label} = {value}": "{label} = {value}",
+  "{label} at least {value}": "{label} nejméně {value}",
+  "{label} at most {value}": "{label} nejvýše {value}",
+  "Uses of {name}": "Použití: {name}",
+  Acrobatics: "Akrobacie",
+  "Animal Handling": "Zacházení se zvířaty",
+  Arcana: "Mystika",
+  Athletics: "Atletika",
+  Deception: "Klamání",
+  History: "Historie",
+  Insight: "Vhled",
+  Intimidation: "Zastrašování",
+  Investigation: "Pátrání",
+  Medicine: "Lékařství",
+  Nature: "Příroda",
+  Perception: "Vnímání",
+  Performance: "Vystupování",
+  Persuasion: "Přesvědčování",
+  Religion: "Náboženství",
+  "Sleight of Hand": "Čachry",
+  Stealth: "Nenápadnost",
+  Survival: "Přežití",
+  // Properties
+  Remove: "Odebrat",
+  "Kept as imported; edit the file to change it.":
+    "Zachováno z importu; změníte ho úpravou souboru.",
+  Advantages: "Výhody",
+  "Add advantage": "Přidat výhodu",
+  Roll: "Hod",
+  Result: "Výsledek",
+  Advantage: "Výhoda",
+  Disadvantage: "Nevýhoda",
+  Abilities: "Vlastnosti",
+  Skills: "Dovednosti",
+  "Only when": "Jen když",
+  Always: "Vždy",
+  "Limited uses": "Omezená použití",
+  "Add use": "Přidat použití",
+  Uses: "Počet použití",
+  "Comes back after": "Obnoví se po",
+  Spells: "Kouzla",
+  "Add spell": "Přidat kouzlo",
+  "How it is cast": "Jak se sesílá",
+  Cantrips: "Počet triků",
+  "Spell ids": "Identifikátory kouzel",
+  "Ids from the rules data, separated by commas.":
+    "Identifikátory z dat pravidel oddělené čárkami.",
+  Use: "Použití",
+  "Add a use first": "Nejprve přidejte použití",
+  "Spellcasting ability": "Sesílací vlastnost",
+  "The player picks Intelligence, Wisdom or Charisma":
+    "Hráč zvolí Inteligenci, Moudrost nebo Charisma",
+  Toggles: "Přepínače",
+  "Add toggle": "Přidat přepínač",
+  "For example Under open sky.": "Například Pod širým nebem.",
+  "Applies when": "Platí, když",
+  Optional: "Nepovinné",
+  Sense: "Smysl",
+  "Range at least (ft)": "Dosah nejméně (stopy)",
+  "Range extended by (ft)": "Prodloužení dosahu (stopy)",
+  "Resistances and immunities": "Odolnosti a imunity",
+  Resistances: "Odolnosti",
+  "Damage immunities": "Imunity vůči zranění",
+  "Condition immunities": "Imunity vůči stavům",
+  "Saving throws": "Záchranné hody",
+  "Ability checks": "Ověření vlastností",
+  "Attack rolls": "Hody na útok",
+  "Concentration saving throws": "Záchranné hody na soustředění",
+  "Death saving throws": "Záchranné hody proti smrti",
+  "Cast with a use": "Sesílá se za použití",
+  "Cast at will": "Sesílá se libovolně",
+  Cantrip: "Trik",
+  "Player picks a cantrip": "Hráč si vybere trik",
+  "Short Rest": "Krátký odpočinek",
+  "Long Rest": "Dlouhý odpočinek",
+  Acid: "Kyselinové",
+  Bludgeoning: "Drtivé",
+  Cold: "Chladné",
+  Fire: "Ohnivé",
+  Force: "Silové",
+  Lightning: "Bleskové",
+  Necrotic: "Nekrotické",
+  Piercing: "Bodné",
+  Poison: "Jedové",
+  Psychic: "Psychické",
+  Radiant: "Zářivé",
+  Slashing: "Sečné",
+  Thunder: "Hromové",
+  Blinded: "Oslepení",
+  Charmed: "Zmámení",
+  Deafened: "Hluchota",
+  Exhaustion: "Vyčerpání",
+  Frightened: "Vystrašení",
+  Grappled: "Uchvácení",
+  Incapacitated: "Neschopnost",
+  Invisible: "Neviditelnost",
+  Paralyzed: "Paralýza",
+  Petrified: "Zkamenění",
+  Poisoned: "Otrava",
+  Prone: "Sražení",
+  Restrained: "Zadržení",
+  Stunned: "Omráčení",
+  Unconscious: "Bezvědomí",
+  Darkvision: "Vidění ve tmě",
+  Blindsight: "Mimosmyslové vnímání",
+  Tremorsense: "Vnímání otřesů",
+  Truesight: "Pravdivé vidění",
+  "{abilities} saving throws": "záchranné hody na {abilities}",
+  "saving throws": "záchranné hody",
+  "{names} checks": "ověření {names}",
+  "ability checks": "ověření vlastností",
+  "attack rolls": "hody na útok",
+  "Initiative rolls": "hody na iniciativu",
+  "saving throws to maintain Concentration": "záchranné hody na udržení soustředění",
+  "Death Saving Throws": "záchranné hody proti smrti",
+  "Advantage on {roll}": "Výhoda na {roll}",
+  "Disadvantage on {roll}": "Nevýhoda na {roll}",
+  "{text} ({when})": "{text} ({when})",
+  "{name}: 1 use per {rest}": "{name}: 1 použití za {rest}",
+  "{name}: {count} uses per {rest}": "{name}: {count} použití za {rest}",
+  "at will": "libovolně",
+  "with a use of {use}": "za 1 použití ({use})",
+  "with {cost} uses of {use}": "za {cost} použití ({use})",
+  "Cast {spells}": "Seslat {spells}",
+  "Learn {spells}": "Naučit se {spells}",
+  "Choose a cantrip": "Vybrat trik",
+  "Choose {count} cantrips": "Vybrat triky: {count}",
+  "Choose a level {level} spell": "Vybrat kouzlo {level}. úrovně",
+  "Choose {count} level {level} spells": "Vybrat kouzla {level}. úrovně: {count}",
+  "Choose a spell up to level {level}": "Vybrat kouzlo do {level}. úrovně",
+  "Choose {count} spells up to level {level}": "Vybrat kouzla do {level}. úrovně: {count}",
+  rituals: "rituály",
+  "from: {filter}": "z: {filter}",
+  "Spellcasting ability: {ability}": "Sesílací vlastnost: {ability}",
+  "Spellcasting ability: the player's choice of {abilities}":
+    "Sesílací vlastnost: hráč volí z {abilities}",
+  "{sense} at least {range} ft": "{sense} nejméně {range} stop",
+  "{sense} +{range} ft": "{sense} +{range} stop",
+  "Resistance: {types}": "Odolnost: {types}",
+  "Damage immunity: {types}": "Imunita vůči zranění: {types}",
+  "Condition immunity: {conditions}": "Imunita vůči stavům: {conditions}",
+  "Toggle {name}: {changes}": "Přepínač {name}: {changes}",
+  "Condition {name}: one level for each item in effect that gives it":
+    "Stav {name}: jedna úroveň za každý účinný předmět, který ho dává",
+  // Body placements
+  head: "hlava",
+  body: "tělo",
+  wrists: "zápěstí",
+  legs: "nohy",
+  feet: "chodidla",
+  face: "obličej",
+  neck: "krk",
+  shoulders: "ramena",
+  waist: "pas",
+  gloves: "rukavice",
+  other: "jiné",
+  // Rarities
+  Common: "Běžný",
+  Uncommon: "Neobvyklý",
+  Rare: "Vzácný",
+  "Very Rare": "Velmi vzácný",
+  Legendary: "Legendární",
+  Artifact: "Artefakt",
+  "Rarity Varies": "Různá vzácnost",
+  // Publish
+  "Publish to character sheets": "Zveřejnit na deníky postav",
+  "Publishing changes the rules data every character uses. Each character sheet asks its owner to adopt the new rules on its next save.":
+    "Zveřejnění změní data pravidel, která používají všechny postavy. Každý deník postavy při příštím uložení požádá svého vlastníka o přijetí nových pravidel.",
+  "Characters holding a withdrawn item show a missing-source problem until it leaves their inventory.":
+    "Postavy, které mají stažený předmět, ukážou problém s chybějícím zdrojem, dokud ho neodeberou z inventáře.",
+  Added: "Přidáno",
+  Updated: "Upraveno",
+  Withdrawn: "Staženo",
+  "Fix these drafts before publishing:": "Před zveřejněním opravte tyto koncepty:",
+  "Publishing would make {count} changes; publish at most 255 at a time.":
+    "Zveřejnění by provedlo {count} změn; najednou lze zveřejnit nejvýše 255.",
+  Cancel: "Zrušit",
+  Close: "Zavřít",
+  "Published.": "Zveřejněno.",
+  "Something changed while you reviewed. Review the publish again.":
+    "Během kontroly se něco změnilo. Zkontrolujte zveřejnění znovu.",
+  "Publishing failed. Nothing was changed.": "Zveřejnění selhalo. Nic se nezměnilo.",
+  // Import
+  "Import homebrew items": "Import vlastních předmětů",
+  "Imported items are drafts; publish them afterwards.":
+    "Importované předměty jsou koncepty; poté je zveřejněte.",
+  "Import files are limited to 2 MiB.": "Soubory pro import mají limit 2 MiB.",
+  "The selected file is not valid JSON.": "Vybraný soubor není platný JSON.",
+  "The homebrew worker is not running, so imports are unavailable. Check the add-on in Settings.":
+    "Pracovní proces doplňku neběží, import proto není dostupný. Zkontrolujte doplněk v Nastavení.",
+  "The import could not be previewed.": "Náhled importu se nepodařilo vytvořit.",
+  "The import could not be saved. Nothing was changed.":
+    "Import se nepodařilo uložit. Nic se nezměnilo.",
+  "Import saved. Changes: {count}.": "Import uložen. Změn: {count}.",
+  "{creates} new, {updates} changed, {skips} unchanged, {deletes} removed.":
+    "Nové: {creates}, změněné: {updates}, beze změny: {skips}, odebrané: {deletes}.",
+  Import: "Importovat",
+  "Nothing to import: every entry matches what is stored.":
+    "Není co importovat: všechny položky odpovídají uloženým.",
+  create: "nové",
+  update: "změna",
+  delete: "odebrání",
+  // Gallery
+  "Search the gallery": "Hledat v galerii",
+  "All classes": "Všechny třídy",
+  "No items have been revealed yet.": "Zatím nebyly odhaleny žádné předměty.",
+  "No items match the search.": "Hledání neodpovídá žádný předmět.",
+  "Requires attunement.": "Vyžaduje sladění.",
+  "Applied on the character sheet:": "Uplatní se na deníku postavy:",
+  "The linked item is not published.": "Odkazovaný předmět není zveřejněn.",
+  // Model problems
+  "The value must be an object.": "Hodnota musí být objekt.",
+  "Unknown field {field}.": "Neznámé pole {field}.",
+  "Missing field {field}.": "Chybí pole {field}.",
+  "Body placements must be distinct.": "Umístění na těle se nesmí opakovat.",
+  "Body placement {value} is not supported.": "Umístění {value} není podporováno.",
+  "Tags must be at most 20 distinct values.": "Štítků může být nejvýše 20 různých.",
+  "Tag {value} must be lowercase words joined by hyphens.":
+    "Štítek {value} musí být z malých slov spojených pomlčkami.",
+  "Choose set, add, minimum or maximum.": "Zvolte nastavit, přičíst, nejméně nebo nejvýše.",
+  "The value must be a whole number between -100000 and 100000.":
+    "Hodnota musí být celé číslo mezi -100000 a 100000.",
+  "Choose an ability.": "Zvolte vlastnost.",
+  "This effect takes no key.": "Tento účinek nemá klíč.",
+  "Choose a skill or a saving throw.": "Zvolte dovednost nebo záchranný hod.",
+  "A proficiency uses mode set with value 1.": "Zdatnost používá způsob nastavit s hodnotou 1.",
+  "Name the sense or resource, such as darkvision.":
+    "Pojmenujte smysl nebo zdroj, například darkvision.",
+  "Effect {target} is not supported.": "Účinek {target} není podporován.",
+  "A text-only item cannot have effects or properties.":
+    "Předmět pouze s textem nemůže mít účinky ani schopnosti.",
+  "Choose automated or text-only mechanics.": "Zvolte automatizovanou mechaniku nebo pouze text.",
+  "An automated item needs at least one effect or property.":
+    "Automatizovaný předmět potřebuje alespoň jeden účinek nebo schopnost.",
+  "An item has at most {count} effects.": "Předmět má nejvýše {count} účinků.",
+  "Effect {position}: {problem}": "Účinek {position}: {problem}",
+  "Effect {position} repeats an earlier effect.": "Účinek {position} opakuje dřívější účinek.",
+  "Effect {position} sets the same value twice.":
+    "Účinek {position} nastavuje stejnou hodnotu podruhé.",
+  "Effect {position} makes a minimum exceed its maximum.":
+    "Účinek {position} nastavuje minimum vyšší než maximum.",
+  "{field} must list 1 to {count} entries.": "{field} musí obsahovat 1 až {count} položek.",
+  "Choose a roll.": "Zvolte hod.",
+  "Choose advantage or disadvantage.": "Zvolte výhodu nebo nevýhodu.",
+  "Abilities narrow only saving throws and ability checks.":
+    "Vlastnosti lze upřesnit jen u záchranných hodů a ověření vlastností.",
+  "Choose distinct abilities.": "Zvolte různé vlastnosti.",
+  "Skills narrow only ability checks.": "Dovednosti lze upřesnit jen u ověření vlastností.",
+  "Choose distinct skills.": "Zvolte různé dovednosti.",
+  "The situation is one line of at most 200 characters.":
+    "Situace je jeden řádek o nejvýše 200 znacích.",
+  "The spellcasting ability is either fixed or chosen from abilities.":
+    "Sesílací vlastnost je buď pevná, nebo volba z vlastností.",
+  "The key must be lowercase words joined by hyphens.":
+    "Klíč musí být z malých slov spojených pomlčkami.",
+  "Give the use a one-line name of at most 120 characters.":
+    "Zadejte použití jednořádkový název o nejvýše 120 znacích.",
+  "The count is a whole number from 1 to 100.": "Počet je celé číslo od 1 do 100.",
+  "Uses come back on a Short Rest or a Long Rest.":
+    "Použití se obnoví po krátkém nebo dlouhém odpočinku.",
+  "The spell filter needs a class, a school, spell ids or ritual.":
+    "Výběr kouzel potřebuje povolání, školu, identifikátory kouzel nebo rituály.",
+  "Enter spell ids such as bless, without repeats.":
+    "Zadejte identifikátory kouzel, například bless, bez opakování.",
+  "Give the spell choice an id of lowercase words joined by hyphens.":
+    "Zadejte volbě kouzla identifikátor z malých slov spojených pomlčkami.",
+  "Choose 1 to 10 spells.": "Zvolte 1 až 10 kouzel.",
+  "Set either an exact spell level or a highest spell level.":
+    "Nastavte buď přesnou úroveň kouzla, nebo nejvyšší úroveň.",
+  "The spell level is a whole number from 0 to 9.": "Úroveň kouzla je celé číslo od 0 do 9.",
+  "A leveled spell choice needs a use or must be at will.":
+    "Volba kouzla s úrovní potřebuje použití, nebo se musí sesílat libovolně.",
+  "The spell spends a use this item does not have.":
+    "Kouzlo spotřebuje použití, které tento předmět nemá.",
+  "A use cost is a whole number up to that use's count.":
+    "Cena v použitích je celé číslo nejvýše do jejich počtu.",
+  "Cast it with a use or at will, not both.":
+    "Sesílejte ho buď za použití, nebo libovolně, ne obojí.",
+  "At will is either set or left out.": "Libovolné sesílání je buď zapnuté, nebo vynechané.",
+  "Name a sense such as darkvision.": "Zadejte smysl, například darkvision.",
+  "The range is a whole number of feet from 1 to 1000.": "Dosah je celé číslo stop od 1 do 1000.",
+  "Choose a condition.": "Zvolte stav.",
+  "Choose a damage type.": "Zvolte druh zranění.",
+  "Choose a supported change.": "Zvolte podporovanou změnu.",
+  "Give the toggle a one-line name of at most 120 characters.":
+    "Zadejte přepínači jednořádkový název o nejvýše 120 znacích.",
+  "Give the toggle 1 to 20 changes.": "Dejte přepínači 1 až 20 změn.",
+  "Choose an id that is not a standard condition.":
+    "Zvolte identifikátor, který není standardním stavem.",
+  "Give the condition a one-line name of at most 120 characters.":
+    "Zadejte stavu jednořádkový název o nejvýše 120 znacích.",
+  "The summary is limited to {count} characters.": "Popis má limit {count} znaků.",
+  "The properties must declare something; leave them out instead.":
+    "Schopnosti musí něco obsahovat; jinak je vynechte.",
+  "Unknown property {field}.": "Neznámá schopnost {field}.",
+  "Use {position}: {problem}": "Použití {position}: {problem}",
+  "Use {position} repeats the key {key}.": "Použití {position} opakuje klíč {key}.",
+  "Advantage {position}: {problem}": "Výhoda {position}: {problem}",
+  "A spellcasting ability needs a spell.": "Sesílací vlastnost potřebuje kouzlo.",
+  "Spell {position}: {problem}": "Kouzlo {position}: {problem}",
+  "Spell {position} repeats the choice id {id}.":
+    "Kouzlo {position} opakuje identifikátor volby {id}.",
+  "Toggle {position}: {problem}": "Přepínač {position}: {problem}",
+  "Toggle {position}, change {change}: {problem}": "Přepínač {position}, změna {change}: {problem}",
+  "Toggle {position} repeats the id {id}.": "Přepínač {position} opakuje identifikátor {id}.",
+  "Choose distinct damage types.": "Zvolte různé druhy zranění.",
+  "Choose distinct conditions.": "Zvolte různé stavy.",
+  "Condition {position}: {problem}": "Stav {position}: {problem}",
+  "Condition {position} repeats the id {id}.": "Stav {position} opakuje identifikátor {id}.",
+  "Conditions come from the item's class.": "Stavy dává třída předmětu.",
+  "Unsupported class version.": "Nepodporovaná verze třídy.",
+  "Unsupported item version.": "Nepodporovaná verze předmětu.",
+  "The id must be lowercase words joined by hyphens.":
+    "Identifikátor musí být z malých slov spojených pomlčkami.",
+  "Give the class a one-line name of at most 120 characters.":
+    "Zadejte třídě jednořádkový název o nejvýše 120 znacích.",
+  "The name prefix is one line of at most 60 characters.":
+    "Předpona názvu je jeden řádek o nejvýše 60 znacích.",
+  "Descriptions are limited to {count} characters.": "Popisy mají limit {count} znaků.",
+  "Give the class an item type, such as Wondrous Item.":
+    "Zadejte třídě typ předmětu, například Wondrous Item.",
+  "Choose a rarity.": "Zvolte vzácnost.",
+  "The class is malformed.": "Třída je poškozená.",
+  "The class reference is invalid.": "Odkaz na třídu je neplatný.",
+  "Give the item a one-line name of at most 120 characters.":
+    "Zadejte předmětu jednořádkový název o nejvýše 120 znacích.",
+  "The item is malformed.": "Předmět je poškozený.",
+  "The item type override is invalid.": "Vlastní typ předmětu je neplatný.",
+  "Its class {classId} no longer exists.": "Jeho třída {classId} už neexistuje.",
+  "characterEffects must be a list.": "characterEffects musí být seznam.",
+  "A published record is invalid.": "Zveřejněný záznam je neplatný.",
+  "The publish record is invalid.": "Záznam o zveřejnění je neplatný.",
+  "The document is invalid: {problem}": "Dokument je neplatný: {problem}",
+  "The mode must be merge or replace.": "Režim musí být merge nebo replace.",
+  "The document needs classes and items lists.": "Dokument potřebuje seznamy classes a items.",
+  "An import holds at most 2000 classes and items.":
+    "Import obsahuje nejvýše 2000 tříd a předmětů.",
+  "{at}: class {id} appears twice.": "{at}: třída {id} se opakuje.",
+  "{at}: item {id} appears twice.": "{at}: předmět {id} se opakuje.",
+  "Item {id} belongs to class {classId}, which the import neither contains nor keeps.":
+    "Předmět {id} patří do třídy {classId}, kterou import neobsahuje ani nezachovává.",
+  "The import changes {count} drafts; split it into files of at most 256 changes.":
+    "Import mění {count} konceptů; rozdělte ho do souborů s nejvýše 256 změnami.",
+  "{at}: {problem}": "{at}: {problem}",
+  "The entry must be an object.": "Položka musí být objekt.",
+  "schemaVersion must be 1.": "schemaVersion musí být 1.",
+  "The host returned an invalid page of homebrew data.":
+    "Hostitel vrátil neplatnou stránku dat vlastních předmětů.",
+  "Homebrew data changed while loading. Reload to try again.":
+    "Data vlastních předmětů se během načítání změnila. Načtěte stránku znovu.",
+  "The host returned an invalid document.": "Hostitel vrátil neplatný dokument.",
+  "The stored id does not match its key.": "Uložený identifikátor neodpovídá svému klíči.",
+  "The save was stored, but its receipt is incomplete. Reload the page.":
+    "Uložení proběhlo, ale jeho potvrzení je neúplné. Načtěte stránku znovu.",
+};

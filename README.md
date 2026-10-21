@@ -1,0 +1,130 @@
+# D&D Homebrew Items
+
+D&D Homebrew Items lets the DM create and import custom magic items and
+**item classes** for TTRPG Codex, then use them on character sheets. A class
+holds what its items share: item type, rarity, attunement, body placements, a
+shared description, a curse and optionally a condition every item gives. Each
+item adds its own description and, where the D&D Engine can apply them,
+effects such as +1 Armor Class and properties such as Advantage, limited uses
+and spells cast from the item.
+
+English and Czech controls follow the host language.
+
+## How it fits together
+
+```text
+Homebrew Items (DM)        drafts: classes and items, DM-only
+        │ Publish
+        ▼
+homebrew_published         one flattened magic-item record per item, readable by players
+        │ dnd5e.rules-data (worker)
+        ▼
+D&D Engine ── merges with the Compendium ──► Character Sheets
+```
+
+- The add-on provides `dnd5e.rules-data` 3.0.0 from its worker. The D&D Engine
+  reads every compatible provider, so published items appear in the sheet's
+  equipment picker next to Compendium items and their effects apply while they
+  are equipped (and attuned, when they require attunement). Neither the Engine
+  nor Character Sheets changes.
+- The add-on also provides a `magic-item` wiki provider: a sheet's rule details
+  for a homebrew item show its text, and `[[Cursed Card: Defense]]` links in
+  campaign articles resolve to the gallery.
+- Install it next to the D&D 2024 Compendium, which supplies the ruleset. This
+  add-on never publishes a ruleset.
+
+## Use it
+
+1. **Homebrew Items** (DM sidebar): create a class, add items to it, or import a
+   file. Drafts are private to the DM and never touch character sheets.
+2. Pick **Automated** for an item whose effect the Engine supports and add its
+   effects and properties; otherwise keep **Text only**, and the sheet shows
+   the description.
+3. **Publish** reviews the changes and writes them for character sheets. Every
+   character sheet then asks its owner to adopt the new rules on its next save,
+   so publish batches of edits rather than every keystroke.
+4. **Item Gallery** (DM and players) lists items whose class and item are both
+   marked *Visible to players*. A sheet link still opens a held item that is not
+   listed.
+
+### What the Engine can apply
+
+| Effect | Key | Example |
+| --- | --- | --- |
+| Ability score, ability score maximum, saving throw bonus | ability | +1 Intelligence (with *at most 20* for "up to 20") |
+| Armor Class, initiative, speed, Hit Point maximum, attunement slots | — | +1 Armor Class, +5 Hit Point maximum |
+| Proficiency | skill or saving-throw ability | Insight, Charisma saving throws |
+| Sense range, resource uses | name | darkvision at least 60 |
+
+With D&D Engine 5.4.0 or later, an item's **properties** also apply
+([format](docs/FORMAT.md#grants)):
+
+| Property | Example |
+| --- | --- |
+| Advantage or Disadvantage, always or only in a situation | Death Saving Throws; Wisdom saves to resist the Charmed condition |
+| Limited uses that come back on a Short or Long Rest | Destiny: 1 use per Long Rest |
+| Spells cast with one of those uses, at will, or as a cantrip; or a cantrip the player picks | Bless once per Long Rest, without a spell slot |
+| Spellcasting ability for those spells | the player picks Intelligence, Wisdom or Charisma |
+| Toggles the player switches on the sheet | Under open sky: Darkvision 60 ft, or 30 ft more |
+| Resistances and immunities | fire resistance, immunity to the Frightened condition |
+
+A class may also give a **condition** whose level is the number of its items in
+effect; what each level does stays text. Other conditional effects stay in the
+description. The bundled [cursed cards](docs/examples/cursed-cards.json)
+automate 38 of 44 cards, and every card adds a level of Fate-Touched.
+
+### Change and remove published items
+
+- Editing an item changes its record at the next publish; characters keep the
+  item and adopt the new version.
+- **Retire** an item to hide it from the gallery while characters that hold it
+  keep working.
+- Deleting a published item **withdraws** it at the next publish. A character
+  that still holds it shows a missing-source problem until it is removed.
+- The id of a class or item is permanent: saved characters refer to
+  `hb.<item id>`.
+
+## Import and export
+
+Import a `dnd-homebrew-items` JSON file from **Homebrew Items → Import file** or
+from the DM Tools Import Center. The page checks the file first and names the
+exact entry that is wrong; the worker then shows a review of what will change.
+**Export** downloads every draft in the same format. See the
+[format reference](docs/FORMAT.md).
+
+## Data
+
+The permanent add-on namespace is `dnd-homebrew`.
+
+| Collection | Visibility | Purpose |
+| --- | --- | --- |
+| `homebrew_classes` | DM | Item class drafts |
+| `homebrew_items` | DM | Item drafts |
+| `homebrew_published` | public | Flattened records the worker serves |
+| `homebrew_meta` | public | The publish revision the Engine sees |
+
+Published records must be player-readable because each player's sheet evaluates
+them with that player's authority. *Visible to players* only controls the
+gallery and wiki search; keep a secret item unpublished until it is handed out.
+The [design notes](docs/DESIGN.md) explain the publish revision, withdrawal and
+the limits.
+
+## Develop
+
+```text
+npm ci
+npx playwright install chromium
+npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
+npm run check             # build, unit and Chromium rendering tests, Go tests
+go run ./cmd/build-package
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.0.0.zip
+```
+
+Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are
+build output.
+
+[`host-tests/installed-homebrew.browser.mts`](host-tests/installed-homebrew.browser.mts)
+installs the Compendium, Engine, Character Sheets and this package on a
+disposable host, imports and publishes the cursed cards, checks DM and player
+sheets, withdrawal, and the real UI. It uses the host's installed-suite
+fixtures; the file header shows how to run it from a host checkout.

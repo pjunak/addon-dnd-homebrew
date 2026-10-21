@@ -1,0 +1,68 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**/*.md"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            go.tools.sum
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - run: npm run check:dependencies
+      - name: Install Chromium for rendering contracts
+        run: npx playwright install --with-deps chromium
+      - run: go mod download -modfile=go.tools.mod
+      - run: go run ./tools/check.go workflows
+      - run: go run ./tools/check.go vuln
+      - name: Run source, analysis, test, and rendering gates
+        run: npm run check
+      - name: Build release package
+        run: |
+          node tools/clean-web.ts
+          go run ./cmd/build-package
+      - name: Verify the build left tracked source unchanged
+        run: |
+          git diff --exit-code
+          test -z "$(git ls-files -- web worker)"
+      - name: Inspect release package with the host inspector
+        run: go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.0.0.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          name: reviewed-package
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish tested commit
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: pjunak/ttrpg-codex/.github/actions/publish-addon@b9eed4ef7664c561ee7e78117a1982f5577e92a4

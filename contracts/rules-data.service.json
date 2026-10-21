@@ -1,0 +1,29 @@
+{
+  "$schema": "https://junak.eu/ttrpg-codex/contracts/addons/v3/service-document.schema.json",
+  "contract": "dnd5e.rules-data",
+  "version": "3.0.0",
+  "allowsExclusive": true,
+  "methods": {
+    "catalog": {
+      "requestSchema": "contracts/empty.request.schema.json",
+      "responseSchema": "contracts/content-catalog.response.schema.json",
+      "maxDeadlineMs": 2000,
+      "idempotency": "none",
+      "errors": ["INVALID_REQUEST", "UNAVAILABLE"]
+    },
+    "get": {
+      "requestSchema": "contracts/content-get.request.schema.json",
+      "responseSchema": "contracts/content-get.response.schema.json",
+      "maxDeadlineMs": 2000,
+      "idempotency": "none",
+      "errors": ["INVALID_REQUEST", "NOT_FOUND", "UNAVAILABLE"]
+    },
+    "query": {
+      "requestSchema": "contracts/content-query.request.schema.json",
+      "responseSchema": "contracts/content-query.response.schema.json",
+      "maxDeadlineMs": 5000,
+      "idempotency": "none",
+      "errors": ["INVALID_REQUEST", "UNAVAILABLE"]
+    }
+  }
+}
