@@ -61,10 +61,11 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 		setSchema    = "homebrew-set.schema.json"
 		itemSchema   = "homebrew-item.schema.json"
 		recordSchema = "published-record.schema.json"
+		servedSchema = "rule-record.schema.json"
 		recordGrants = "homebrew-common.schema.json#/$defs/recordGrants"
 		itemGrants   = "homebrew-common.schema.json#/$defs/itemGrants"
 	)
-	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, recordGrants, itemGrants)
+	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, recordGrants, itemGrants)
 	accept := func(name, label string, body []byte) {
 		t.Helper()
 		if err := validate(t, schemas[name], label, body); err != nil {
@@ -118,9 +119,18 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	for _, set := range publish.Sets {
 		accept(setSchema, "publish fixture set", set)
 	}
+	// The host validates served records against the Compendium's record
+	// schema (copied in contracts/), which applies the Engine's grants vocabulary.
 	for _, testCase := range publish.Cases {
 		accept(itemSchema, testCase.Name+" (item)", testCase.Item)
 		accept(recordSchema, testCase.Name+" (published)", testCase.Published)
+		var published struct {
+			Record json.RawMessage `json:"record"`
+		}
+		if err := json.Unmarshal(testCase.Published, &published); err != nil {
+			t.Fatal(err)
+		}
+		accept(servedSchema, testCase.Name+" (served)", published.Record)
 	}
 
 	var effects struct {
@@ -136,6 +146,8 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	}
 	for _, testCase := range effects.Grants.Valid {
 		accept(recordGrants, testCase.Name, testCase.Grants)
+		served, _ := json.Marshal(map[string]any{"kind": "magic-item", "id": "hb.case", "name": testCase.Name, "characterMechanics": "complete", "grants": testCase.Grants})
+		accept(servedSchema, testCase.Name+" (served)", served)
 		var grants map[string]json.RawMessage
 		_ = json.Unmarshal(testCase.Grants, &grants)
 		if _, conditions := grants["conditions"]; !conditions {

@@ -34,6 +34,9 @@ Tasks for all repositories live in the host's `docs/BACKLOG.md`.
   stricter, never looser. Extending either vocabulary starts in the Engine.
   `contracts/` must accept every draft and record the model accepts
   (`internal/importer/schema_test.go` checks this with the host's validator).
+  `contracts/rule-record.schema.json` is an exact copy of the Compendium's,
+  which applies the Engine's grants vocabulary to served records; copy it
+  again whenever the Compendium's changes.
 - Published records are never deleted, only withdrawn: a browser cannot learn
   a deleted key's tombstone revision and could not publish that id again.
 - Every publish writes the records and the `homebrew_meta` revision in one

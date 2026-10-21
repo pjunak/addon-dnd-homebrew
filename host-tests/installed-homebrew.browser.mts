@@ -9,7 +9,7 @@
 //     node --test frontend/test/browser/installed-homebrew.browser.mts
 //
 // CODEX_HOMEBREW_ROOT must hold a built web/ (npm run build) and the examples.
-// The card property checks need D&D Engine 5.4.0 or later.
+// It needs D&D Engine 6 and Character Sheets 6.
 import { required } from "./fixture-types.mts";
 import type { APIRequestContext } from "playwright";
 import type { AddressInfo } from "node:net";
@@ -126,7 +126,7 @@ async function connect(request: APIRequestContext, csrf: string, addon: string, 
   };
 }
 const engineAs = (request: APIRequestContext, csrf: string) =>
-  connect(request, csrf, "dnd-sheets", { contract: "dnd5e.rules-engine", range: "^5.0.0", cardinality: "one" });
+  connect(request, csrf, "dnd-sheets", { contract: "dnd5e.rules-engine", range: "^6.0.0", cardinality: "one" });
 
 async function data(operation: string, body: Record<string, unknown>) {
   return jsonResponse(
@@ -167,7 +167,7 @@ async function publish(): Promise<number> {
 
 function inputs(inventory: unknown[]) {
   return {
-    contractVersion: "rules-character.v2",
+    contractVersion: "rules-character.v3",
     inputs: {
       build: {
         method: "array",
