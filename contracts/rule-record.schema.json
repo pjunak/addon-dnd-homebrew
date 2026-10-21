@@ -48,6 +48,12 @@
     "text": {
       "type": "string"
     },
+    "excerpt": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "pattern": "^[^\\n\\r]*$"
+    },
     "sizeOptions": {
       "type": "array",
       "minItems": 2,
