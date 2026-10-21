@@ -22,8 +22,8 @@ func TestTheSampleFileIsValid(t *testing.T) {
 func TestAnExportTurnsTheReportIntoUpdates(t *testing.T) {
 	var fixture struct {
 		Stored struct {
-			Classes []json.RawMessage `json:"classes"`
-			Items   []json.RawMessage `json:"items"`
+			Sets  []json.RawMessage `json:"sets"`
+			Items []json.RawMessage `json:"items"`
 		} `json:"stored"`
 	}
 	body, err := os.ReadFile("../../tests/fixtures/imports.json")
@@ -35,10 +35,10 @@ func TestAnExportTurnsTheReportIntoUpdates(t *testing.T) {
 	}
 	export := write(t, "export.json", map[string]any{
 		"format": "dnd-homebrew-items", "schemaVersion": 1, "generatedAt": 1, "mode": "merge",
-		"classes": fixture.Stored.Classes, "items": fixture.Stored.Items,
+		"sets": fixture.Stored.Sets, "items": fixture.Stored.Items,
 	})
 	document := write(t, "items.json", map[string]any{
-		"format": "dnd-homebrew-items", "schemaVersion": 1, "classes": []any{},
+		"format": "dnd-homebrew-items", "schemaVersion": 1, "sets": []any{},
 		"items": []any{map[string]any{"id": "defense", "text": "+1 bonus to Armor Class while carried."}},
 	})
 	var out bytes.Buffer
@@ -53,7 +53,7 @@ func TestAnExportTurnsTheReportIntoUpdates(t *testing.T) {
 
 func TestAProblemNamesTheEntry(t *testing.T) {
 	document := write(t, "items.json", map[string]any{
-		"format": "dnd-homebrew-items", "schemaVersion": 1, "classes": []any{},
+		"format": "dnd-homebrew-items", "schemaVersion": 1, "sets": []any{},
 		"items": []any{map[string]any{"id": "ring", "name": "Ring",
 			"characterEffects": []any{map[string]any{"target": "armorClass", "key": "DEX", "mode": "add", "value": 1}}}},
 	})

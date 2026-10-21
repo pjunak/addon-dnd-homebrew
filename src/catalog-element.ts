@@ -23,7 +23,7 @@ import { LiveRefresh } from "./live-refresh.js";
 import {
   bodyPlacements,
   canonical,
-  classProblem,
+  setProblem,
   collections,
   compare,
   exportDocument,
@@ -34,7 +34,7 @@ import {
   itemProblem,
   maxConditionSummary,
   maxMarkdown,
-  newClass,
+  newSet,
   newItem,
   planImport,
   planPublish,
@@ -42,7 +42,7 @@ import {
   slug,
   type BodyPlacement,
   type Item,
-  type ItemClass,
+  type ItemSet,
   type Mechanics,
   type Overrides,
   type Problem,
@@ -56,11 +56,11 @@ import type { ContributionContext } from "./sdk.js";
 export const catalogElementTag = "dnd-homebrew-catalog";
 
 type Selection =
-  | { readonly kind: "class"; readonly id: string }
+  | { readonly kind: "set"; readonly id: string }
   | { readonly kind: "item"; readonly id: string }
-  | { readonly kind: "new-class" }
+  | { readonly kind: "new-set" }
   /** `template` prefills the editor, as Duplicate does. */
-  | { readonly kind: "new-item"; readonly classId: string; readonly template?: Item };
+  | { readonly kind: "new-item"; readonly setId: string; readonly template?: Item };
 
 /** Common item types, offered as suggestions; any one-line type is allowed. */
 const itemTypes = [
@@ -216,7 +216,7 @@ export function defineCatalogElement(generation?: string): string {
           document,
           "p",
           "",
-          t("Create item classes and items, then publish them to use them on character sheets."),
+          t("Create item sets and items, then publish them to use them on character sheets."),
         ),
       );
       const actions = element(document, "div", "hb-actions");
@@ -224,11 +224,11 @@ export function defineCatalogElement(generation?: string): string {
       const ready = this.#drafts !== undefined && !this.#busy;
       const pending = this.#pendingChanges();
       const buttons = [
-        actionButton(document, t("New class"), () => void this.#select({ kind: "new-class" })),
+        actionButton(document, t("New set"), () => void this.#select({ kind: "new-set" })),
         actionButton(
           document,
           t("New item"),
-          () => void this.#select({ kind: "new-item", classId: this.#currentClassId() }),
+          () => void this.#select({ kind: "new-item", setId: this.#currentSetId() }),
         ),
         actionButton(document, t("Import file"), () => this.#fileInput.click()),
         actionButton(document, t("Export"), () => this.#export()),
@@ -301,47 +301,47 @@ export function defineCatalogElement(generation?: string): string {
       if (!groups || !this.#drafts) return;
       groups.replaceChildren();
       const query = fold(this.#query.trim());
-      const classes = [...this.#drafts.classes].sort((a, b) =>
+      const sets = [...this.#drafts.sets].sort((a, b) =>
         compare(fold(a.value.name), fold(b.value.name)),
       );
       const items = [...this.#drafts.items].sort((a, b) =>
         compare(fold(a.value.name), fold(b.value.name)),
       );
-      const matches = (item: Item, itemClass?: ItemClass): boolean =>
+      const matches = (item: Item, itemSet?: ItemSet): boolean =>
         !query ||
         fold(item.name).includes(query) ||
-        (itemClass !== undefined && fold(itemClass.name).includes(query));
-      if (classes.length === 0 && items.length === 0) {
+        (itemSet !== undefined && fold(itemSet.name).includes(query));
+      if (sets.length === 0 && items.length === 0) {
         groups.append(
           element(
             document,
             "p",
             "hb-hint",
-            t("No items yet. Create a class or import a file to begin."),
+            t("No items yet. Create a set or import a file to begin."),
           ),
         );
         return;
       }
       const group = (
         label: string,
-        itemClass: ItemClass | undefined,
+        itemSet: ItemSet | undefined,
         members: readonly Stored<Item>[],
       ): void => {
-        const visible = members.filter((entry) => matches(entry.value, itemClass));
-        if (query && visible.length === 0 && !(itemClass && fold(itemClass.name).includes(query)))
+        const visible = members.filter((entry) => matches(entry.value, itemSet));
+        if (query && visible.length === 0 && !(itemSet && fold(itemSet.name).includes(query)))
           return;
         const section = element(document, "section", "hb-group");
-        if (itemClass) {
-          const head = this.#treeButton(label, { kind: "class", id: itemClass.id });
+        if (itemSet) {
+          const head = this.#treeButton(label, { kind: "set", id: itemSet.id });
           head.classList.add("hb-group-head");
           head.append(badge(document, t("Items: {count}", { count: members.length }), "muted"));
-          if (!itemClass.playerVisible) head.append(badge(document, t("Hidden"), "muted"));
+          if (!itemSet.playerVisible) head.append(badge(document, t("Hidden"), "muted"));
           section.append(head);
         } else section.append(element(document, "h2", "hb-group-head", label));
         const list = element(document, "ul");
         for (const entry of visible) {
           const button = this.#treeButton(entry.value.name, { kind: "item", id: entry.value.id });
-          for (const [text, tone] of this.#itemBadges(entry.value, itemClass))
+          for (const [text, tone] of this.#itemBadges(entry.value, itemSet))
             button.append(badge(document, t(text), tone));
           const row = element(document, "li");
           row.append(button);
@@ -350,18 +350,17 @@ export function defineCatalogElement(generation?: string): string {
         section.append(list);
         groups.append(section);
       };
-      for (const entry of classes)
+      for (const entry of sets)
         group(
           entry.value.name,
           entry.value,
-          items.filter((item) => item.value.classId === entry.value.id),
+          items.filter((item) => item.value.setId === entry.value.id),
         );
       const loose = items.filter(
         (item) =>
-          item.value.classId === "" ||
-          !classes.some((entry) => entry.value.id === item.value.classId),
+          item.value.setId === "" || !sets.some((entry) => entry.value.id === item.value.setId),
       );
-      if (loose.length > 0) group(t("Items without a class"), undefined, loose);
+      if (loose.length > 0) group(t("Items without a set"), undefined, loose);
     }
     #treeButton(label: string, selection: Selection): HTMLButtonElement {
       const button = element(document, "button", "hb-tree-item");
@@ -381,24 +380,24 @@ export function defineCatalogElement(generation?: string): string {
     }
     #itemBadges(
       item: Item,
-      itemClass: ItemClass | undefined,
+      itemSet: ItemSet | undefined,
     ): [string, "" | "muted" | "warn" | "accent"][] {
       const badges: [string, "" | "muted" | "warn" | "accent"][] = [
         item.characterMechanics === "complete" ? ["Automated", "accent"] : ["Text only", "muted"],
       ];
-      if (!(item.playerVisible && (itemClass?.playerVisible ?? true)))
+      if (!(item.playerVisible && (itemSet?.playerVisible ?? true)))
         badges.push(["Hidden", "muted"]);
       if (item.retired) badges.push(["Retired", "warn"]);
       const published = this.#published?.records.get(`hb.${item.id}`);
       if (!published || published.value.withdrawn) badges.push(["Unpublished", "warn"]);
-      else if (canonical(published.value) !== canonical(flatten(itemClass, item)))
+      else if (canonical(published.value) !== canonical(flatten(itemSet, item)))
         badges.push(["Changed", "warn"]);
       return badges;
     }
     #pendingChanges(): number {
       if (!this.#drafts || !this.#published) return 0;
       const plan = planPublish(
-        this.#drafts.classes.map((entry) => entry.value),
+        this.#drafts.sets.map((entry) => entry.value),
         this.#drafts.items.map((entry) => entry.value),
         this.#published.records,
         this.#published.meta,
@@ -407,23 +406,23 @@ export function defineCatalogElement(generation?: string): string {
       return plan.changes.length + plan.problems.length;
     }
 
-    #selected(): Stored<ItemClass> | Stored<Item> | undefined {
+    #selected(): Stored<ItemSet> | Stored<Item> | undefined {
       const selection = this.#selection;
       if (!selection || !this.#drafts) return undefined;
-      if (selection.kind === "class")
-        return this.#drafts.classes.find((entry) => entry.value.id === selection.id);
+      if (selection.kind === "set")
+        return this.#drafts.sets.find((entry) => entry.value.id === selection.id);
       if (selection.kind === "item")
         return this.#drafts.items.find((entry) => entry.value.id === selection.id);
       return undefined;
     }
-    #currentClassId(): string {
+    #currentSetId(): string {
       const selection = this.#selection;
-      if (selection?.kind === "class") return selection.id;
+      if (selection?.kind === "set") return selection.id;
       if (selection?.kind === "item")
         return (
-          this.#drafts?.items.find((entry) => entry.value.id === selection.id)?.value.classId ?? ""
+          this.#drafts?.items.find((entry) => entry.value.id === selection.id)?.value.setId ?? ""
         );
-      if (selection?.kind === "new-item") return selection.classId;
+      if (selection?.kind === "new-item") return selection.setId;
       return "";
     }
     async #select(selection: Selection): Promise<void> {
@@ -471,16 +470,16 @@ export function defineCatalogElement(generation?: string): string {
       const selection = this.#selection;
       if (!selection || !this.#drafts) {
         this.#editor.replaceChildren(
-          element(document, "p", "hb-hint", t("Choose a class or an item to edit it.")),
+          element(document, "p", "hb-hint", t("Choose a set or an item to edit it.")),
         );
         return;
       }
-      if (selection.kind === "class" || selection.kind === "new-class") {
+      if (selection.kind === "set" || selection.kind === "new-set") {
         const stored =
-          selection.kind === "class"
-            ? this.#drafts.classes.find((entry) => entry.value.id === selection.id)
+          selection.kind === "set"
+            ? this.#drafts.sets.find((entry) => entry.value.id === selection.id)
             : undefined;
-        this.#editor.replaceChildren(this.#classForm(stored));
+        this.#editor.replaceChildren(this.#setForm(stored));
       } else {
         const stored =
           selection.kind === "item"
@@ -488,7 +487,7 @@ export function defineCatalogElement(generation?: string): string {
             : undefined;
         this.#editor.replaceChildren(
           selection.kind === "new-item"
-            ? this.#itemForm(undefined, selection.classId, selection.template)
+            ? this.#itemForm(undefined, selection.setId, selection.template)
             : this.#itemForm(stored, undefined),
         );
       }
@@ -522,8 +521,8 @@ export function defineCatalogElement(generation?: string): string {
       name.addEventListener("input", update);
       update();
     }
-    #classIds(): ReadonlySet<string> {
-      return new Set(this.#drafts?.classes.map((entry) => entry.value.id) ?? []);
+    #setIds(): ReadonlySet<string> {
+      return new Set(this.#drafts?.sets.map((entry) => entry.value.id) ?? []);
     }
     /** Item ids in use, including published records whose draft was deleted. */
     #itemIds(): ReadonlySet<string> {
@@ -542,10 +541,10 @@ export function defineCatalogElement(generation?: string): string {
         form.append(messageBlock(document, this.#editorMessage.text, this.#editorMessage.kind));
       return form;
     }
-    #classForm(stored: Stored<ItemClass> | undefined): HTMLFormElement {
+    #setForm(stored: Stored<ItemSet> | undefined): HTMLFormElement {
       const t = this.#t;
-      const value = stored?.value ?? newClass("", "", Date.now());
-      const form = this.#form(stored ? value.name : t("New class"));
+      const value = stored?.value ?? newSet("", "", Date.now());
+      const form = this.#form(stored ? value.name : t("New set"));
       form.append(
         textField(document, t("Name"), "name", value.name, { maxLength: 120 }),
         this.#idField(stored !== undefined, value.id, "elemental-rings"),
@@ -582,7 +581,7 @@ export function defineCatalogElement(generation?: string): string {
           value.description,
           4,
           maxMarkdown,
-          t("Added to every item in the class."),
+          t("Added to every item in the set."),
         ),
         textArea(
           document,
@@ -602,7 +601,7 @@ export function defineCatalogElement(generation?: string): string {
           "p",
           "hb-hint",
           t(
-            "Every item of the class gives this condition. Its level on the sheet is the number of the class's items in effect. Leave the name empty for none.",
+            "Every item of the set gives this condition. Its level on the sheet is the number of the set's items in effect. Leave the name empty for none.",
           ),
         ),
         textField(document, t("Condition name"), "conditionName", value.condition?.name ?? "", {
@@ -631,16 +630,16 @@ export function defineCatalogElement(generation?: string): string {
           t("Visible to players"),
           "playerVisible",
           value.playerVisible,
-          t("Lists the class in the player gallery. Each item also needs its own switch."),
+          t("Lists the set in the player gallery. Each item also needs its own switch."),
         ),
       );
-      this.#previewId(form, () => this.#classIds());
+      this.#previewId(form, () => this.#setIds());
       const actions = element(document, "div", "hb-editor-actions");
       actions.dataset["uiActions"] = "";
       const save = actionButton(
         document,
         t("Save"),
-        () => void this.#saveClass(form, stored),
+        () => void this.#saveSet(form, stored),
         "primary",
       );
       save.type = "submit";
@@ -649,20 +648,20 @@ export function defineCatalogElement(generation?: string): string {
         actions.append(
           actionButton(
             document,
-            t("Add item to this class"),
-            () => void this.#select({ kind: "new-item", classId: value.id }),
+            t("Add item to this set"),
+            () => void this.#select({ kind: "new-item", setId: value.id }),
           ),
-          actionButton(document, t("Delete"), () => void this.#deleteClass(stored), "danger"),
+          actionButton(document, t("Delete"), () => void this.#deleteSet(stored), "danger"),
         );
       }
       form.append(actions);
       form.addEventListener("submit", (event) => event.preventDefault());
       return form;
     }
-    #readClass(form: HTMLFormElement, stored: Stored<ItemClass> | undefined): ItemClass {
+    #readSet(form: HTMLFormElement, stored: Stored<ItemSet> | undefined): ItemSet {
       const data = new FormData(form);
       const name = formText(data, "name").trim();
-      const taken = this.#classIds();
+      const taken = this.#setIds();
       const conditionName = formText(data, "conditionName").trim(),
         conditionId = formText(data, "conditionId").trim(),
         conditionSummary = formText(data, "conditionSummary").trim();
@@ -691,45 +690,45 @@ export function defineCatalogElement(generation?: string): string {
         ...(condition ? { condition } : {}),
       };
     }
-    async #saveClass(form: HTMLFormElement, stored: Stored<ItemClass> | undefined): Promise<void> {
-      const value = this.#readClass(form, stored);
+    async #saveSet(form: HTMLFormElement, stored: Stored<ItemSet> | undefined): Promise<void> {
+      const value = this.#readSet(form, stored);
       const named = !stored && formText(new FormData(form), "id").trim() === "";
-      if (!stored && this.#classIds().has(value.id))
+      if (!stored && this.#setIds().has(value.id))
         return this.#editorProblem({ text: "This id is already in use. Choose another id." });
-      const failure = classProblem(value);
+      const failure = setProblem(value);
       if (failure) return this.#editorProblem(failure);
       await this.#save(
-        collections.classes,
+        collections.sets,
         value,
         stored,
-        (saved) => ({ kind: "class", id: saved.id }),
+        (saved) => ({ kind: "set", id: saved.id }),
         named
           ? (failed) => ({
               ...value,
-              id: freeId(value.name, new Set([...this.#classIds(), ...failed])),
+              id: freeId(value.name, new Set([...this.#setIds(), ...failed])),
             })
           : undefined,
       );
     }
     #itemForm(
       stored: Stored<Item> | undefined,
-      classId: string | undefined,
+      setId: string | undefined,
       template?: Item,
     ): HTMLFormElement {
       const t = this.#t;
-      const value = stored?.value ?? template ?? newItem("", "", classId ?? "", Date.now());
+      const value = stored?.value ?? template ?? newItem("", "", setId ?? "", Date.now());
       const form = this.#form(stored ? value.name : t("New item"));
-      const classes = [...(this.#drafts?.classes ?? [])].sort((a, b) =>
+      const sets = [...(this.#drafts?.sets ?? [])].sort((a, b) =>
         compare(fold(a.value.name), fold(b.value.name)),
       );
-      const classOf = (id: string): ItemClass | undefined =>
-        classes.find((entry) => entry.value.id === id)?.value;
+      const setOf = (id: string): ItemSet | undefined =>
+        sets.find((entry) => entry.value.id === id)?.value;
       form.append(
         textField(document, t("Name"), "name", value.name, { maxLength: 120 }),
         this.#idField(stored !== undefined, value.id, "ring-of-embers"),
-        selectField(document, t("Class"), "classId", value.classId, [
-          ["", t("No class")],
-          ...classes.map((entry) => [entry.value.id, entry.value.name] as const),
+        selectField(document, t("Set"), "setId", value.setId, [
+          ["", t("No set")],
+          ...sets.map((entry) => [entry.value.id, entry.value.name] as const),
         ]),
         textArea(
           document,
@@ -791,13 +790,13 @@ export function defineCatalogElement(generation?: string): string {
       form.append(effects, grants);
 
       const defaults = element(document, "details", "hb-defaults");
-      const inherited = classOf(value.classId);
+      const inherited = setOf(value.setId);
       defaults.open = Object.keys(value.overrides).length > 0;
       defaults.append(
-        element(document, "summary", "", t("Class defaults")),
-        element(document, "p", "hb-hint", t("Leave a field empty to use the class's value.")),
+        element(document, "summary", "", t("Set defaults")),
+        element(document, "p", "hb-hint", t("Leave a field empty to use the set's value.")),
       );
-      const fromClass = (text: string): string => t("From class ({value})", { value: text });
+      const fromSet = (text: string): string => t("From set ({value})", { value: text });
       defaults.append(
         textField(document, t("Item type"), "overrideItemType", value.overrides.itemType ?? "", {
           maxLength: 120,
@@ -805,7 +804,7 @@ export function defineCatalogElement(generation?: string): string {
           suggestions: itemTypes,
         }),
         selectField(document, t("Rarity"), "overrideRarity", value.overrides.rarity ?? "", [
-          ["", fromClass(t(inherited?.rarity ?? "Common"))],
+          ["", fromSet(t(inherited?.rarity ?? "Common"))],
           ...rarities.map((rarity) => [rarity, t(rarity)] as const),
         ]),
         selectField(
@@ -814,14 +813,14 @@ export function defineCatalogElement(generation?: string): string {
           "overrideAttunement",
           value.overrides.attunement === undefined ? "" : value.overrides.attunement ? "yes" : "no",
           [
-            ["", fromClass(t((inherited?.attunement ?? false) ? "Yes" : "No"))],
+            ["", fromSet(t((inherited?.attunement ?? false) ? "Yes" : "No"))],
             ["yes", t("Yes")],
             ["no", t("No")],
           ],
         ),
         checkField(
           document,
-          t("Use the class's placements"),
+          t("Use the set's placements"),
           "inheritPlacements",
           value.overrides.bodyPlacements === undefined,
         ),
@@ -843,7 +842,7 @@ export function defineCatalogElement(generation?: string): string {
           t("Visible to players"),
           "playerVisible",
           value.playerVisible,
-          t("Lists the item in the player gallery when its class is visible too."),
+          t("Lists the item in the player gallery when its set is visible too."),
         ),
         checkField(
           document,
@@ -875,7 +874,7 @@ export function defineCatalogElement(generation?: string): string {
             () =>
               void this.#select({
                 kind: "new-item",
-                classId: stored.value.classId,
+                setId: stored.value.setId,
                 template: {
                   ...stored.value,
                   id: "",
@@ -923,7 +922,7 @@ export function defineCatalogElement(generation?: string): string {
       return {
         id: stored?.value.id ?? (formText(data, "id").trim() || freeId(name, this.#itemIds())),
         schemaVersion: 1,
-        classId: formText(data, "classId"),
+        setId: formText(data, "setId"),
         name,
         text: formText(data, "text"),
         overrides,
@@ -941,10 +940,8 @@ export function defineCatalogElement(generation?: string): string {
       const preview = form.querySelector(".hb-preview");
       if (!preview) return;
       const item = this.#readItem(form, stored);
-      const itemClass = this.#drafts?.classes.find(
-        (entry) => entry.value.id === item.classId,
-      )?.value;
-      const published = flatten(itemClass, { ...item, name: item.name || t("New item") });
+      const itemSet = this.#drafts?.sets.find((entry) => entry.value.id === item.setId)?.value;
+      const published = flatten(itemSet, { ...item, name: item.name || t("New item") });
       const failure = itemProblem({ ...item, id: item.id || "item", name: item.name || "item" });
       preview.replaceChildren(
         element(document, "h3", "", t("As published")),
@@ -978,7 +975,7 @@ export function defineCatalogElement(generation?: string): string {
         value,
         stored,
         (saved) =>
-          another ? { kind: "new-item", classId: saved.classId } : { kind: "item", id: saved.id },
+          another ? { kind: "new-item", setId: saved.setId } : { kind: "item", id: saved.id },
         named
           ? (failed) => ({
               ...value,
@@ -999,8 +996,8 @@ export function defineCatalogElement(generation?: string): string {
      * came from its name can still meet a deleted draft's key, which the
      * browser cannot reuse; `rename` then gives the next free id.
      */
-    async #save<T extends ItemClass | Item>(
-      collection: typeof collections.classes | typeof collections.items,
+    async #save<T extends ItemSet | Item>(
+      collection: typeof collections.sets | typeof collections.items,
       value: T,
       stored: Stored<T> | undefined,
       select: (saved: T) => Selection,
@@ -1039,10 +1036,10 @@ export function defineCatalogElement(generation?: string): string {
         else this.#editorProblem({ text: messageOf(error, "The draft could not be saved.") });
       }
     }
-    async #deleteClass(stored: Stored<ItemClass>): Promise<void> {
+    async #deleteSet(stored: Stored<ItemSet>): Promise<void> {
       const t = this.#t;
-      if (this.#drafts?.items.some((entry) => entry.value.classId === stored.value.id))
-        return this.#editorProblem({ text: "Move or delete this class's items first." });
+      if (this.#drafts?.items.some((entry) => entry.value.setId === stored.value.id))
+        return this.#editorProblem({ text: "Move or delete this set's items first." });
       if (
         !(await confirmDialog(
           this,
@@ -1052,7 +1049,7 @@ export function defineCatalogElement(generation?: string): string {
         ))
       )
         return;
-      await this.#remove(collections.classes, stored);
+      await this.#remove(collections.sets, stored);
     }
     async #deleteItem(stored: Stored<Item>): Promise<void> {
       const t = this.#t;
@@ -1068,8 +1065,8 @@ export function defineCatalogElement(generation?: string): string {
       await this.#remove(collections.items, stored);
     }
     async #remove(
-      collection: typeof collections.classes | typeof collections.items,
-      stored: Stored<ItemClass> | Stored<Item>,
+      collection: typeof collections.sets | typeof collections.items,
+      stored: Stored<ItemSet> | Stored<Item>,
     ): Promise<void> {
       const runtime = this.#runtime;
       if (!runtime || this.#busy) return;
@@ -1114,7 +1111,7 @@ export function defineCatalogElement(generation?: string): string {
           runtime.repository.published(signal, true),
         ]);
         const plan = planPublish(
-          drafts.classes.map((entry) => entry.value),
+          drafts.sets.map((entry) => entry.value),
           drafts.items.map((entry) => entry.value),
           published.records,
           published.meta,
@@ -1223,7 +1220,7 @@ export function defineCatalogElement(generation?: string): string {
       try {
         planImport(
           document_,
-          new Map(this.#drafts.classes.map((entry) => [entry.value.id, entry])),
+          new Map(this.#drafts.sets.map((entry) => [entry.value.id, entry])),
           new Map(this.#drafts.items.map((entry) => [entry.value.id, entry])),
           Date.now(),
         );
@@ -1320,7 +1317,7 @@ export function defineCatalogElement(generation?: string): string {
       if (!this.#drafts) return;
       const now = new Date();
       const document_ = exportDocument(
-        this.#drafts.classes.map((entry) => entry.value),
+        this.#drafts.sets.map((entry) => entry.value),
         this.#drafts.items.map((entry) => entry.value),
         now.getTime(),
       );

@@ -9,8 +9,8 @@ picker and applies their effects with no change to the Engine or Character
 Sheets. Package content sets are immutable, so editable items live in add-on
 collections and the worker serves them over the worker transport.
 
-The Engine loads a fixed list of record kinds. An item class is therefore not
-served on its own; publishing flattens each item with its class into one
+The Engine loads a fixed list of record kinds. An item set is therefore not
+served on its own; publishing flattens each item with its set into one
 `magic-item` record ([format](FORMAT.md#published-record)).
 
 ## Drafts and publishing
@@ -64,7 +64,7 @@ skips invalid ones with a diagnostic, and the next publish rewrites them.
   `dnd5e.rules-data` as well as provide it, so for now the Engine checks the
   ids: an unknown spell is unavailable on the sheet, and a leveled spell
   without a use or `atWill` is refused there, not here.
-- A class condition only counts levels. What each level does stays text in
+- A set condition only counts levels. What each level does stays text in
   its summary, and conditional rules beyond toggles stay in the description;
   the DM can add a linked adjustment on a character instead.
 - If the worker stops, the Engine cannot read its rules sources and character

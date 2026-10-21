@@ -2,13 +2,13 @@ import {
   collections,
   HomebrewError,
   metaKey,
-  parseClass,
+  parseSet,
   parseItem,
   parseMeta,
   parsePublished,
   type CollectionMutation,
   type Item,
-  type ItemClass,
+  type ItemSet,
   type Published,
   type PublishMeta,
   type Stored,
@@ -42,7 +42,7 @@ export interface Unreadable {
   readonly message: string;
 }
 export interface Drafts {
-  readonly classes: readonly Stored<ItemClass>[];
+  readonly sets: readonly Stored<ItemSet>[];
   readonly items: readonly Stored<Item>[];
   readonly unreadable: readonly Unreadable[];
   readonly dataRevisions: readonly DataSetRevision[];
@@ -75,19 +75,19 @@ export class HomebrewRepository {
       ) ?? (() => undefined)
     );
   }
-  /** Reads every class and item draft; DM only. */
+  /** Reads every set and item draft; DM only. */
   async drafts(signal: AbortSignal): Promise<Drafts> {
     signal = AbortSignal.any([this.#context.signal, signal]);
-    const [classes, items] = await Promise.all([
-      this.#all(collections.classes, signal, true),
+    const [sets, items] = await Promise.all([
+      this.#all(collections.sets, signal, true),
       this.#all(collections.items, signal, true),
     ]);
     const unreadable: Unreadable[] = [];
     return {
-      classes: read(classes.documents, collections.classes, parseClass, unreadable),
+      sets: read(sets.documents, collections.sets, parseSet, unreadable),
       items: read(items.documents, collections.items, parseItem, unreadable),
       unreadable,
-      dataRevisions: [classes.dataRevision!, items.dataRevision!],
+      dataRevisions: [sets.dataRevision!, items.dataRevision!],
     };
   }
   /** Reads the published records; `guarded` adds set revisions for a publish. */
@@ -113,8 +113,8 @@ export class HomebrewRepository {
     };
   }
   async save(
-    collection: typeof collections.classes | typeof collections.items,
-    value: ItemClass | Item,
+    collection: typeof collections.sets | typeof collections.items,
+    value: ItemSet | Item,
     expectedRevision: number,
     signal: AbortSignal,
   ): Promise<number> {
@@ -134,7 +134,7 @@ export class HomebrewRepository {
     return revisionOf(receipt, collection, value.id);
   }
   async remove(
-    collection: typeof collections.classes | typeof collections.items,
+    collection: typeof collections.sets | typeof collections.items,
     key: string,
     expectedRevision: number,
     signal: AbortSignal,

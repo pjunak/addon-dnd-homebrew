@@ -18,8 +18,8 @@ import (
 type importFixture struct {
 	Now    int64 `json:"now"`
 	Stored struct {
-		Classes []json.RawMessage `json:"classes"`
-		Items   []json.RawMessage `json:"items"`
+		Sets  []json.RawMessage `json:"sets"`
+		Items []json.RawMessage `json:"items"`
 	} `json:"stored"`
 	Cases []struct {
 		Name          string                    `json:"name"`
@@ -57,7 +57,7 @@ func TestPlansMatchSharedFixture(t *testing.T) {
 	fixture := loadImportFixture(t)
 	for _, testCase := range fixture.Cases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			plan, err := buildPlan(testCase.Document, storedMap(t, fixture.Stored.Classes), storedMap(t, fixture.Stored.Items), fixture.Now)
+			plan, err := buildPlan(testCase.Document, storedMap(t, fixture.Stored.Sets), storedMap(t, fixture.Stored.Items), fixture.Now)
 			if testCase.ErrorIncludes != "" {
 				if err == nil || !strings.Contains(err.Error(), testCase.ErrorIncludes) {
 					t.Fatalf("expected an error mentioning %q, got %v", testCase.ErrorIncludes, err)
@@ -92,8 +92,8 @@ func TestPlansMatchSharedFixture(t *testing.T) {
 				}
 				body := mutation.Value.(json.RawMessage)
 				var err error
-				if mutation.Reference.DataID == homebrew.ClassesCollection {
-					_, err = homebrew.DecodeClass(body)
+				if mutation.Reference.DataID == homebrew.SetsCollection {
+					_, err = homebrew.DecodeSet(body)
 				} else {
 					_, err = homebrew.DecodeItem(body)
 				}
@@ -138,12 +138,12 @@ func TestSampleExampleImports(t *testing.T) {
 	complete, granted := 0, 0
 	for _, mutation := range plan.Mutations {
 		if mutation.Reference.DataID != homebrew.ItemsCollection {
-			class, err := homebrew.DecodeClass(mutation.Value.(json.RawMessage))
+			set, err := homebrew.DecodeSet(mutation.Value.(json.RawMessage))
 			if err != nil {
 				t.Fatal(err)
 			}
-			if class.Condition == nil || class.Condition.ID != "rune-bound" {
-				t.Fatalf("class condition %+v", class.Condition)
+			if set.Condition == nil || set.Condition.ID != "rune-bound" {
+				t.Fatalf("set condition %+v", set.Condition)
 			}
 			continue
 		}
@@ -265,7 +265,7 @@ func TestPreviewCommitRoundTrip(t *testing.T) {
 	if err != nil || described["formats"].([]any)[0] != Format {
 		t.Fatalf("describe %v %v", described, err)
 	}
-	document := json.RawMessage(`{"format":"dnd-homebrew-items","schemaVersion":1,"classes":[{"id":"omens","name":"Omens","itemType":"Wondrous Item","rarity":"Rare"}],"items":[{"id":"destiny","classId":"omens","name":"Destiny"}]}`)
+	document := json.RawMessage(`{"format":"dnd-homebrew-items","schemaVersion":1,"sets":[{"id":"omens","name":"Omens","itemType":"Wondrous Item","rarity":"Rare"}],"items":[{"id":"destiny","setId":"omens","name":"Destiny"}]}`)
 	preview, err := handle(t, handler, dm, "preview", map[string]any{"contractVersion": "import-preview.v1", "format": Format, "document": document})
 	if err != nil {
 		t.Fatal(err)
@@ -305,12 +305,12 @@ func TestReplaceThenRecreateUsesTombstones(t *testing.T) {
 			t.Fatalf("commit %s: %v", document, err)
 		}
 	}
-	run(`{"format":"dnd-homebrew-items","schemaVersion":1,"classes":[],"items":[{"id":"luna","name":"Luna"}]}`)
-	run(`{"format":"dnd-homebrew-items","schemaVersion":1,"mode":"replace","classes":[],"items":[]}`)
+	run(`{"format":"dnd-homebrew-items","schemaVersion":1,"sets":[],"items":[{"id":"luna","name":"Luna"}]}`)
+	run(`{"format":"dnd-homebrew-items","schemaVersion":1,"mode":"replace","sets":[],"items":[]}`)
 	if len(store.collections[homebrew.ItemsCollection]) != 0 {
 		t.Fatal("replace kept a draft")
 	}
-	run(`{"format":"dnd-homebrew-items","schemaVersion":1,"classes":[],"items":[{"id":"luna","name":"Luna"}]}`)
+	run(`{"format":"dnd-homebrew-items","schemaVersion":1,"sets":[],"items":[{"id":"luna","name":"Luna"}]}`)
 	if store.collections[homebrew.ItemsCollection]["luna"].Revision != 3 {
 		t.Fatalf("recreated revision %d", store.collections[homebrew.ItemsCollection]["luna"].Revision)
 	}
@@ -319,7 +319,7 @@ func TestReplaceThenRecreateUsesTombstones(t *testing.T) {
 func TestCommitRefusesStalePlans(t *testing.T) {
 	store := newFakeStore()
 	handler, _ := New(store)
-	document := json.RawMessage(`{"format":"dnd-homebrew-items","schemaVersion":1,"classes":[],"items":[{"id":"luna","name":"Luna"}]}`)
+	document := json.RawMessage(`{"format":"dnd-homebrew-items","schemaVersion":1,"sets":[],"items":[{"id":"luna","name":"Luna"}]}`)
 	preview, err := handle(t, handler, dm, "preview", map[string]any{"contractVersion": "import-preview.v1", "format": Format, "document": document})
 	if err != nil {
 		t.Fatal(err)
@@ -334,7 +334,7 @@ func TestPlansExpire(t *testing.T) {
 	handler, _ := New(newFakeStore())
 	now := time.Unix(100, 0)
 	handler.now = func() time.Time { return now }
-	document := json.RawMessage(`{"format":"dnd-homebrew-items","schemaVersion":1,"classes":[],"items":[]}`)
+	document := json.RawMessage(`{"format":"dnd-homebrew-items","schemaVersion":1,"sets":[],"items":[]}`)
 	preview, err := handle(t, handler, dm, "preview", map[string]any{"contractVersion": "import-preview.v1", "format": Format, "document": document})
 	if err != nil {
 		t.Fatal(err)

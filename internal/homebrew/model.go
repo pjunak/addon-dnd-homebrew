@@ -1,4 +1,4 @@
-// Package homebrew holds the stored shapes of item classes, item drafts and
+// Package homebrew holds the stored shapes of item sets, item drafts and
 // published magic-item records, and the checks that keep them acceptable to
 // the D&D Engine. contracts/*.schema.json is the host-enforced form of the
 // same rules; this package adds the cross-field rules a schema cannot state.
@@ -19,7 +19,7 @@ import (
 const (
 	SchemaVersion       = 1
 	IDPrefix            = "hb."
-	ClassesCollection   = "homebrew_classes"
+	SetsCollection      = "homebrew_sets"
 	ItemsCollection     = "homebrew_items"
 	PublishedCollection = "homebrew_published"
 	MetaCollection      = "homebrew_meta"
@@ -48,7 +48,7 @@ type Effect struct {
 	Value  int    `json:"value"`
 }
 
-type Class struct {
+type ItemSet struct {
 	ID             string   `json:"id"`
 	SchemaVersion  int      `json:"schemaVersion"`
 	Name           string   `json:"name"`
@@ -62,12 +62,12 @@ type Class struct {
 	NamePrefix     string   `json:"namePrefix"`
 	PlayerVisible  bool     `json:"playerVisible"`
 	UpdatedAt      int64    `json:"updatedAt"`
-	// Condition is given by every item of the class; its level on a sheet is
-	// the number of the class's items in effect.
+	// Condition is given by every item of the set; its level on a sheet is
+	// the number of the set's items in effect.
 	Condition *Condition `json:"condition,omitempty"`
 }
 
-// Overrides replace the class defaults for one item; an absent field inherits.
+// Overrides replace the set defaults for one item; an absent field inherits.
 type Overrides struct {
 	ItemType       *string   `json:"itemType,omitempty"`
 	Rarity         *string   `json:"rarity,omitempty"`
@@ -78,7 +78,7 @@ type Overrides struct {
 type Item struct {
 	ID                 string    `json:"id"`
 	SchemaVersion      int       `json:"schemaVersion"`
-	ClassID            string    `json:"classId"`
+	SetID              string    `json:"setId"`
 	Name               string    `json:"name"`
 	Text               string    `json:"text"`
 	Overrides          Overrides `json:"overrides"`
@@ -117,8 +117,8 @@ type Published struct {
 	ID            string `json:"id"`
 	SchemaVersion int    `json:"schemaVersion"`
 	ItemID        string `json:"itemId"`
-	ClassID       string `json:"classId"`
-	ClassName     string `json:"className"`
+	SetID         string `json:"setId"`
+	SetName       string `json:"setName"`
 	PlayerVisible bool   `json:"playerVisible"`
 	Retired       bool   `json:"retired"`
 	Withdrawn     bool   `json:"withdrawn"`
@@ -132,27 +132,27 @@ type Meta struct {
 	RecordCount   int   `json:"recordCount"`
 }
 
-var classFields = []string{"id", "schemaVersion", "name", "description", "curse", "itemType", "rarity", "attunement", "bodyPlacements", "tags", "namePrefix", "playerVisible", "updatedAt"}
-var itemFields = []string{"id", "schemaVersion", "classId", "name", "text", "overrides", "tags", "characterMechanics", "characterEffects", "playerVisible", "retired", "updatedAt"}
-var publishedFields = []string{"id", "schemaVersion", "itemId", "classId", "className", "playerVisible", "retired", "withdrawn", "record"}
+var setFields = []string{"id", "schemaVersion", "name", "description", "curse", "itemType", "rarity", "attunement", "bodyPlacements", "tags", "namePrefix", "playerVisible", "updatedAt"}
+var itemFields = []string{"id", "schemaVersion", "setId", "name", "text", "overrides", "tags", "characterMechanics", "characterEffects", "playerVisible", "retired", "updatedAt"}
+var publishedFields = []string{"id", "schemaVersion", "itemId", "setId", "setName", "playerVisible", "retired", "withdrawn", "record"}
 var recordFields = []string{"kind", "id", "name", "edition", "book", "itemType", "rarity", "attunement", "tags", "text", "characterMechanics", "characterEffects"}
 
-// DecodeClass reads one stored or imported class exactly.
-func DecodeClass(body []byte) (Class, error) {
-	var class Class
-	if err := decodeExact(body, &class, classFields); err != nil {
-		return Class{}, err
+// DecodeSet reads one stored or imported set exactly.
+func DecodeSet(body []byte) (ItemSet, error) {
+	var set ItemSet
+	if err := decodeExact(body, &set, setFields); err != nil {
+		return ItemSet{}, err
 	}
-	if class.Condition != nil {
+	if set.Condition != nil {
 		var raw, condition map[string]json.RawMessage
 		if json.Unmarshal(body, &raw) != nil || json.Unmarshal(raw["condition"], &condition) != nil {
-			return Class{}, errors.New("class condition must be an object")
+			return ItemSet{}, errors.New("set condition must be an object")
 		}
 		if err := requireFields(condition, []string{"id", "name", "summary"}); err != nil {
-			return Class{}, fmt.Errorf("class condition: %w", err)
+			return ItemSet{}, fmt.Errorf("set condition: %w", err)
 		}
 	}
-	return class, ValidateClass(class)
+	return set, ValidateSet(set)
 }
 
 // DecodeItem reads one stored or imported item draft exactly.
@@ -201,34 +201,34 @@ func DecodeMeta(body []byte) (Meta, error) {
 	return meta, nil
 }
 
-func ValidateClass(class Class) error {
+func ValidateSet(set ItemSet) error {
 	switch {
-	case class.SchemaVersion != SchemaVersion:
-		return errors.New("class schemaVersion must be 1")
-	case !ValidID(class.ID):
-		return fmt.Errorf("class id %q must be lowercase words joined by hyphens", class.ID)
-	case !validName(class.Name, 120):
-		return fmt.Errorf("class %s needs a one-line name of at most 120 characters", class.ID)
-	case class.NamePrefix != "" && !validName(class.NamePrefix, 60):
-		return fmt.Errorf("class %s name prefix must be one line of at most 60 characters", class.ID)
-	case !validMarkdown(class.Description) || !validMarkdown(class.Curse):
-		return fmt.Errorf("class %s description and curse are limited to %d characters", class.ID, MaxMarkdown)
-	case !validName(class.ItemType, 120):
-		return fmt.Errorf("class %s needs an item type", class.ID)
-	case !slices.Contains(Rarities, class.Rarity):
-		return fmt.Errorf("class %s has an unknown rarity %q", class.ID, class.Rarity)
-	case class.UpdatedAt < 0:
-		return fmt.Errorf("class %s updatedAt is invalid", class.ID)
+	case set.SchemaVersion != SchemaVersion:
+		return errors.New("set schemaVersion must be 1")
+	case !ValidID(set.ID):
+		return fmt.Errorf("set id %q must be lowercase words joined by hyphens", set.ID)
+	case !validName(set.Name, 120):
+		return fmt.Errorf("set %s needs a one-line name of at most 120 characters", set.ID)
+	case set.NamePrefix != "" && !validName(set.NamePrefix, 60):
+		return fmt.Errorf("set %s name prefix must be one line of at most 60 characters", set.ID)
+	case !validMarkdown(set.Description) || !validMarkdown(set.Curse):
+		return fmt.Errorf("set %s description and curse are limited to %d characters", set.ID, MaxMarkdown)
+	case !validName(set.ItemType, 120):
+		return fmt.Errorf("set %s needs an item type", set.ID)
+	case !slices.Contains(Rarities, set.Rarity):
+		return fmt.Errorf("set %s has an unknown rarity %q", set.ID, set.Rarity)
+	case set.UpdatedAt < 0:
+		return fmt.Errorf("set %s updatedAt is invalid", set.ID)
 	}
-	if err := validPlacements(class.BodyPlacements); err != nil {
-		return fmt.Errorf("class %s: %w", class.ID, err)
+	if err := validPlacements(set.BodyPlacements); err != nil {
+		return fmt.Errorf("set %s: %w", set.ID, err)
 	}
-	if err := validTags(class.Tags); err != nil {
-		return fmt.Errorf("class %s: %w", class.ID, err)
+	if err := validTags(set.Tags); err != nil {
+		return fmt.Errorf("set %s: %w", set.ID, err)
 	}
-	if class.Condition != nil {
-		if err := ValidateCondition(*class.Condition); err != nil {
-			return fmt.Errorf("class %s: %w", class.ID, err)
+	if set.Condition != nil {
+		if err := ValidateCondition(*set.Condition); err != nil {
+			return fmt.Errorf("set %s: %w", set.ID, err)
 		}
 	}
 	return nil
@@ -240,8 +240,8 @@ func ValidateItem(item Item) error {
 		return errors.New("item schemaVersion must be 1")
 	case !ValidID(item.ID):
 		return fmt.Errorf("item id %q must be lowercase words joined by hyphens", item.ID)
-	case item.ClassID != "" && !ValidID(item.ClassID):
-		return fmt.Errorf("item %s has an invalid classId", item.ID)
+	case item.SetID != "" && !ValidID(item.SetID):
+		return fmt.Errorf("item %s has an invalid setId", item.ID)
 	case !validName(item.Name, 120):
 		return fmt.Errorf("item %s needs a one-line name of at most 120 characters", item.ID)
 	case !validMarkdown(item.Text):
@@ -262,7 +262,7 @@ func ValidateItem(item Item) error {
 		return fmt.Errorf("item %s: %w", item.ID, err)
 	}
 	if _, exists := item.Grants["conditions"]; exists {
-		return fmt.Errorf("item %s: conditions come from the item's class", item.ID)
+		return fmt.Errorf("item %s: conditions come from the item's set", item.ID)
 	}
 	if err := ValidateMechanics(item.CharacterMechanics, item.CharacterEffects, item.Grants); err != nil {
 		return fmt.Errorf("item %s: %w", item.ID, err)
@@ -280,10 +280,10 @@ func ValidatePublished(published Published) error {
 		return errors.New("published schemaVersion must be 1")
 	case !ValidID(published.ItemID) || published.ID != IDPrefix+published.ItemID || record.ID != published.ID:
 		return fmt.Errorf("published record %q does not match its item id", published.ID)
-	case published.ClassID != "" && !ValidID(published.ClassID):
-		return fmt.Errorf("published record %s has an invalid classId", published.ID)
-	case (published.ClassID == "") != (published.ClassName == "") || published.ClassName != "" && !validName(published.ClassName, 120):
-		return fmt.Errorf("published record %s has an invalid class name", published.ID)
+	case published.SetID != "" && !ValidID(published.SetID):
+		return fmt.Errorf("published record %s has an invalid setId", published.ID)
+	case (published.SetID == "") != (published.SetName == "") || published.SetName != "" && !validName(published.SetName, 120):
+		return fmt.Errorf("published record %s has an invalid set name", published.ID)
 	case record.Kind != RecordKind || record.Edition != RecordEdition || record.Book != RecordBook:
 		return fmt.Errorf("published record %s must be a 2024 homebrew magic-item", published.ID)
 	case !validName(record.Name, 243):

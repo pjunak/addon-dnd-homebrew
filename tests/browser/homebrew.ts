@@ -14,7 +14,7 @@ interface FixtureElement extends HTMLElement {
   codexContribution: ContributionContext;
 }
 interface PublishFixture {
-  classes: { id: string }[];
+  sets: { id: string }[];
   cases: { item: { id: string }; published: { id: string } }[];
 }
 
@@ -31,7 +31,7 @@ const fixture = (await (await fetch("../fixtures/publish.json")).json()) as Publ
 const documents = (values: readonly { id: string }[], key = (value: { id: string }) => value.id) =>
   values.map((value): AddonDocument<unknown> => ({ key: key(value), revision: 1, value }));
 const stored: Record<string, readonly AddonDocument<unknown>[]> = {
-  homebrew_classes: documents(fixture.classes),
+  homebrew_sets: documents(fixture.sets),
   homebrew_items: documents(fixture.cases.map((testCase) => testCase.item)),
   homebrew_published: documents(fixture.cases.slice(0, 3).map((testCase) => testCase.published)),
   homebrew_meta: [
@@ -159,7 +159,7 @@ globalThis.runRenderingContract = () => {
   check("catalog places the item tree beside the editor", columns === 2, columns, 2);
   const names = [...catalog.querySelectorAll(".hb-tree-name")].map((node) => node.textContent);
   check(
-    "tree lists classes and their items by name",
+    "tree lists sets and their items by name",
     JSON.stringify(names) ===
       JSON.stringify(["Cursed Cards", "Defense", "Omens", "Destiny", "Ring of Wit", "Trinket"]),
     names,
@@ -192,7 +192,7 @@ globalThis.runRenderingContract = () => {
   check("editor shows the item's effect rows", rows === 1, rows, 1);
   const summary = lines(catalog, ".hb-effect-summary");
   check(
-    "effects and the class condition read as plain words",
+    "effects and the set condition read as plain words",
     JSON.stringify(summary) === JSON.stringify(["Armor Class +1", fateTouched]),
     summary,
     ["Armor Class +1", fateTouched],
@@ -226,7 +226,7 @@ globalThis.runRenderingContract = () => {
   );
   const defenseCard = lines(gallery, ".hb-card-effects");
   check(
-    "a gallery card lists the class condition",
+    "a gallery card lists the set condition",
     JSON.stringify(defenseCard) === JSON.stringify(["Armor Class +1", fateTouched]),
     defenseCard,
     ["Armor Class +1", fateTouched],

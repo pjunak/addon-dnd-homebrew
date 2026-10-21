@@ -1,155 +1,155 @@
 {
   "now": 1000,
   "stored": {
-    "classes": [
+    "sets": [
       { "id": "cursed-cards", "schemaVersion": 1, "name": "Cursed Cards", "description": "", "curse": "", "itemType": "Wondrous Item", "rarity": "Rare", "attunement": false, "bodyPlacements": ["other"], "tags": [], "namePrefix": "Cursed Card", "playerVisible": true, "updatedAt": 10 }
     ],
     "items": [
-      { "id": "defense", "schemaVersion": 1, "classId": "cursed-cards", "name": "Defense", "text": "+1 permanent bonus to Armor Class.", "overrides": {}, "tags": [], "characterMechanics": "complete", "characterEffects": [{ "target": "armorClass", "mode": "add", "value": 1 }], "playerVisible": true, "retired": false, "updatedAt": 10 },
-      { "id": "good-luck", "schemaVersion": 1, "classId": "cursed-cards", "name": "Good Luck", "text": "Once per Long Rest, reroll a 1.", "overrides": {}, "tags": [], "characterMechanics": "complete", "characterEffects": [], "playerVisible": true, "retired": false, "updatedAt": 10, "grants": { "resources": [{ "key": "uses", "name": "Good Luck", "fixed": 1, "recharge": "long" }] } }
+      { "id": "defense", "schemaVersion": 1, "setId": "cursed-cards", "name": "Defense", "text": "+1 permanent bonus to Armor Class.", "overrides": {}, "tags": [], "characterMechanics": "complete", "characterEffects": [{ "target": "armorClass", "mode": "add", "value": 1 }], "playerVisible": true, "retired": false, "updatedAt": 10 },
+      { "id": "good-luck", "schemaVersion": 1, "setId": "cursed-cards", "name": "Good Luck", "text": "Once per Long Rest, reroll a 1.", "overrides": {}, "tags": [], "characterMechanics": "complete", "characterEffects": [], "playerVisible": true, "retired": false, "updatedAt": 10, "grants": { "resources": [{ "key": "uses", "name": "Good Luck", "fixed": 1, "recharge": "long" }] } }
     ]
   },
   "cases": [
     {
-      "name": "new class and items take defaults",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [{ "id": "omens", "name": "Omens", "itemType": "Wondrous Item", "rarity": "Uncommon" }], "items": [{ "id": "destiny", "classId": "omens", "name": "Destiny", "text": "Reroll a D20 Test once per Long Rest." }, { "id": "wisdom", "classId": "omens", "name": "Wisdom", "characterEffects": [{ "target": "abilityScore", "key": "WIS", "mode": "add", "value": 1 }, { "target": "abilityScore", "key": "WIS", "mode": "maximum", "value": 20 }] }] },
+      "name": "new set and items take defaults",
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [{ "id": "omens", "name": "Omens", "itemType": "Wondrous Item", "rarity": "Uncommon" }], "items": [{ "id": "destiny", "setId": "omens", "name": "Destiny", "text": "Reroll a D20 Test once per Long Rest." }, { "id": "wisdom", "setId": "omens", "name": "Wisdom", "characterEffects": [{ "target": "abilityScore", "key": "WIS", "mode": "add", "value": 1 }, { "target": "abilityScore", "key": "WIS", "mode": "maximum", "value": 20 }] }] },
       "summary": { "creates": 3, "updates": 0, "skips": 0, "deletes": 0 },
-      "changes": [["homebrew_classes", "omens", "create"], ["homebrew_items", "destiny", "create"], ["homebrew_items", "wisdom", "create"]],
+      "changes": [["homebrew_sets", "omens", "create"], ["homebrew_items", "destiny", "create"], ["homebrew_items", "wisdom", "create"]],
       "values": {
-        "homebrew_classes/omens": { "attunement": false, "playerVisible": false, "namePrefix": "", "updatedAt": 1000, "schemaVersion": 1 },
+        "homebrew_sets/omens": { "attunement": false, "playerVisible": false, "namePrefix": "", "updatedAt": 1000, "schemaVersion": 1 },
         "homebrew_items/destiny": { "characterMechanics": "narrative", "characterEffects": [], "playerVisible": false, "retired": false, "overrides": {} },
         "homebrew_items/wisdom": { "characterMechanics": "complete", "text": "" }
       }
     },
     {
       "name": "re-importing stored content skips it",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [{ "id": "cursed-cards", "name": "Cursed Cards", "itemType": "Wondrous Item", "rarity": "Rare" }], "items": [{ "id": "defense", "classId": "cursed-cards", "name": "Defense", "text": "+1 permanent bonus to Armor Class.", "characterEffects": [{ "target": "armorClass", "mode": "add", "value": 1 }] }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [{ "id": "cursed-cards", "name": "Cursed Cards", "itemType": "Wondrous Item", "rarity": "Rare" }], "items": [{ "id": "defense", "setId": "cursed-cards", "name": "Defense", "text": "+1 permanent bonus to Armor Class.", "characterEffects": [{ "target": "armorClass", "mode": "add", "value": 1 }] }] },
       "summary": { "creates": 0, "updates": 0, "skips": 2, "deletes": 0 },
       "changes": []
     },
     {
       "name": "an update keeps stored fields the file omits",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "defense", "name": "Defense", "text": "+1 bonus to Armor Class while carried." }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "defense", "name": "Defense", "text": "+1 bonus to Armor Class while carried." }] },
       "summary": { "creates": 0, "updates": 1, "skips": 0, "deletes": 0 },
       "changes": [["homebrew_items", "defense", "update"]],
-      "values": { "homebrew_items/defense": { "playerVisible": true, "classId": "cursed-cards", "characterMechanics": "complete", "text": "+1 bonus to Armor Class while carried.", "updatedAt": 1000 } }
+      "values": { "homebrew_items/defense": { "playerVisible": true, "setId": "cursed-cards", "characterMechanics": "complete", "text": "+1 bonus to Armor Class while carried.", "updatedAt": 1000 } }
     },
     {
       "name": "clearing effects makes an item narrative",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "defense", "name": "Defense", "characterEffects": [] }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "defense", "name": "Defense", "characterEffects": [] }] },
       "summary": { "creates": 0, "updates": 1, "skips": 0, "deletes": 0 },
       "changes": [["homebrew_items", "defense", "update"]],
       "values": { "homebrew_items/defense": { "characterMechanics": "narrative", "characterEffects": [] } }
     },
     {
       "name": "replace deletes drafts missing from the file",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "mode": "replace", "classes": [{ "id": "cursed-cards", "name": "Cursed Cards", "itemType": "Wondrous Item", "rarity": "Rare" }], "items": [] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "mode": "replace", "sets": [{ "id": "cursed-cards", "name": "Cursed Cards", "itemType": "Wondrous Item", "rarity": "Rare" }], "items": [] },
       "summary": { "creates": 0, "updates": 0, "skips": 1, "deletes": 2 },
       "changes": [["homebrew_items", "defense", "delete"], ["homebrew_items", "good-luck", "delete"]]
     },
     {
-      "name": "replace refuses items whose class it removes",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "mode": "replace", "classes": [], "items": [{ "id": "defense", "classId": "cursed-cards", "name": "Defense" }] },
+      "name": "replace refuses items whose set it removes",
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "mode": "replace", "sets": [], "items": [{ "id": "defense", "setId": "cursed-cards", "name": "Defense" }] },
       "errorIncludes": "cursed-cards"
     },
     {
-      "name": "merge accepts an item in a stored class",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "luna", "classId": "cursed-cards", "name": "Luna", "text": "Darkvision under open sky." }] },
+      "name": "merge accepts an item in a stored set",
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "luna", "setId": "cursed-cards", "name": "Luna", "text": "Darkvision under open sky." }] },
       "summary": { "creates": 1, "updates": 0, "skips": 0, "deletes": 0 },
       "changes": [["homebrew_items", "luna", "create"]]
     },
     {
-      "name": "unknown class",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "luna", "classId": "tarot", "name": "Luna" }] },
+      "name": "unknown set",
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "luna", "setId": "tarot", "name": "Luna" }] },
       "errorIncludes": "tarot"
     },
     {
       "name": "grants make an imported item automated",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "resilience", "classId": "cursed-cards", "name": "Resilience", "grants": { "advantages": [{ "on": "deathSave" }] } }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "resilience", "setId": "cursed-cards", "name": "Resilience", "grants": { "advantages": [{ "on": "deathSave" }] } }] },
       "summary": { "creates": 1, "updates": 0, "skips": 0, "deletes": 0 },
       "changes": [["homebrew_items", "resilience", "create"]],
       "values": { "homebrew_items/resilience": { "characterMechanics": "complete", "characterEffects": [], "grants": { "advantages": [{ "on": "deathSave" }] } } }
     },
     {
       "name": "an update keeps stored grants",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "good-luck", "name": "Good Luck", "text": "Once per Long Rest, reroll a natural 1." }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "good-luck", "name": "Good Luck", "text": "Once per Long Rest, reroll a natural 1." }] },
       "summary": { "creates": 0, "updates": 1, "skips": 0, "deletes": 0 },
       "changes": [["homebrew_items", "good-luck", "update"]],
       "values": { "homebrew_items/good-luck": { "characterMechanics": "complete", "grants": { "resources": [{ "key": "uses", "name": "Good Luck", "fixed": 1, "recharge": "long" }] } } }
     },
     {
       "name": "an empty grants object clears them",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "good-luck", "name": "Good Luck", "grants": {} }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "good-luck", "name": "Good Luck", "grants": {} }] },
       "summary": { "creates": 0, "updates": 1, "skips": 0, "deletes": 0 },
       "changes": [["homebrew_items", "good-luck", "update"]],
       "values": { "homebrew_items/good-luck": { "characterMechanics": "narrative" } }
     },
     {
-      "name": "a class condition",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [{ "id": "omens", "name": "Omens", "itemType": "Wondrous Item", "rarity": "Uncommon", "condition": { "id": "omen-marked", "name": "Omen-Marked", "summary": "" } }], "items": [] },
+      "name": "a set condition",
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [{ "id": "omens", "name": "Omens", "itemType": "Wondrous Item", "rarity": "Uncommon", "condition": { "id": "omen-marked", "name": "Omen-Marked", "summary": "" } }], "items": [] },
       "summary": { "creates": 1, "updates": 0, "skips": 0, "deletes": 0 },
-      "changes": [["homebrew_classes", "omens", "create"]],
-      "values": { "homebrew_classes/omens": { "condition": { "id": "omen-marked", "name": "Omen-Marked", "summary": "" } } }
+      "changes": [["homebrew_sets", "omens", "create"]],
+      "values": { "homebrew_sets/omens": { "condition": { "id": "omen-marked", "name": "Omen-Marked", "summary": "" } } }
     },
     {
-      "name": "an empty condition object leaves the class without one",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [{ "id": "cursed-cards", "name": "Cursed Cards", "itemType": "Wondrous Item", "rarity": "Rare", "condition": {} }], "items": [] },
+      "name": "an empty condition object leaves the set without one",
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [{ "id": "cursed-cards", "name": "Cursed Cards", "itemType": "Wondrous Item", "rarity": "Rare", "condition": {} }], "items": [] },
       "summary": { "creates": 0, "updates": 0, "skips": 1, "deletes": 0 },
       "changes": []
     },
     {
       "name": "a standard condition id",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [{ "id": "omens", "name": "Omens", "itemType": "Wondrous Item", "rarity": "Uncommon", "condition": { "id": "charmed", "name": "Charmed", "summary": "" } }], "items": [] },
-      "errorIncludes": "classes[0]"
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [{ "id": "omens", "name": "Omens", "itemType": "Wondrous Item", "rarity": "Uncommon", "condition": { "id": "charmed", "name": "Charmed", "summary": "" } }], "items": [] },
+      "errorIncludes": "sets[0]"
     },
     {
       "name": "unsupported grants",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "luna", "name": "Luna", "grants": { "senses": { "darkvision": 60 } } }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "luna", "name": "Luna", "grants": { "senses": { "darkvision": 60 } } }] },
       "errorIncludes": "items[0]"
     },
     {
       "name": "a draft condition",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "luna", "name": "Luna", "grants": { "conditions": [{ "id": "moonlit", "name": "Moonlit", "summary": "" }] } }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "luna", "name": "Luna", "grants": { "conditions": [{ "id": "moonlit", "name": "Moonlit", "summary": "" }] } }] },
       "errorIncludes": "items[0]"
     },
     {
       "name": "narrative item with grants",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "luna", "name": "Luna", "characterMechanics": "narrative", "grants": { "advantages": [{ "on": "deathSave" }] } }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "luna", "name": "Luna", "characterMechanics": "narrative", "grants": { "advantages": [{ "on": "deathSave" }] } }] },
       "errorIncludes": "items[0]"
     },
     {
       "name": "unsupported effect",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "luna", "name": "Luna", "characterEffects": [{ "target": "attackBonus", "mode": "add", "value": 1 }] }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "luna", "name": "Luna", "characterEffects": [{ "target": "attackBonus", "mode": "add", "value": 1 }] }] },
       "errorIncludes": "items[0]"
     },
     {
       "name": "narrative item with effects",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "luna", "name": "Luna", "characterMechanics": "narrative", "characterEffects": [{ "target": "armorClass", "mode": "add", "value": 1 }] }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "luna", "name": "Luna", "characterMechanics": "narrative", "characterEffects": [{ "target": "armorClass", "mode": "add", "value": 1 }] }] },
       "errorIncludes": "items[0]"
     },
     {
       "name": "duplicate item",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [{ "id": "luna", "name": "Luna" }, { "id": "luna", "name": "Luna again" }] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [{ "id": "luna", "name": "Luna" }, { "id": "luna", "name": "Luna again" }] },
       "errorIncludes": "items[1]"
     },
     {
       "name": "unknown entry field",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [{ "id": "omens", "name": "Omens", "itemType": "Wondrous Item", "rarity": "Rare", "color": "red" }], "items": [] },
-      "errorIncludes": "classes[0]"
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [{ "id": "omens", "name": "Omens", "itemType": "Wondrous Item", "rarity": "Rare", "color": "red" }], "items": [] },
+      "errorIncludes": "sets[0]"
     },
     {
       "name": "unknown document field",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [], "items": [], "cards": [] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [], "items": [], "cards": [] },
       "errorIncludes": "document"
     },
     {
       "name": "wrong format",
-      "document": { "format": "dm-tools-planning", "schemaVersion": 1, "classes": [], "items": [] },
+      "document": { "format": "dm-tools-planning", "schemaVersion": 1, "sets": [], "items": [] },
       "errorIncludes": "dnd-homebrew-items"
     },
     {
       "name": "missing items",
-      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "classes": [] },
+      "document": { "format": "dnd-homebrew-items", "schemaVersion": 1, "sets": [] },
       "errorIncludes": "items"
     }
   ]

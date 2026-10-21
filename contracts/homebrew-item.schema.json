@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
-  "required": ["id", "schemaVersion", "classId", "name", "text", "overrides", "tags", "characterMechanics", "characterEffects", "playerVisible", "retired", "updatedAt"],
+  "required": ["id", "schemaVersion", "setId", "name", "text", "overrides", "tags", "characterMechanics", "characterEffects", "playerVisible", "retired", "updatedAt"],
   "properties": {
     "id": { "$ref": "homebrew-common.schema.json#/$defs/id" },
     "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
-    "classId": { "$ref": "homebrew-common.schema.json#/$defs/classRef" },
+    "setId": { "$ref": "homebrew-common.schema.json#/$defs/setRef" },
     "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
     "text": { "$ref": "homebrew-common.schema.json#/$defs/markdown" },
     "overrides": {

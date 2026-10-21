@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
-  "required": ["id", "schemaVersion", "itemId", "classId", "className", "playerVisible", "retired", "withdrawn", "record"],
+  "required": ["id", "schemaVersion", "itemId", "setId", "setName", "playerVisible", "retired", "withdrawn", "record"],
   "properties": {
     "id": { "type": "string", "maxLength": 67, "pattern": "^hb\\.[a-z0-9]+(?:-[a-z0-9]+)*$" },
     "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
     "itemId": { "$ref": "homebrew-common.schema.json#/$defs/id" },
-    "classId": { "$ref": "homebrew-common.schema.json#/$defs/classRef" },
-    "className": { "anyOf": [{ "const": "" }, { "$ref": "homebrew-common.schema.json#/$defs/name" }] },
+    "setId": { "$ref": "homebrew-common.schema.json#/$defs/setRef" },
+    "setName": { "anyOf": [{ "const": "" }, { "$ref": "homebrew-common.schema.json#/$defs/name" }] },
     "playerVisible": { "type": "boolean" },
     "retired": { "type": "boolean" },
     "withdrawn": { "type": "boolean" },

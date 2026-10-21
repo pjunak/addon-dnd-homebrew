@@ -75,7 +75,7 @@ export async function provideReferences(
         .map((record, index): Match => ({
           index,
           label: record.record.name,
-          description: [record.className, record.record.rarity].filter(Boolean).join(" · "),
+          description: [record.setName, record.record.rarity].filter(Boolean).join(" · "),
           target: target(record),
         })),
     };

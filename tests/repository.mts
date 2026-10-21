@@ -6,7 +6,7 @@ import { HomebrewRepository } from "#web/repository";
 const publish = JSON.parse(
   await readFile(new URL("./fixtures/publish.json", import.meta.url), "utf8"),
 ) as {
-  classes: { id: string }[];
+  sets: { id: string }[];
   cases: { item: { id: string }; published: { id: string } }[];
 };
 
@@ -48,21 +48,21 @@ function fakeContext(stored: Record<string, { key: string; revision: number; val
 
 void test("drafts are read with set revisions and broken documents are reported, not dropped", async () => {
   const { context, queries } = fakeContext({
-    homebrew_classes: publish.classes.map((value) => ({ key: value.id, revision: 2, value })),
+    homebrew_sets: publish.sets.map((value) => ({ key: value.id, revision: 2, value })),
     homebrew_items: [
       ...publish.cases.map(({ item }) => ({ key: item.id, revision: 4, value: item })),
       { key: "broken", revision: 1, value: { id: "broken", name: "Broken" } },
     ],
   });
   const drafts = await new HomebrewRepository(context).drafts(new AbortController().signal);
-  assert.equal(drafts.classes.length, 2);
+  assert.equal(drafts.sets.length, 2);
   assert.equal(drafts.items.length, 4);
   assert.deepEqual(
     drafts.unreadable.map((entry) => [entry.collection, entry.key]),
     [["homebrew_items", "broken"]],
   );
   assert.deepEqual(drafts.dataRevisions, [
-    { kind: "collection", dataId: "homebrew_classes", revision: 9 },
+    { kind: "collection", dataId: "homebrew_sets", revision: 9 },
     { kind: "collection", dataId: "homebrew_items", revision: 9 },
   ]);
   assert.ok(queries.every((query) => query.options["includeDataRevision"] === true));

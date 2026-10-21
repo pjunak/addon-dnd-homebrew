@@ -25,7 +25,7 @@ var (
 
 const MaxConditionSummary = 2000
 
-// Condition is a level-counted condition an item gives: the class condition
+// Condition is a level-counted condition an item gives: the set condition
 // of a draft, and each grants.conditions entry of a published record.
 type Condition struct {
 	ID      string `json:"id"`
@@ -35,7 +35,7 @@ type Condition struct {
 
 // ValidateGrants checks a published record's grants against the Engine
 // allowlist. A draft's grants also may not declare conditions; those come
-// from its class.
+// from its set.
 func ValidateGrants(grants map[string]any) error {
 	if len(grants) == 0 {
 		return errors.New("grants must declare something; leave the field out instead")

@@ -26,15 +26,15 @@ export const cs: Readonly<Record<string, string>> = {
   // Page
   "Homebrew Items": "Vlastní předměty",
   "Item Gallery": "Galerie předmětů",
-  "Create item classes and items, then publish them to use them on character sheets.":
-    "Vytvářejte třídy předmětů a předměty a pak je zveřejněte, aby šly použít na deníkách postav.",
+  "Create item sets and items, then publish them to use them on character sheets.":
+    "Vytvářejte sady předmětů a předměty a pak je zveřejněte, aby šly použít na deníkách postav.",
   "Items the DM has revealed to the party.": "Předměty, které Pán jeskyně odhalil družině.",
   "Loading homebrew items…": "Načítání vlastních předmětů…",
   "This page belongs to an add-on version that is no longer active. Reload the page.":
     "Tato stránka patří k verzi doplňku, která už není aktivní. Načtěte stránku znovu.",
   "Homebrew items could not be loaded. Reload to try again.":
     "Vlastní předměty se nepodařilo načíst. Načtěte stránku znovu.",
-  "New class": "Nová třída",
+  "New set": "Nová sada",
   "New item": "Nový předmět",
   "Import file": "Importovat soubor",
   Export: "Exportovat",
@@ -46,10 +46,10 @@ export const cs: Readonly<Record<string, string>> = {
     "Zveřejněná revize {revision}, předmětů: {count}.",
   "Unpublished changes: {count}.": "Nezveřejněné změny: {count}.",
   "Search items": "Hledat předměty",
-  "Items without a class": "Předměty bez třídy",
-  "No items yet. Create a class or import a file to begin.":
-    "Zatím žádné předměty. Začněte vytvořením třídy nebo importem souboru.",
-  "Choose a class or an item to edit it.": "Vyberte třídu nebo předmět k úpravě.",
+  "Items without a set": "Předměty bez sady",
+  "No items yet. Create a set or import a file to begin.":
+    "Zatím žádné předměty. Začněte vytvořením sady nebo importem souboru.",
+  "Choose a set or an item to edit it.": "Vyberte sadu nebo předmět k úpravě.",
   "Items: {count}": "Předmětů: {count}",
   "Some stored drafts could not be read:": "Některé uložené koncepty nelze přečíst:",
   // Badges
@@ -60,8 +60,7 @@ export const cs: Readonly<Record<string, string>> = {
   Unpublished: "Nezveřejněný",
   Changed: "Změněný",
   Visible: "Viditelný",
-  // Class editor
-  "Item class": "Třída předmětů",
+  // Set editor
   Name: "Název",
   Id: "Identifikátor",
   "Used in saved characters; it cannot change after the first save.":
@@ -81,21 +80,21 @@ export const cs: Readonly<Record<string, string>> = {
   "Lowercase words joined by hyphens, separated by commas.":
     "Malá slova spojená pomlčkami, oddělená čárkami.",
   "Shared description": "Společný popis",
-  "Added to every item in the class.": "Připojí se ke každému předmětu ve třídě.",
+  "Added to every item in the set.": "Připojí se ke každému předmětu v sadě.",
   Curse: "Kletba",
   "Added to every item as its curse.": "Připojí se ke každému předmětu jako jeho kletba.",
   "Visible to players": "Viditelné pro hráče",
-  "Lists the class in the player gallery. Each item also needs its own switch.":
-    "Zobrazí třídu v galerii pro hráče. Každý předmět potřebuje i vlastní přepínač.",
+  "Lists the set in the player gallery. Each item also needs its own switch.":
+    "Zobrazí sadu v galerii pro hráče. Každý předmět potřebuje i vlastní přepínač.",
   Save: "Uložit",
   Saving: "Ukládání",
   Delete: "Smazat",
-  "Add item to this class": "Přidat předmět do této třídy",
+  "Add item to this set": "Přidat předmět do této sady",
   "Saved.": "Uloženo.",
-  "Move or delete this class's items first.": "Nejprve přesuňte nebo smažte předměty této třídy.",
+  "Move or delete this set's items first.": "Nejprve přesuňte nebo smažte předměty této sady.",
   Condition: "Stav",
-  "Every item of the class gives this condition. Its level on the sheet is the number of the class's items in effect. Leave the name empty for none.":
-    "Každý předmět třídy dává tento stav. Jeho úroveň na deníku odpovídá počtu účinných předmětů třídy. Bez názvu třída žádný stav nedává.",
+  "Every item of the set gives this condition. Its level on the sheet is the number of the set's items in effect. Leave the name empty for none.":
+    "Každý předmět sady dává tento stav. Jeho úroveň na deníku odpovídá počtu účinných předmětů sady. Bez názvu sada žádný stav nedává.",
   "Condition name": "Název stavu",
   "Condition id": "Identifikátor stavu",
   "Filled from the name when empty.": "Když zůstane prázdný, vytvoří se z názvu.",
@@ -103,8 +102,8 @@ export const cs: Readonly<Record<string, string>> = {
   "What each level does, as players read it.": "Co dělá každá úroveň, jak to uvidí hráči.",
   // Item editor
   Item: "Předmět",
-  Class: "Třída",
-  "No class": "Bez třídy",
+  Set: "Sada",
+  "No set": "Bez sady",
   Description: "Popis",
   "The effect as players read it on their character sheet.":
     "Účinek tak, jak ho hráči uvidí na deníku postavy.",
@@ -116,14 +115,14 @@ export const cs: Readonly<Record<string, string>> = {
   Properties: "Schopnosti předmětu",
   "Advantages, limited uses, spells, toggles and resistances, on the same terms. Item spells never use spell slots.":
     "Výhody, omezená použití, kouzla, přepínače a odolnosti, za stejných podmínek. Kouzla předmětů nikdy nespotřebují pozice kouzel.",
-  "Class defaults": "Výchozí hodnoty třídy",
-  "Leave a field empty to use the class's value.": "Prázdné pole použije hodnotu třídy.",
-  "From class ({value})": "Podle třídy ({value})",
+  "Set defaults": "Výchozí hodnoty sady",
+  "Leave a field empty to use the set's value.": "Prázdné pole použije hodnotu sady.",
+  "From set ({value})": "Podle sady ({value})",
   Yes: "Ano",
   No: "Ne",
-  "Use the class's placements": "Použít umístění třídy",
-  "Lists the item in the player gallery when its class is visible too.":
-    "Zobrazí předmět v galerii pro hráče, pokud je viditelná i jeho třída.",
+  "Use the set's placements": "Použít umístění sady",
+  "Lists the item in the player gallery when its set is visible too.":
+    "Zobrazí předmět v galerii pro hráče, pokud je viditelná i jeho sada.",
   "Retired items stay usable on character sheets but leave the player gallery.":
     "Vyřazené předměty zůstanou použitelné na denících postav, ale zmizí z galerie pro hráče.",
   Preview: "Náhled",
@@ -405,7 +404,7 @@ export const cs: Readonly<Record<string, string>> = {
   delete: "odebrání",
   // Gallery
   "Search the gallery": "Hledat v galerii",
-  "All classes": "Všechny třídy",
+  "All sets": "Všechny sady",
   "No items have been revealed yet.": "Zatím nebyly odhaleny žádné předměty.",
   "No items match the search.": "Hledání neodpovídá žádný předmět.",
   "Requires attunement.": "Vyžaduje sladění.",
@@ -510,38 +509,37 @@ export const cs: Readonly<Record<string, string>> = {
   "Choose distinct conditions.": "Zvolte různé stavy.",
   "Condition {position}: {problem}": "Stav {position}: {problem}",
   "Condition {position} repeats the id {id}.": "Stav {position} opakuje identifikátor {id}.",
-  "Conditions come from the item's class.": "Stavy dává třída předmětu.",
-  "Unsupported class version.": "Nepodporovaná verze třídy.",
+  "Conditions come from the item's set.": "Stavy dává sada předmětu.",
+  "Unsupported set version.": "Nepodporovaná verze sady.",
   "Unsupported item version.": "Nepodporovaná verze předmětu.",
   "The id must be lowercase words joined by hyphens.":
     "Identifikátor musí být z malých slov spojených pomlčkami.",
-  "Give the class a one-line name of at most 120 characters.":
-    "Zadejte třídě jednořádkový název o nejvýše 120 znacích.",
+  "Give the set a one-line name of at most 120 characters.":
+    "Zadejte sadě jednořádkový název o nejvýše 120 znacích.",
   "The name prefix is one line of at most 60 characters.":
     "Předpona názvu je jeden řádek o nejvýše 60 znacích.",
   "Descriptions are limited to {count} characters.": "Popisy mají limit {count} znaků.",
-  "Give the class an item type, such as Wondrous Item.":
-    "Zadejte třídě typ předmětu, například Wondrous Item.",
+  "Give the set an item type, such as Wondrous Item.":
+    "Zadejte sadě typ předmětu, například Wondrous Item.",
   "Choose a rarity.": "Zvolte vzácnost.",
-  "The class is malformed.": "Třída je poškozená.",
-  "The class reference is invalid.": "Odkaz na třídu je neplatný.",
+  "The set is malformed.": "Sada je poškozená.",
+  "The set reference is invalid.": "Odkaz na sadu je neplatný.",
   "Give the item a one-line name of at most 120 characters.":
     "Zadejte předmětu jednořádkový název o nejvýše 120 znacích.",
   "The item is malformed.": "Předmět je poškozený.",
   "The item type override is invalid.": "Vlastní typ předmětu je neplatný.",
-  "Its class {classId} no longer exists.": "Jeho třída {classId} už neexistuje.",
+  "Its set {setId} no longer exists.": "Jeho sada {setId} už neexistuje.",
   "characterEffects must be a list.": "characterEffects musí být seznam.",
   "A published record is invalid.": "Zveřejněný záznam je neplatný.",
   "The publish record is invalid.": "Záznam o zveřejnění je neplatný.",
   "The document is invalid: {problem}": "Dokument je neplatný: {problem}",
   "The mode must be merge or replace.": "Režim musí být merge nebo replace.",
-  "The document needs classes and items lists.": "Dokument potřebuje seznamy classes a items.",
-  "An import holds at most 2000 classes and items.":
-    "Import obsahuje nejvýše 2000 tříd a předmětů.",
-  "{at}: class {id} appears twice.": "{at}: třída {id} se opakuje.",
+  "The document needs sets and items lists.": "Dokument potřebuje seznamy sets a items.",
+  "An import holds at most 2000 sets and items.": "Import obsahuje nejvýše 2000 sad a předmětů.",
+  "{at}: set {id} appears twice.": "{at}: sada {id} se opakuje.",
   "{at}: item {id} appears twice.": "{at}: předmět {id} se opakuje.",
-  "Item {id} belongs to class {classId}, which the import neither contains nor keeps.":
-    "Předmět {id} patří do třídy {classId}, kterou import neobsahuje ani nezachovává.",
+  "Item {id} belongs to set {setId}, which the import neither contains nor keeps.":
+    "Předmět {id} patří do sady {setId}, kterou import neobsahuje ani nezachovává.",
   "The import changes {count} drafts; split it into files of at most 256 changes.":
     "Import mění {count} konceptů; rozdělte ho do souborů s nejvýše 256 změnami.",
   "{at}: {problem}": "{at}: {problem}",

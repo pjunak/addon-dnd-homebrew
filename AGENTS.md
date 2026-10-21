@@ -1,7 +1,7 @@
 # D&D Homebrew Items add-on
 
 A TTRPG Codex add-on (TypeScript UI plus a native Go worker) for DM-authored
-item classes and items, served to the D&D Engine as `dnd5e.rules-data`. Its
+item sets and items, served to the D&D Engine as `dnd5e.rules-data`. Its
 add-on ID, four collection IDs and the `hb.<item id>` record ids are permanent:
 saved characters refer to them.
 
@@ -26,7 +26,7 @@ Tasks for all repositories live in the host's `docs/BACKLOG.md`.
 - `src/model.ts` and `internal/homebrew` hold the same rules in two languages.
   The fixtures in `tests/fixtures/` (effects, flattening, import plans) are
   read by both test suites; change a rule in both and in the fixture.
-- Flattening (`flatten` in `src/model.ts`) is the only place class defaults and
+- Flattening (`flatten` in `src/model.ts`) is the only place set defaults and
   item overrides combine. The worker serves what was published and never
   recomputes it.
 - Effects mirror the Engine's `validCharacterEffect` and proficiency rule, and

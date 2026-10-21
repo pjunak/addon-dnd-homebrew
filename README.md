@@ -1,7 +1,7 @@
 # D&D Homebrew Items
 
 D&D Homebrew Items lets the DM create and import custom magic items and
-**item classes** for TTRPG Codex, then use them on character sheets. A class
+**item sets** for TTRPG Codex, then use them on character sheets. A set
 holds what its items share: item type, rarity, attunement, body placements, a
 shared description, a curse and optionally a condition every item gives. Each
 item adds its own description and, where the D&D Engine can apply them,
@@ -13,7 +13,7 @@ English and Czech controls follow the host language.
 ## How it fits together
 
 ```text
-Homebrew Items (DM)        drafts: classes and items, DM-only
+Homebrew Items (DM)        drafts: sets and items, DM-only
         │ Publish
         ▼
 homebrew_published         one flattened magic-item record per item, readable by players
@@ -35,9 +35,9 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 
 ## Use it
 
-1. **Homebrew Items** (DM sidebar): create a class, add items to it, or import a
+1. **Homebrew Items** (DM sidebar): create a set, add items to it, or import a
    file. Drafts are private to the DM and never touch character sheets.
-   **Save and add another** keeps the class for the next item, and
+   **Save and add another** keeps the set for the next item, and
    **Duplicate** starts a new item from an existing one.
 2. Add the item's effects and properties where the Engine supports them. An
    item with neither is **Text only** and the sheet shows its description; the
@@ -45,7 +45,7 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 3. **Publish** reviews the changes and writes them for character sheets. Every
    character sheet then asks its owner to adopt the new rules on its next save,
    so publish batches of edits rather than every keystroke.
-4. **Item Gallery** (DM and players) lists items whose class and item are both
+4. **Item Gallery** (DM and players) lists items whose set and item are both
    marked *Visible to players*. A sheet link still opens a held item that is not
    listed.
 
@@ -70,10 +70,10 @@ With D&D Engine 5.4.0 or later, an item's **properties** also apply
 | Toggles the player switches on the sheet: Advantage, senses, resistances and immunities | In darkness: Darkvision 60 ft, or 30 ft more |
 | Resistances and immunities | fire resistance, immunity to the Frightened condition |
 
-A class may also give a **condition** whose level is the number of its items in
+A set may also give a **condition** whose level is the number of its items in
 effect; what each level does stays text. Other conditional effects stay in the
 description. The [sample file](docs/examples/sample-items.json) shows each
-kind: a class of runestones with a condition, and a lantern without a class.
+kind: a set of runestones with a condition, and a lantern without a set.
 
 ### Change and remove published items
 
@@ -83,7 +83,7 @@ kind: a class of runestones with a condition, and a lantern without a class.
   keep working.
 - Deleting a published item **withdraws** it at the next publish. A character
   that still holds it shows a missing-source problem until it is removed.
-- The id of a class or item is permanent: saved characters refer to
+- The id of a set or item is permanent: saved characters refer to
   `hb.<item id>`.
 
 ## Import and export
@@ -108,7 +108,7 @@ The permanent add-on namespace is `dnd-homebrew`.
 
 | Collection | Visibility | Purpose |
 | --- | --- | --- |
-| `homebrew_classes` | DM | Item class drafts |
+| `homebrew_sets` | DM | Item set drafts |
 | `homebrew_items` | DM | Item drafts |
 | `homebrew_published` | public | Flattened records the worker serves |
 | `homebrew_meta` | public | The publish revision the Engine sees |

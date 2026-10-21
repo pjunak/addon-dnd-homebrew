@@ -33,7 +33,7 @@ void test("manifest serves rules data from a worker and keeps drafts DM-only", (
   assert.deepEqual(
     manifest.collections.map(({ id, visibility }) => [id, visibility]),
     [
-      ["homebrew_classes", "dm"],
+      ["homebrew_sets", "dm"],
       ["homebrew_items", "dm"],
       ["homebrew_published", "public"],
       ["homebrew_meta", "public"],

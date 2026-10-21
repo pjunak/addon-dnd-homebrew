@@ -2,7 +2,7 @@
   "format": "dnd-homebrew-items",
   "schemaVersion": 1,
   "mode": "merge",
-  "classes": [
+  "sets": [
     {
       "id": "runestones",
       "name": "Runestones",
@@ -24,14 +24,14 @@
   "items": [
     {
       "id": "ward",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Ward",
       "text": "You gain a +1 bonus to Armor Class.",
       "characterEffects": [{ "target": "armorClass", "mode": "add", "value": 1 }]
     },
     {
       "id": "lore",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Lore",
       "text": "Your Intelligence score increases by 1, to a maximum of 20.",
       "characterEffects": [
@@ -41,21 +41,21 @@
     },
     {
       "id": "clarity",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Clarity",
       "text": "You gain proficiency in the Insight skill.",
       "characterEffects": [{ "target": "proficiency", "key": "insight", "mode": "set", "value": 1 }]
     },
     {
       "id": "vigor",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Vigor",
       "text": "Your Hit Point maximum increases by 5.",
       "characterEffects": [{ "target": "maxHp", "mode": "add", "value": 5 }]
     },
     {
       "id": "fortune",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Fortune",
       "text": "Once per Long Rest, you can reroll a D20 Test. You must use the new roll.",
       "grants": {
@@ -64,14 +64,14 @@
     },
     {
       "id": "endurance",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Endurance",
       "text": "You have Advantage on Death Saving Throws.",
       "grants": { "advantages": [{ "on": "deathSave" }] }
     },
     {
       "id": "calm",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Calm",
       "text": "You have Advantage on Wisdom saving throws to resist the Charmed condition.",
       "grants": {
@@ -82,7 +82,7 @@
     },
     {
       "id": "blessing",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Blessing",
       "text": "Once per Long Rest, you can cast *Bless* without a spell slot. Intelligence, Wisdom or Charisma is your spellcasting ability for it (choose when you first carry the stone).",
       "grants": {
@@ -93,7 +93,7 @@
     },
     {
       "id": "night-eye",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Night Eye",
       "text": "While you stand in darkness, you have Darkvision with a range of 60 feet, or the range of your Darkvision increases by 30 feet.",
       "grants": {
@@ -111,14 +111,14 @@
     },
     {
       "id": "flame-ward",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Flame Ward",
       "text": "You have Resistance to Fire damage.",
       "grants": { "resistances": ["fire"] }
     },
     {
       "id": "echo",
-      "classId": "runestones",
+      "setId": "runestones",
       "name": "Echo",
       "text": "The stone hums softly whenever a creature within 10 feet of you tells a deliberate lie. The DM decides what you notice."
     },

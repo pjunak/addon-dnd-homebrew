@@ -30,7 +30,7 @@ import { jsonResponse, installReviewedPackage, enableAllRuleSources } from "./in
 
 const homebrewRoot = required(process.env.CODEX_HOMEBREW_ROOT);
 const model = (await import(pathToFileURL(resolve(homebrewRoot, "web/model.js")).href)) as {
-  planPublish: (classes: unknown[], items: unknown[], published: Map<string, unknown>, meta: unknown, now: number) => {
+  planPublish: (sets: unknown[], items: unknown[], published: Map<string, unknown>, meta: unknown, now: number) => {
     problems: unknown[];
     mutations: { dataId: string; key: string; expectedRevision: number; value?: unknown; operation: string }[];
   };
@@ -143,9 +143,9 @@ async function all(dataId: string) {
 }
 /** The browser's Publish, through the same planner and a guarded transaction. */
 async function publish(): Promise<number> {
-  const [classes, items, published, meta] = await Promise.all(["homebrew_classes", "homebrew_items", "homebrew_published", "homebrew_meta"].map(all));
+  const [sets, items, published, meta] = await Promise.all(["homebrew_sets", "homebrew_items", "homebrew_published", "homebrew_meta"].map(all));
   const plan = model.planPublish(
-    classes!.documents.map((document) => document.value),
+    sets!.documents.map((document) => document.value),
     items!.documents.map((document) => document.value),
     new Map(published!.documents.map((document) => [document.key, { value: model.parsePublished(document.value), revision: document.revision }])),
     meta!.documents[0] ? { value: meta!.documents[0].value, revision: meta!.documents[0].revision } : undefined,
@@ -155,9 +155,9 @@ async function publish(): Promise<number> {
   if (plan.mutations.length === 0) return 0;
   await data("transactions", {
     contractVersion: "addon-data-transaction.v1",
-    expectedDataSets: [classes, items, published, meta].map((set, index) => ({
+    expectedDataSets: [sets, items, published, meta].map((set, index) => ({
       kind: "collection",
-      dataId: ["homebrew_classes", "homebrew_items", "homebrew_published", "homebrew_meta"][index],
+      dataId: ["homebrew_sets", "homebrew_items", "homebrew_published", "homebrew_meta"][index],
       revision: set!.dataRevision,
     })),
     mutations: plan.mutations.map((mutation) => ({ ...mutation, kind: "collection" })),
@@ -332,7 +332,7 @@ void test("the real UI edits, publishes and shows the gallery", async () => {
     await playerPage.locator(".hb-card.focused").getByText("Runestone: Ward").waitFor();
     if (shots) await playerPage.screenshot({ path: `${shots}/ui-gallery.png`, fullPage: true });
     // A new draft named like a deleted one gets the next free id automatically.
-    const temp = { id: "temp", schemaVersion: 1, classId: "", name: "Temp", text: "", overrides: {}, tags: [], characterMechanics: "narrative", characterEffects: [], playerVisible: false, retired: false, updatedAt: 1 };
+    const temp = { id: "temp", schemaVersion: 1, setId: "", name: "Temp", text: "", overrides: {}, tags: [], characterMechanics: "narrative", characterEffects: [], playerVisible: false, retired: false, updatedAt: 1 };
     await data("transactions", { contractVersion: "addon-data-transaction.v1", mutations: [{ operation: "put", kind: "collection", dataId: "homebrew_items", key: "temp", expectedRevision: 0, value: temp }] });
     const created = (await all("homebrew_items")).documents.find((document) => document.key === "temp")!;
     await data("transactions", { contractVersion: "addon-data-transaction.v1", mutations: [{ operation: "delete", kind: "collection", dataId: "homebrew_items", key: "temp", expectedRevision: created.revision }] });

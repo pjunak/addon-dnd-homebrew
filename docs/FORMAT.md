@@ -1,6 +1,6 @@
 # Homebrew items format
 
-One JSON document holds item classes and items. Import it from **Homebrew Items
+One JSON document holds item sets and items. Import it from **Homebrew Items
 → Import file** or from the DM Tools Import Center; **Export** writes the same
 shape. Files are limited to 2 MiB and 256 changes per import.
 
@@ -9,16 +9,16 @@ shape. Files are limited to 2 MiB and 256 changes per import.
   "format": "dnd-homebrew-items",
   "schemaVersion": 1,
   "mode": "merge",
-  "classes": [
+  "sets": [
     { "id": "runestones", "name": "Runestones", "namePrefix": "Runestone",
       "itemType": "Wondrous Item", "rarity": "Uncommon", "bodyPlacements": ["other"],
       "playerVisible": true }
   ],
   "items": [
-    { "id": "ward", "classId": "runestones", "name": "Ward",
+    { "id": "ward", "setId": "runestones", "name": "Ward",
       "text": "You gain a +1 bonus to Armor Class.",
       "characterEffects": [{ "target": "armorClass", "mode": "add", "value": 1 }] },
-    { "id": "fortune", "classId": "runestones", "name": "Fortune",
+    { "id": "fortune", "setId": "runestones", "name": "Fortune",
       "text": "Once per Long Rest, you can reroll a D20 Test. You must use the new roll.",
       "grants": { "resources": [{ "key": "uses", "name": "Fortune", "fixed": 1, "recharge": "long" }] } }
   ]
@@ -34,10 +34,10 @@ A file can hold a whole card pack or treasure list, up to 256 changes per
 import. To turn notes, a PDF or a conversation into a file, by hand or with an
 AI assistant:
 
-1. **Export** the current drafts from Homebrew Items, so ids and classes that
+1. **Export** the current drafts from Homebrew Items, so ids and sets that
    already exist are reused rather than duplicated.
 2. Give the writer this page, the [sample](examples/sample-items.json), the
-   export and the source text. Ask for a `merge` file with only the classes and
+   export and the source text. Ask for a `merge` file with only the sets and
    items to add or change, effects and grants only where the item's rule
    matches them exactly, and the rest of the rule in `text`.
 3. Check the file offline from a clone of this repository, and fix every
@@ -60,14 +60,14 @@ AI assistant:
 | `schemaVersion` | yes | `1` |
 | `mode` | no | `"merge"` (default) adds and updates; `"replace"` also deletes drafts missing from the file |
 | `generatedAt` | no | Informational timestamp written by Export |
-| `classes`, `items` | yes | Lists, possibly empty |
+| `sets`, `items` | yes | Lists, possibly empty |
 
 Unknown fields anywhere are refused. In `merge` mode an entry updates the draft
 with the same `id`; a field the entry leaves out keeps its stored value, so
 re-importing a card pack does not reset visibility the DM changed. A new draft
 takes the defaults below. Entries that match what is stored are skipped.
 
-## Class
+## Set
 
 | Field | Default | Rule |
 | --- | --- | --- |
@@ -81,23 +81,23 @@ takes the defaults below. Entries that match what is stored are skipped.
 | `namePrefix` | `""` | Shown as `<prefix>: <item name>` |
 | `description` | `""` | Markdown appended to every item |
 | `curse` | `""` | Markdown appended as **Curse.** |
-| `playerVisible` | `false` | The class may appear in the player gallery |
-| `condition` | none | A condition every item of the class gives; see [Class condition](#class-condition) |
+| `playerVisible` | `false` | The set may appear in the player gallery |
+| `condition` | none | A condition every item of the set gives; see [Set condition](#set-condition) |
 
 ## Item
 
 | Field | Default | Rule |
 | --- | --- | --- |
-| `id` | required | As for classes; the published record is `hb.<id>` |
+| `id` | required | As for sets; the published record is `hb.<id>` |
 | `name` | required | One line, at most 120 characters |
-| `classId` | `""` | An existing or imported class, or `""` |
+| `setId` | `""` | An existing or imported set, or `""` |
 | `text` | `""` | Markdown; the effect as the player reads it |
 | `characterEffects` | `[]` | See [Effects](#effects) |
 | `grants` | none | See [Grants](#grants) |
 | `characterMechanics` | from effects and grants | `"complete"` with effects or grants, `"narrative"` with neither |
-| `overrides` | `{}` | Any of `itemType`, `rarity`, `attunement`, `bodyPlacements`, replacing the class value |
-| `tags` | `[]` | As for classes |
-| `playerVisible` | `false` | Listed in the gallery when its class is visible too |
+| `overrides` | `{}` | Any of `itemType`, `rarity`, `attunement`, `bodyPlacements`, replacing the set value |
+| `tags` | `[]` | As for sets |
+| `playerVisible` | `false` | Listed in the gallery when its set is visible too |
 | `retired` | `false` | Hidden from the gallery; still usable on sheets |
 
 ## Effects
@@ -175,33 +175,33 @@ as a cantrip; the Engine refuses a leveled one.
 
 In an import, `"grants": {}` removes the stored grants.
 
-## Class condition
+## Set condition
 
 ```json
 "condition": { "id": "rune-bound", "name": "Rune-Bound", "summary": "Level 3 or more: …" }
 ```
 
-Every item of the class gives this condition. On a character sheet its level
-is the number of the class's items in effect; it has no automated effect, so
+Every item of the set gives this condition. On a character sheet its level
+is the number of the set's items in effect; it has no automated effect, so
 `summary` (at most 2000 characters) says what each level does. `id` is
 lowercase words joined by hyphens and may not be a standard condition such as
 `charmed`. In an import, `"condition": {}` removes it.
 
 ## Published record
 
-Publishing combines a class and an item into one Engine `magic-item` record:
+Publishing combines a set and an item into one Engine `magic-item` record:
 
 | Record field | Source |
 | --- | --- |
 | `id` | `hb.<item id>` |
 | `name` | `<namePrefix>: <name>`, or the name alone |
-| `itemType`, `rarity`, `attunement`, `bodyPlacements` | the item override, else the class, else `Wondrous Item`, `Common`, `false`, none |
-| `tags` | `homebrew`, the class id, class tags, item tags |
-| `text` | `*<type>, <rarity>[ (Requires Attunement)]*`, the item text, the class description, `**Curse.** <curse>` |
+| `itemType`, `rarity`, `attunement`, `bodyPlacements` | the item override, else the set, else `Wondrous Item`, `Common`, `false`, none |
+| `tags` | `homebrew`, the set id, set tags, item tags |
+| `text` | `*<type>, <rarity>[ (Requires Attunement)]*`, the item text, the set description, `**Curse.** <curse>` |
 | `characterEffects` | the item |
-| `grants` | the item's grants, plus the class condition as `conditions: [{ id, name, summary }]`; absent when neither exists |
-| `characterMechanics` | `complete` when the record has effects or grants, else `narrative`. A text-only item in a class with a condition is `complete` and carries only the condition. |
+| `grants` | the item's grants, plus the set condition as `conditions: [{ id, name, summary }]`; absent when neither exists |
+| `characterMechanics` | `complete` when the record has effects or grants, else `narrative`. A text-only item in a set with a condition is `complete` and carries only the condition. |
 | `edition`, `book` | `2024`, `homebrew` |
 
-An item is in the gallery when the item and its class are both visible to
+An item is in the gallery when the item and its set are both visible to
 players and it is not retired.

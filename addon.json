@@ -4,7 +4,7 @@
   "id": "dnd-homebrew",
   "name": "D&D Homebrew Items",
   "version": "1.0.0",
-  "description": "DM-authored custom items and item classes served to character sheets as rules data.",
+  "description": "DM-authored custom items and item sets served to character sheets as rules data.",
   "license": "MIT",
   "compatibility": {
     "host": ">=2.0.0 <3.0.0",
@@ -38,9 +38,9 @@
     { "id": "homebrew.wiki", "surface": "wiki-kind", "label": "Homebrew items", "roles": ["dm", "player"], "config": { "contractVersion": 1, "kinds": ["magic-item"], "search": true } }
   ],
   "collections": [
-    { "id": "homebrew_classes", "keyed": true, "visibility": "dm", "schema": "contracts/homebrew-class.schema.json", "schemaVersion": "1.0.0" },
-    { "id": "homebrew_items", "keyed": true, "visibility": "dm", "schema": "contracts/homebrew-item.schema.json", "schemaVersion": "1.0.0", "indexes": [{ "path": "/classId" }] },
-    { "id": "homebrew_published", "keyed": true, "visibility": "public", "schema": "contracts/published-record.schema.json", "schemaVersion": "1.0.0", "indexes": [{ "path": "/classId" }, { "path": "/playerVisible" }] },
+    { "id": "homebrew_sets", "keyed": true, "visibility": "dm", "schema": "contracts/homebrew-set.schema.json", "schemaVersion": "1.0.0" },
+    { "id": "homebrew_items", "keyed": true, "visibility": "dm", "schema": "contracts/homebrew-item.schema.json", "schemaVersion": "1.0.0", "indexes": [{ "path": "/setId" }] },
+    { "id": "homebrew_published", "keyed": true, "visibility": "public", "schema": "contracts/published-record.schema.json", "schemaVersion": "1.0.0", "indexes": [{ "path": "/setId" }, { "path": "/playerVisible" }] },
     { "id": "homebrew_meta", "keyed": true, "visibility": "public", "schema": "contracts/publish-meta.schema.json", "schemaVersion": "1.0.0" }
   ],
   "services": {

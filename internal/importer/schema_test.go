@@ -58,13 +58,13 @@ func validate(t *testing.T, schema *jsonschema.Schema, label string, body []byte
 
 func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	const (
-		classSchema  = "homebrew-class.schema.json"
+		setSchema    = "homebrew-set.schema.json"
 		itemSchema   = "homebrew-item.schema.json"
 		recordSchema = "published-record.schema.json"
 		recordGrants = "homebrew-common.schema.json#/$defs/recordGrants"
 		itemGrants   = "homebrew-common.schema.json#/$defs/itemGrants"
 	)
-	schemas := compileSchemas(t, classSchema, itemSchema, recordSchema, recordGrants, itemGrants)
+	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, recordGrants, itemGrants)
 	accept := func(name, label string, body []byte) {
 		t.Helper()
 		if err := validate(t, schemas[name], label, body); err != nil {
@@ -84,7 +84,7 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	plans := []importPlan{plan}
 	for _, testCase := range imports.Cases {
 		if testCase.ErrorIncludes == "" {
-			planned, err := buildPlan(testCase.Document, storedMap(t, imports.Stored.Classes), storedMap(t, imports.Stored.Items), imports.Now)
+			planned, err := buildPlan(testCase.Document, storedMap(t, imports.Stored.Sets), storedMap(t, imports.Stored.Items), imports.Now)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -97,16 +97,16 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 				continue
 			}
 			name := itemSchema
-			if mutation.Reference.DataID == homebrew.ClassesCollection {
-				name = classSchema
+			if mutation.Reference.DataID == homebrew.SetsCollection {
+				name = setSchema
 			}
 			accept(name, mutation.Reference.DataID+"/"+mutation.Key, mutation.Value.(json.RawMessage))
 		}
 	}
 
 	var publish struct {
-		Classes []json.RawMessage `json:"classes"`
-		Cases   []struct {
+		Sets  []json.RawMessage `json:"sets"`
+		Cases []struct {
 			Name      string          `json:"name"`
 			Item      json.RawMessage `json:"item"`
 			Published json.RawMessage `json:"published"`
@@ -115,8 +115,8 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	if body, err := os.ReadFile("../../tests/fixtures/publish.json"); err != nil || json.Unmarshal(body, &publish) != nil {
 		t.Fatalf("publish fixture: %v", err)
 	}
-	for _, class := range publish.Classes {
-		accept(classSchema, "publish fixture class", class)
+	for _, set := range publish.Sets {
+		accept(setSchema, "publish fixture set", set)
 	}
 	for _, testCase := range publish.Cases {
 		accept(itemSchema, testCase.Name+" (item)", testCase.Item)
@@ -143,14 +143,14 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 		}
 	}
 
-	item := `{"id":"luck","schemaVersion":1,"classId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1,"grants":{"advantages":[{"on":"deathSave"}]}}`
+	item := `{"id":"luck","schemaVersion":1,"setId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1,"grants":{"advantages":[{"on":"deathSave"}]}}`
 	accept(itemSchema, "an item automated by grants alone", []byte(item))
 	for label, body := range map[string]string{
-		"a narrative item with grants":          `{"id":"luck","schemaVersion":1,"classId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"narrative","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1,"grants":{"advantages":[{"on":"deathSave"}]}}`,
-		"a complete item with neither":          `{"id":"luck","schemaVersion":1,"classId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1}`,
-		"a draft condition":                     `{"id":"luck","schemaVersion":1,"classId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1,"grants":{"conditions":[{"id":"lucky","name":"Lucky","summary":""}]}}`,
-		"a spellcasting ability without spells": `{"id":"luck","schemaVersion":1,"classId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1,"grants":{"castingAbility":{"fixed":"WIS"}}}`,
-		"a free spell":                          `{"id":"luck","schemaVersion":1,"classId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1,"grants":{"spells":[{"ids":["bless"],"free":"1/long"}]}}`,
+		"a narrative item with grants":          `{"id":"luck","schemaVersion":1,"setId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"narrative","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1,"grants":{"advantages":[{"on":"deathSave"}]}}`,
+		"a complete item with neither":          `{"id":"luck","schemaVersion":1,"setId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1}`,
+		"a draft condition":                     `{"id":"luck","schemaVersion":1,"setId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1,"grants":{"conditions":[{"id":"lucky","name":"Lucky","summary":""}]}}`,
+		"a spellcasting ability without spells": `{"id":"luck","schemaVersion":1,"setId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1,"grants":{"castingAbility":{"fixed":"WIS"}}}`,
+		"a free spell":                          `{"id":"luck","schemaVersion":1,"setId":"","name":"Luck","text":"","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[],"playerVisible":false,"retired":false,"updatedAt":1,"grants":{"spells":[{"ids":["bless"],"free":"1/long"}]}}`,
 	} {
 		if validate(t, schemas[itemSchema], label, []byte(body)) == nil {
 			t.Errorf("the item schema accepts %s", label)

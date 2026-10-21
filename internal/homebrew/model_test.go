@@ -106,7 +106,7 @@ func TestMechanicsAgreeWithEngineGate(t *testing.T) {
 }
 
 func validItemJSON() string {
-	return `{"id":"defense","schemaVersion":1,"classId":"cursed-cards","name":"Defense","text":"+1 permanent bonus to Armor Class.","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[{"target":"armorClass","mode":"add","value":1}],"playerVisible":true,"retired":false,"updatedAt":1}`
+	return `{"id":"defense","schemaVersion":1,"setId":"cursed-cards","name":"Defense","text":"+1 permanent bonus to Armor Class.","overrides":{},"tags":[],"characterMechanics":"complete","characterEffects":[{"target":"armorClass","mode":"add","value":1}],"playerVisible":true,"retired":false,"updatedAt":1}`
 }
 
 func TestDecodeItem(t *testing.T) {
@@ -114,7 +114,7 @@ func TestDecodeItem(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if item.ClassID != "cursed-cards" || len(item.CharacterEffects) != 1 {
+	if item.SetID != "cursed-cards" || len(item.CharacterEffects) != 1 {
 		t.Fatalf("decoded %+v", item)
 	}
 	for name, body := range map[string]string{
@@ -158,18 +158,18 @@ func TestDecodeItemGrants(t *testing.T) {
 	}
 }
 
-func TestDecodeClass(t *testing.T) {
+func TestDecodeSet(t *testing.T) {
 	body := `{"id":"cursed-cards","schemaVersion":1,"name":"Cursed Cards","description":"","curse":"","itemType":"Wondrous Item","rarity":"Rare","attunement":false,"bodyPlacements":["other"],"tags":["card"],"namePrefix":"Cursed Card","playerVisible":false,"updatedAt":0}`
-	if _, err := DecodeClass([]byte(body)); err != nil {
+	if _, err := DecodeSet([]byte(body)); err != nil {
 		t.Fatal(err)
 	}
 	withCondition := strings.Replace(body, `"updatedAt":0`, `"updatedAt":0,"condition":{"id":"fate-touched","name":"Fate-Touched","summary":""}`, 1)
-	class, err := DecodeClass([]byte(withCondition))
+	set, err := DecodeSet([]byte(withCondition))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if class.Condition == nil || class.Condition.ID != "fate-touched" {
-		t.Fatalf("decoded condition %+v", class.Condition)
+	if set.Condition == nil || set.Condition.ID != "fate-touched" {
+		t.Fatalf("decoded condition %+v", set.Condition)
 	}
 	for name, broken := range map[string]string{
 		"rarity":            strings.Replace(body, `"Rare"`, `"rare"`, 1),
@@ -182,7 +182,7 @@ func TestDecodeClass(t *testing.T) {
 		"condition field":   strings.Replace(withCondition, `"summary":""`, `"summary":"","maximumLevel":3`, 1),
 		"null condition":    strings.Replace(body, `"updatedAt":0`, `"updatedAt":0,"condition":null`, 1),
 	} {
-		if _, err := DecodeClass([]byte(broken)); err == nil {
+		if _, err := DecodeSet([]byte(broken)); err == nil {
 			t.Errorf("%s was accepted", name)
 		}
 	}

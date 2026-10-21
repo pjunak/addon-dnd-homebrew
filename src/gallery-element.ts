@@ -28,7 +28,7 @@ export function defineGalleryElement(generation?: string): string {
     #state: PublishedState | undefined;
     #failure: string | undefined;
     #search = "";
-    #className = "";
+    #setName = "";
     readonly #list = document.createElement("div");
 
     set codexContribution(value: ContributionContext) {
@@ -126,10 +126,10 @@ export function defineGalleryElement(generation?: string): string {
         const focus = served(this.#state, this.#focusId);
         if (this.#focusId && !focus)
           nodes.push(messageBlock(document, t("The linked item is not published."), "status"));
-        const classes = [
-          ...new Set(records.map((record) => record.className).filter((name) => name !== "")),
+        const sets = [
+          ...new Set(records.map((record) => record.setName).filter((name) => name !== "")),
         ];
-        nodes.push(this.#filters(classes));
+        nodes.push(this.#filters(sets));
         this.#list.className = "hb-gallery-list";
         nodes.push(this.#list);
         this.#renderList(records, focus);
@@ -139,7 +139,7 @@ export function defineGalleryElement(generation?: string): string {
       if (this.#focusId)
         this.querySelector<HTMLElement>(".hb-card.focused")?.scrollIntoView({ block: "nearest" });
     }
-    #filters(classes: readonly string[]): HTMLElement {
+    #filters(sets: readonly string[]): HTMLElement {
       const t = this.#t;
       const bar = element(document, "div", "hb-gallery-filters");
       bar.dataset["uiToolbar"] = "";
@@ -156,17 +156,17 @@ export function defineGalleryElement(generation?: string): string {
           this.#renderList(revealed(this.#state), served(this.#state, this.#focusId));
       });
       bar.append(search);
-      if (classes.length > 1) {
+      if (sets.length > 1) {
         const select = element(document, "select");
-        select.setAttribute("aria-label", t("Class"));
-        select.append(option(document, "", t("All classes")));
-        for (const name of classes) {
+        select.setAttribute("aria-label", t("Set"));
+        select.append(option(document, "", t("All sets")));
+        for (const name of sets) {
           const entry = option(document, name, name);
-          entry.selected = name === this.#className;
+          entry.selected = name === this.#setName;
           select.append(entry);
         }
         select.addEventListener("change", () => {
-          this.#className = select.value;
+          this.#setName = select.value;
           if (this.#state)
             this.#renderList(revealed(this.#state), served(this.#state, this.#focusId));
         });
@@ -179,7 +179,7 @@ export function defineGalleryElement(generation?: string): string {
       const query = fold(this.#search.trim());
       const shown = records.filter(
         (record) =>
-          (!this.#className || record.className === this.#className) &&
+          (!this.#setName || record.setName === this.#setName) &&
           (!query ||
             fold(record.record.name).includes(query) ||
             fold(record.record.text).includes(query)),
@@ -213,7 +213,7 @@ export function defineGalleryElement(generation?: string): string {
         document,
         "p",
         "hb-card-meta",
-        [published.className, t(record.rarity)].filter(Boolean).join(" · "),
+        [published.setName, t(record.rarity)].filter(Boolean).join(" · "),
       );
       card.append(heading, meta, markdown(document, record.text));
       const lines = [

@@ -1,4 +1,4 @@
-// Stored shapes and rules for item classes, item drafts and published records.
+// Stored shapes and rules for item sets, item drafts and published records.
 // internal/homebrew (Go) enforces the same rules for imports and serving; the
 // shared fixtures in tests/fixtures keep the two in step.
 
@@ -146,7 +146,7 @@ export type BodyPlacement = (typeof bodyPlacements)[number];
 export type Mechanics = "complete" | "narrative";
 
 export const collections = {
-  classes: "homebrew_classes",
+  sets: "homebrew_sets",
   items: "homebrew_items",
   published: "homebrew_published",
   meta: "homebrew_meta",
@@ -230,7 +230,7 @@ export interface Grants {
   readonly conditionImmunities?: readonly ConditionId[];
   readonly conditions?: readonly GrantedCondition[];
 }
-export interface ItemClass {
+export interface ItemSet {
   readonly id: string;
   readonly schemaVersion: 1;
   readonly name: string;
@@ -244,7 +244,7 @@ export interface ItemClass {
   readonly namePrefix: string;
   readonly playerVisible: boolean;
   readonly updatedAt: number;
-  /** Given by every item of the class. */
+  /** Given by every item of the set. */
   readonly condition?: GrantedCondition;
 }
 export interface Overrides {
@@ -256,7 +256,7 @@ export interface Overrides {
 export interface Item {
   readonly id: string;
   readonly schemaVersion: 1;
-  readonly classId: string;
+  readonly setId: string;
   readonly name: string;
   readonly text: string;
   readonly overrides: Overrides;
@@ -293,8 +293,8 @@ export interface Published {
   readonly id: string;
   readonly schemaVersion: 1;
   readonly itemId: string;
-  readonly classId: string;
-  readonly className: string;
+  readonly setId: string;
+  readonly setName: string;
   readonly playerVisible: boolean;
   readonly retired: boolean;
   readonly withdrawn: boolean;
@@ -661,7 +661,7 @@ function activationProblem(value: unknown): Problem | undefined {
     : problem("Give the toggle 1 to 20 changes.");
 }
 
-/** A granted condition: the class condition, or a published grants.conditions entry. */
+/** A granted condition: the set condition, or a published grants.conditions entry. */
 export function conditionProblem(value: unknown): Problem | undefined {
   const shape = exactFields(value, ["id", "name", "summary"]);
   if (shape) return shape;
@@ -777,22 +777,22 @@ export function grantsProblem(value: unknown): Problem | undefined {
 
 // --- Drafts ----------------------------------------------------------------
 
-export function classProblem(value: ItemClass): Problem | undefined {
-  if (value.schemaVersion !== 1) return problem("Unsupported class version.");
+export function setProblem(value: ItemSet): Problem | undefined {
+  if (value.schemaVersion !== 1) return problem("Unsupported set version.");
   if (!validId(value.id)) return problem("The id must be lowercase words joined by hyphens.");
   if (!validName(value.name))
-    return problem("Give the class a one-line name of at most 120 characters.");
+    return problem("Give the set a one-line name of at most 120 characters.");
   if (value.namePrefix !== "" && !validName(value.namePrefix, 60))
     return problem("The name prefix is one line of at most 60 characters.");
   if (!validMarkdown(value.description) || !validMarkdown(value.curse))
     return problem("Descriptions are limited to {count} characters.", { count: maxMarkdown });
   if (!validName(value.itemType))
-    return problem("Give the class an item type, such as Wondrous Item.");
+    return problem("Give the set an item type, such as Wondrous Item.");
   if (!oneOf(rarities, value.rarity)) return problem("Choose a rarity.");
   if (typeof value.attunement !== "boolean" || typeof value.playerVisible !== "boolean")
-    return problem("The class is malformed.");
+    return problem("The set is malformed.");
   if (!Number.isSafeInteger(value.updatedAt) || value.updatedAt < 0)
-    return problem("The class is malformed.");
+    return problem("The set is malformed.");
   return (
     placementsProblem(value.bodyPlacements) ??
     tagsProblem(value.tags) ??
@@ -803,8 +803,7 @@ export function classProblem(value: ItemClass): Problem | undefined {
 export function itemProblem(value: Item): Problem | undefined {
   if (value.schemaVersion !== 1) return problem("Unsupported item version.");
   if (!validId(value.id)) return problem("The id must be lowercase words joined by hyphens.");
-  if (value.classId !== "" && !validId(value.classId))
-    return problem("The class reference is invalid.");
+  if (value.setId !== "" && !validId(value.setId)) return problem("The set reference is invalid.");
   if (!validName(value.name))
     return problem("Give the item a one-line name of at most 120 characters.");
   if (!validMarkdown(value.text))
@@ -825,14 +824,14 @@ export function itemProblem(value: Item): Problem | undefined {
     if (failure) return failure;
   }
   if (isRecord(value.grants) && value.grants["conditions"] !== undefined)
-    return problem("Conditions come from the item's class.");
+    return problem("Conditions come from the item's set.");
   return (
     tagsProblem(value.tags) ??
     mechanicsProblem(value.characterMechanics, value.characterEffects, value.grants)
   );
 }
 
-const classFields = [
+const setFields = [
   "id",
   "schemaVersion",
   "name",
@@ -850,7 +849,7 @@ const classFields = [
 const itemFields = [
   "id",
   "schemaVersion",
-  "classId",
+  "setId",
   "name",
   "text",
   "overrides",
@@ -888,12 +887,12 @@ function effectsShapeProblem(value: unknown): Problem | undefined {
   return undefined;
 }
 
-/** Checks an untrusted value as a stored class and returns it. */
-export function parseClass(value: unknown): ItemClass {
+/** Checks an untrusted value as a stored set and returns it. */
+export function parseSet(value: unknown): ItemSet {
   const failure =
-    exactFields(value, classFields, ["condition"]) ?? classProblem(value as unknown as ItemClass);
+    exactFields(value, setFields, ["condition"]) ?? setProblem(value as unknown as ItemSet);
   if (failure) throw new HomebrewError(failure.text, failure.params);
-  return value as unknown as ItemClass;
+  return value as unknown as ItemSet;
 }
 /** Checks an untrusted value as a stored item draft and returns it. */
 export function parseItem(value: unknown): Item {
@@ -911,8 +910,8 @@ export function parsePublished(value: unknown): Published {
     "id",
     "schemaVersion",
     "itemId",
-    "classId",
-    "className",
+    "setId",
+    "setName",
     "playerVisible",
     "retired",
     "withdrawn",
@@ -946,9 +945,9 @@ export function parsePublished(value: unknown): Published {
     validId(published.itemId) &&
     published.id === idPrefix + published.itemId &&
     served.id === published.id &&
-    (published.classId === "" || validId(published.classId)) &&
-    (published.classId === "") === (published.className === "") &&
-    (published.className === "" || validName(published.className)) &&
+    (published.setId === "" || validId(published.setId)) &&
+    (published.setId === "") === (published.setName === "") &&
+    (published.setName === "" || validName(published.setName)) &&
     typeof published.playerVisible === "boolean" &&
     typeof published.retired === "boolean" &&
     typeof published.withdrawn === "boolean" &&
@@ -1010,7 +1009,7 @@ export function freeId(name: string, taken: ReadonlySet<string>): string {
     if (!taken.has(candidate)) return candidate;
   }
 }
-export function newClass(name: string, id: string, now: number): ItemClass {
+export function newSet(name: string, id: string, now: number): ItemSet {
   return {
     id,
     schemaVersion: 1,
@@ -1027,11 +1026,11 @@ export function newClass(name: string, id: string, now: number): ItemClass {
     updatedAt: now,
   };
 }
-export function newItem(name: string, id: string, classId: string, now: number): Item {
+export function newItem(name: string, id: string, setId: string, now: number): Item {
   return {
     id,
     schemaVersion: 1,
-    classId,
+    setId,
     name,
     text: "",
     overrides: {},
@@ -1046,21 +1045,21 @@ export function newItem(name: string, id: string, classId: string, now: number):
 
 // --- Publishing ------------------------------------------------------------
 
-/** Class defaults, per-item overrides and the item's own text, as one record. */
-export function flatten(itemClass: ItemClass | undefined, item: Item): Published {
+/** Set defaults, per-item overrides and the item's own text, as one record. */
+export function flatten(itemSet: ItemSet | undefined, item: Item): Published {
   const overrides = item.overrides;
-  const itemType = overrides.itemType ?? itemClass?.itemType ?? "Wondrous Item",
-    rarity = overrides.rarity ?? itemClass?.rarity ?? "Common",
-    attunement = overrides.attunement ?? itemClass?.attunement ?? false,
-    placements = overrides.bodyPlacements ?? itemClass?.bodyPlacements ?? [],
-    prefix = itemClass?.namePrefix ?? "";
+  const itemType = overrides.itemType ?? itemSet?.itemType ?? "Wondrous Item",
+    rarity = overrides.rarity ?? itemSet?.rarity ?? "Common",
+    attunement = overrides.attunement ?? itemSet?.attunement ?? false,
+    placements = overrides.bodyPlacements ?? itemSet?.bodyPlacements ?? [],
+    prefix = itemSet?.namePrefix ?? "";
   const header = `*${itemType}, ${rarity}${attunement ? " (Requires Attunement)" : ""}*`;
-  const curse = itemClass?.curse.trim() ?? "";
-  const grants = publishedGrants(item.grants, itemClass?.condition);
+  const curse = itemSet?.curse.trim() ?? "";
+  const grants = publishedGrants(item.grants, itemSet?.condition);
   const text = [
     header,
     item.text.trim(),
-    itemClass?.description.trim() ?? "",
+    itemSet?.description.trim() ?? "",
     curse ? `**Curse.** ${curse}` : "",
   ]
     .filter((part) => part !== "")
@@ -1077,13 +1076,13 @@ export function flatten(itemClass: ItemClass | undefined, item: Item): Published
     tags: [
       ...new Set([
         "homebrew",
-        ...(itemClass ? [itemClass.id] : []),
-        ...(itemClass?.tags ?? []),
+        ...(itemSet ? [itemSet.id] : []),
+        ...(itemSet?.tags ?? []),
         ...item.tags,
       ]),
     ],
     text,
-    // The class condition makes even a text-only item a grant source.
+    // The set condition makes even a text-only item a grant source.
     characterMechanics: grants ? "complete" : item.characterMechanics,
     characterEffects: item.characterEffects.map((effect) => ({
       target: effect.target,
@@ -1098,16 +1097,16 @@ export function flatten(itemClass: ItemClass | undefined, item: Item): Published
     id: record.id,
     schemaVersion: 1,
     itemId: item.id,
-    classId: item.classId,
-    className: itemClass?.name ?? "",
-    playerVisible: item.playerVisible && (itemClass ? itemClass.playerVisible : true),
+    setId: item.setId,
+    setName: itemSet?.name ?? "",
+    playerVisible: item.playerVisible && (itemSet ? itemSet.playerVisible : true),
     retired: item.retired,
     withdrawn: false,
     record,
   };
 }
 
-/** The item's grants plus its class condition, in record field order. */
+/** The item's grants plus its set condition, in record field order. */
 function publishedGrants(
   grants: Grants | undefined,
   condition: GrantedCondition | undefined,
@@ -1162,32 +1161,32 @@ export interface PublishPlan {
  * that rules data changed; an unchanged publish writes nothing.
  */
 export function planPublish(
-  classes: readonly ItemClass[],
+  sets: readonly ItemSet[],
   items: readonly Item[],
   published: ReadonlyMap<string, Stored<Published>>,
   meta: Stored<PublishMeta> | undefined,
   now: number,
 ): PublishPlan {
-  const byClass = new Map(classes.map((entry) => [entry.id, entry]));
+  const bySet = new Map(sets.map((entry) => [entry.id, entry]));
   const problems: { itemId: string; problem: Problem }[] = [];
   const desired = new Map<string, Published>();
-  for (const itemClass of classes) {
-    const failure = classProblem(itemClass);
+  for (const itemSet of sets) {
+    const failure = setProblem(itemSet);
     if (failure)
-      for (const item of items.filter((entry) => entry.classId === itemClass.id))
+      for (const item of items.filter((entry) => entry.setId === itemSet.id))
         problems.push({ itemId: item.id, problem: failure });
   }
   for (const item of items) {
     const failure =
       itemProblem(item) ??
-      (item.classId !== "" && !byClass.has(item.classId)
-        ? problem("Its class {classId} no longer exists.", { classId: item.classId })
+      (item.setId !== "" && !bySet.has(item.setId)
+        ? problem("Its set {setId} no longer exists.", { setId: item.setId })
         : undefined);
     if (failure) {
       problems.push({ itemId: item.id, problem: failure });
       continue;
     }
-    desired.set(idPrefix + item.id, flatten(byClass.get(item.classId), item));
+    desired.set(idPrefix + item.id, flatten(bySet.get(item.setId), item));
   }
   const changes: PublishChange[] = [],
     mutations: CollectionMutation[] = [];
@@ -1253,7 +1252,7 @@ export interface ImportPlan {
   readonly changes: readonly ImportChange[];
   readonly mutations: readonly CollectionMutation[];
 }
-const classDefaults: Record<string, unknown> = {
+const setDefaults: Record<string, unknown> = {
   description: "",
   curse: "",
   attunement: false,
@@ -1263,7 +1262,7 @@ const classDefaults: Record<string, unknown> = {
   playerVisible: false,
 };
 const itemDefaults: Record<string, unknown> = {
-  classId: "",
+  setId: "",
   text: "",
   overrides: {},
   tags: [],
@@ -1279,13 +1278,13 @@ const itemDefaults: Record<string, unknown> = {
  */
 export function planImport(
   document: unknown,
-  storedClasses: ReadonlyMap<string, Stored<unknown>>,
+  storedSets: ReadonlyMap<string, Stored<unknown>>,
   storedItems: ReadonlyMap<string, Stored<unknown>>,
   now: number,
 ): ImportPlan {
   const unknownField = exactFields(
     document,
-    ["format", "schemaVersion", "classes", "items"],
+    ["format", "schemaVersion", "sets", "items"],
     ["generatedAt", "mode"],
   );
   if (unknownField)
@@ -1300,12 +1299,12 @@ export function planImport(
   const mode = source["mode"] ?? "merge";
   if (mode !== "merge" && mode !== "replace")
     throw new HomebrewError("The mode must be merge or replace.");
-  const incomingClasses = source["classes"],
+  const incomingSets = source["sets"],
     incomingItems = source["items"];
-  if (!Array.isArray(incomingClasses) || !Array.isArray(incomingItems))
-    throw new HomebrewError("The document needs classes and items lists.");
-  if (incomingClasses.length + incomingItems.length > 2000)
-    throw new HomebrewError("An import holds at most 2000 classes and items.");
+  if (!Array.isArray(incomingSets) || !Array.isArray(incomingItems))
+    throw new HomebrewError("The document needs sets and items lists.");
+  if (incomingSets.length + incomingItems.length > 2000)
+    throw new HomebrewError("An import holds at most 2000 sets and items.");
   let creates = 0,
     updates = 0,
     skips = 0,
@@ -1336,18 +1335,16 @@ export function planImport(
     });
     changes.push({ collection, id, operation: existing ? "update" : "create", label });
   };
-  const finalClasses = new Set(mode === "merge" ? storedClasses.keys() : []);
-  for (const [index, raw] of incomingClasses.entries()) {
-    const at = `classes[${index}]`;
-    const existing = storedClasses.get(entryId(raw));
-    const value = guarded(at, () =>
-      parseClass(normalize(raw, existing, classDefaults, false, now)),
-    );
-    if (seen.has(`class:${value.id}`))
-      throw new HomebrewError("{at}: class {id} appears twice.", { at, id: value.id });
-    seen.add(`class:${value.id}`);
-    finalClasses.add(value.id);
-    add(collections.classes, value.id, value.name, value, existing);
+  const finalSets = new Set(mode === "merge" ? storedSets.keys() : []);
+  for (const [index, raw] of incomingSets.entries()) {
+    const at = `sets[${index}]`;
+    const existing = storedSets.get(entryId(raw));
+    const value = guarded(at, () => parseSet(normalize(raw, existing, setDefaults, false, now)));
+    if (seen.has(`set:${value.id}`))
+      throw new HomebrewError("{at}: set {id} appears twice.", { at, id: value.id });
+    seen.add(`set:${value.id}`);
+    finalSets.add(value.id);
+    add(collections.sets, value.id, value.name, value, existing);
   }
   const finalItems = new Map<string, Item>();
   if (mode === "merge")
@@ -1368,15 +1365,15 @@ export function planImport(
   }
   for (const id of [...finalItems.keys()].sort(compare)) {
     const item = finalItems.get(id)!;
-    if (item.classId !== "" && !finalClasses.has(item.classId))
+    if (item.setId !== "" && !finalSets.has(item.setId))
       throw new HomebrewError(
-        "Item {id} belongs to class {classId}, which the import neither contains nor keeps.",
-        { id, classId: item.classId },
+        "Item {id} belongs to set {setId}, which the import neither contains nor keeps.",
+        { id, setId: item.setId },
       );
   }
   if (mode === "replace")
     for (const [collection, stored, prefix] of [
-      [collections.classes, storedClasses, "class:"],
+      [collections.sets, storedSets, "set:"],
       [collections.items, storedItems, "item:"],
     ] as const)
       for (const id of [...stored.keys()].sort(compare)) {
@@ -1403,9 +1400,9 @@ export function planImport(
         count: mutations.length,
       },
     );
-  changes.sort(
-    (left, right) => compare(left.collection, right.collection) || compare(left.id, right.id),
-  );
+  // Sets come before their items, then each collection by id.
+  const rank = (change: ImportChange): number => (change.collection === collections.sets ? 0 : 1);
+  changes.sort((left, right) => rank(left) - rank(right) || compare(left.id, right.id));
   return { mode, summary: { creates, updates, skips, deletes }, changes, mutations };
 }
 
@@ -1451,7 +1448,7 @@ function normalize(
 // --- Export ----------------------------------------------------------------
 
 export function exportDocument(
-  classes: readonly ItemClass[],
+  sets: readonly ItemSet[],
   items: readonly Item[],
   now: number,
 ): unknown {
@@ -1460,7 +1457,7 @@ export function exportDocument(
     schemaVersion: 1,
     generatedAt: now,
     mode: "merge",
-    classes: [...classes].sort((left, right) => compare(left.id, right.id)),
+    sets: [...sets].sort((left, right) => compare(left.id, right.id)),
     items: [...items].sort((left, right) => compare(left.id, right.id)),
   };
 }

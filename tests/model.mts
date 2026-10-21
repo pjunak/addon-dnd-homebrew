@@ -11,7 +11,7 @@ import {
   HomebrewError,
   itemProblem,
   mechanicsProblem,
-  parseClass,
+  parseSet,
   parseItem,
   parsePublished,
   planImport,
@@ -19,7 +19,7 @@ import {
   slug,
   type Effect,
   type Item,
-  type ItemClass,
+  type ItemSet,
   type Published,
   type Stored,
 } from "#web/model";
@@ -39,12 +39,12 @@ interface GrantsCase {
   grants: unknown;
 }
 interface PublishFixture {
-  classes: ItemClass[];
+  sets: ItemSet[];
   cases: { name: string; item: Item; published: Published }[];
 }
 interface ImportFixture {
   now: number;
-  stored: { classes: unknown[]; items: unknown[] };
+  stored: { sets: unknown[]; items: unknown[] };
   cases: {
     name: string;
     document: unknown;
@@ -83,10 +83,10 @@ void test("grants follow the shared Engine allowlist fixture", async () => {
 
 void test("flattening matches the published fixture the worker serves", async () => {
   const publish = await fixture<PublishFixture>("publish.json");
-  const classes = new Map(publish.classes.map((entry) => [entry.id, parseClass(entry)]));
+  const sets = new Map(publish.sets.map((entry) => [entry.id, parseSet(entry)]));
   for (const testCase of publish.cases) {
     const item = parseItem(testCase.item);
-    assert.deepEqual(flatten(classes.get(item.classId), item), testCase.published, testCase.name);
+    assert.deepEqual(flatten(sets.get(item.setId), item), testCase.published, testCase.name);
     assert.deepEqual(parsePublished(testCase.published), testCase.published);
   }
 });
@@ -99,7 +99,7 @@ void test("imports plan exactly like the worker importer", async () => {
     const run = () =>
       planImport(
         testCase.document,
-        stored(imports.stored.classes),
+        stored(imports.stored.sets),
         stored(imports.stored.items),
         imports.now,
       );
@@ -132,16 +132,16 @@ void test("imports plan exactly like the worker importer", async () => {
   }
 });
 
-void test("a class condition reaches every item, even a text-only one", async () => {
+void test("a set condition reaches every item, even a text-only one", async () => {
   const publish = await fixture<PublishFixture>("publish.json");
-  const [cards, omens] = publish.classes.map((entry) => parseClass(entry));
-  const courage = parseItem({ ...publish.cases[2]!.item, id: "courage", classId: cards!.id });
+  const [cards, omens] = publish.sets.map((entry) => parseSet(entry));
+  const courage = parseItem({ ...publish.cases[2]!.item, id: "courage", setId: cards!.id });
   assert.equal(courage.characterMechanics, "narrative");
   const published = flatten(cards, courage);
   assert.equal(published.record.characterMechanics, "complete");
   assert.deepEqual(published.record.grants, { conditions: [cards!.condition] });
   assert.deepEqual(parsePublished(published), published);
-  const plain = flatten(omens, { ...courage, classId: omens!.id }).record;
+  const plain = flatten(omens, { ...courage, setId: omens!.id }).record;
   assert.equal(plain.characterMechanics, "narrative");
   assert.equal(plain.grants, undefined);
   const drafted = {
@@ -149,10 +149,10 @@ void test("a class condition reaches every item, even a text-only one", async ()
     characterMechanics: "complete" as const,
     grants: { conditions: [] },
   };
-  assert.ok(itemProblem(drafted), "a draft takes its conditions from the class");
+  assert.ok(itemProblem(drafted), "a draft takes its conditions from the set");
 });
 
-void test("the sample file imports 1 class and 12 items, 11 automated", async () => {
+void test("the sample file imports 1 set and 12 items, 11 automated", async () => {
   const document = JSON.parse(
     await readFile(new URL("../docs/examples/sample-items.json", import.meta.url), "utf8"),
   ) as unknown;
@@ -164,12 +164,12 @@ void test("the sample file imports 1 class and 12 items, 11 automated", async ()
   assert.equal(items.length, 12);
   assert.equal(items.filter((item) => item?.characterMechanics === "complete").length, 11);
   assert.equal(items.filter((item) => item?.grants !== undefined).length, 7);
-  const classWrite = plan.mutations.find((mutation) => mutation.dataId === "homebrew_classes");
-  assert.ok(classWrite?.operation === "put");
-  const itemClass = parseClass(classWrite.value);
-  assert.equal(itemClass.condition?.id, "rune-bound");
+  const setWrite = plan.mutations.find((mutation) => mutation.dataId === "homebrew_sets");
+  assert.ok(setWrite?.operation === "put");
+  const itemSet = parseSet(setWrite.value);
+  assert.equal(itemSet.condition?.id, "rune-bound");
   const records = items.map(
-    (item) => parsePublished(flatten(item!.classId ? itemClass : undefined, item!)).record,
+    (item) => parsePublished(flatten(item!.setId ? itemSet : undefined, item!)).record,
   );
   assert.ok(records.every((record) => record.characterMechanics === "complete"));
   const record = (id: string) => records.find((entry) => entry.id === `hb.${id}`)!;
@@ -177,11 +177,11 @@ void test("the sample file imports 1 class and 12 items, 11 automated", async ()
     { key: "uses", name: "Fortune", fixed: 1, recharge: "long" },
   ]);
   assert.deepEqual(record("blessing").grants?.spells, [{ ids: ["bless"], resource: "uses" }]);
-  assert.deepEqual(record("echo").grants, { conditions: [itemClass.condition] });
+  assert.deepEqual(record("echo").grants, { conditions: [itemSet.condition] });
   assert.equal(record("lantern-of-embers").grants?.conditions, undefined);
   assert.equal(record("lantern-of-embers").rarity, "Rare");
   const lore = flatten(
-    itemClass,
+    itemSet,
     items.find((item) => item?.id === "lore")!,
   );
   assert.equal(lore.record.name, "Runestone: Lore");
@@ -190,9 +190,9 @@ void test("the sample file imports 1 class and 12 items, 11 automated", async ()
 
 void test("publishing writes only changes and always moves the metadata revision", async () => {
   const publish = await fixture<PublishFixture>("publish.json");
-  const classes = publish.classes;
+  const sets = publish.sets;
   const items = publish.cases.map((testCase) => testCase.item);
-  const first = planPublish(classes, items, new Map(), undefined, 50);
+  const first = planPublish(sets, items, new Map(), undefined, 50);
   assert.deepEqual(first.problems, []);
   assert.equal(first.recordCount, 4);
   assert.equal(first.mutations.length, 5);
@@ -217,7 +217,7 @@ void test("publishing writes only changes and always moves the metadata revision
     revision: 7,
   };
   assert.equal(
-    planPublish(classes, items, stored, metaStored, 60).mutations.length,
+    planPublish(sets, items, stored, metaStored, 60).mutations.length,
     0,
     "nothing to publish",
   );
@@ -226,7 +226,7 @@ void test("publishing writes only changes and always moves the metadata revision
     item.id === "defense" ? { ...item, text: "Changed." } : item,
   );
   const removed = edited.filter((item) => item.id !== "trinket");
-  const second = planPublish(classes, removed, stored, metaStored, 70);
+  const second = planPublish(sets, removed, stored, metaStored, 70);
   assert.deepEqual(
     second.changes.map((change) => [change.id, change.operation]),
     [
@@ -258,11 +258,11 @@ void test("ids come from names and avoid listed drafts", () => {
 void test("an export imports back unchanged", async () => {
   const publish = await fixture<PublishFixture>("publish.json");
   const items = publish.cases.map((testCase) => testCase.item);
-  const document = JSON.parse(JSON.stringify(exportDocument(publish.classes, items, 9))) as unknown;
+  const document = JSON.parse(JSON.stringify(exportDocument(publish.sets, items, 9))) as unknown;
   const fresh = planImport(document, new Map(), new Map(), 10);
   assert.deepEqual(fresh.summary, { creates: 6, updates: 0, skips: 0, deletes: 0 });
   const stored = <T extends { id: string }>(values: readonly T[]) =>
     new Map(values.map((value) => [value.id, { value: value as unknown, revision: 1 }]));
-  const again = planImport(document, stored(publish.classes), stored(items), 10);
+  const again = planImport(document, stored(publish.sets), stored(items), 10);
   assert.deepEqual(again.summary, { creates: 0, updates: 0, skips: 6, deletes: 0 });
 });

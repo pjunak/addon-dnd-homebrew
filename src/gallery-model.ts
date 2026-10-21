@@ -12,7 +12,7 @@ export function revealed(state: PublishedState): Published[] {
     .filter((record) => record.playerVisible && !record.retired && !record.withdrawn)
     .sort(
       (left, right) =>
-        compare(fold(left.className), fold(right.className)) ||
+        compare(fold(left.setName), fold(right.setName)) ||
         compare(fold(left.record.name), fold(right.record.name)),
     );
 }
