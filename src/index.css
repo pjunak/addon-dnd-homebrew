@@ -199,6 +199,12 @@
   flex: 1 1 9rem;
   min-width: 0;
 }
+/* Without the host's control styles an input keeps its UA default width,
+   which wide fallback fonts push past a shrunken field and the form edge. */
+.hb-form :is(input, select) {
+  max-width: 100%;
+  box-sizing: border-box;
+}
 .hb-grants,
 .hb-grants-section {
   display: grid;
