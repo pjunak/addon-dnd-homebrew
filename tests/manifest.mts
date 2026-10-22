@@ -37,6 +37,8 @@ void test("manifest serves rules data from a worker and keeps drafts DM-only", (
       ["homebrew_items", "dm"],
       ["homebrew_published", "public"],
       ["homebrew_meta", "public"],
+      ["homebrew_subclasses", "dm"],
+      ["homebrew_published_subclasses", "public"],
     ],
   );
   assert.deepEqual(

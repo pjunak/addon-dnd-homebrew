@@ -6,12 +6,16 @@ import {
   parseItem,
   parseMeta,
   parsePublished,
+  parsePublishedSubclass,
+  parseSubclass,
   type CollectionMutation,
   type Item,
   type ItemSet,
   type Published,
+  type PublishedSubclass,
   type PublishMeta,
   type Stored,
+  type Subclass,
 } from "./model.js";
 import type {
   AddonContext,
@@ -44,11 +48,13 @@ export interface Unreadable {
 export interface Drafts {
   readonly sets: readonly Stored<ItemSet>[];
   readonly items: readonly Stored<Item>[];
+  readonly subclasses: readonly Stored<Subclass>[];
   readonly unreadable: readonly Unreadable[];
   readonly dataRevisions: readonly DataSetRevision[];
 }
 export interface PublishedState {
   readonly records: ReadonlyMap<string, Stored<Published>>;
+  readonly subclasses: ReadonlyMap<string, Stored<PublishedSubclass>>;
   readonly meta: Stored<PublishMeta> | undefined;
   readonly unreadable: readonly Unreadable[];
   /** Present only for a guarded (DM) read; players cannot read set revisions. */
@@ -75,30 +81,39 @@ export class HomebrewRepository {
       ) ?? (() => undefined)
     );
   }
-  /** Reads every set and item draft; DM only. */
+  /** Reads every set, item and subclass draft; DM only. */
   async drafts(signal: AbortSignal): Promise<Drafts> {
     signal = AbortSignal.any([this.#context.signal, signal]);
-    const [sets, items] = await Promise.all([
+    const [sets, items, subclasses] = await Promise.all([
       this.#all(collections.sets, signal, true),
       this.#all(collections.items, signal, true),
+      this.#all(collections.subclasses, signal, true),
     ]);
     const unreadable: Unreadable[] = [];
     return {
       sets: read(sets.documents, collections.sets, parseSet, unreadable),
       items: read(items.documents, collections.items, parseItem, unreadable),
+      subclasses: read(subclasses.documents, collections.subclasses, parseSubclass, unreadable),
       unreadable,
-      dataRevisions: [sets.dataRevision!, items.dataRevision!],
+      dataRevisions: [sets.dataRevision!, items.dataRevision!, subclasses.dataRevision!],
     };
   }
   /** Reads the published records; `guarded` adds set revisions for a publish. */
   async published(signal: AbortSignal, guarded = false): Promise<PublishedState> {
     signal = AbortSignal.any([this.#context.signal, signal]);
-    const [records, meta] = await Promise.all([
+    const [records, subclassRecords, meta] = await Promise.all([
       this.#all(collections.published, signal, guarded),
+      this.#all(collections.publishedSubclasses, signal, guarded),
       this.#all(collections.meta, signal, guarded),
     ]);
     const unreadable: Unreadable[] = [];
     const published = read(records.documents, collections.published, parsePublished, unreadable);
+    const subclasses = read(
+      subclassRecords.documents,
+      collections.publishedSubclasses,
+      parsePublishedSubclass,
+      unreadable,
+    );
     const metas = read(
       meta.documents.filter((document) => document.key === metaKey),
       collections.meta,
@@ -107,14 +122,23 @@ export class HomebrewRepository {
     );
     return {
       records: new Map(published.map((entry) => [entry.value.id, entry])),
+      subclasses: new Map(subclasses.map((entry) => [entry.value.id, entry])),
       meta: metas[0],
       unreadable,
-      ...(guarded ? { dataRevisions: [records.dataRevision!, meta.dataRevision!] } : {}),
+      ...(guarded
+        ? {
+            dataRevisions: [
+              records.dataRevision!,
+              subclassRecords.dataRevision!,
+              meta.dataRevision!,
+            ],
+          }
+        : {}),
     };
   }
   async save(
-    collection: typeof collections.sets | typeof collections.items,
-    value: ItemSet | Item,
+    collection: typeof collections.sets | typeof collections.items | typeof collections.subclasses,
+    value: ItemSet | Item | Subclass,
     expectedRevision: number,
     signal: AbortSignal,
   ): Promise<number> {
@@ -134,7 +158,7 @@ export class HomebrewRepository {
     return revisionOf(receipt, collection, value.id);
   }
   async remove(
-    collection: typeof collections.sets | typeof collections.items,
+    collection: typeof collections.sets | typeof collections.items | typeof collections.subclasses,
     key: string,
     expectedRevision: number,
     signal: AbortSignal,

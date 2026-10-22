@@ -1,0 +1,284 @@
+{
+  "valid": [
+    {
+      "id": "storm-drum",
+      "schemaVersion": 1,
+      "name": "Path of the Storm Drum",
+      "classId": "barbarian",
+      "subclassLevel": 3,
+      "text": "Barbarians of this path beat war drums that call the storm.",
+      "excerpt": "Drum beats that speed allies, thunder resistance and an intimidating roar.",
+      "spells": [],
+      "grants": { "languages": ["primordial"] },
+      "classResources": [
+        {
+          "key": "drum-beats",
+          "name": "Drum Beats",
+          "abilityMod": "CON",
+          "min": 1,
+          "recharge": "long"
+        }
+      ],
+      "tableColumns": [
+        {
+          "key": "drum-die",
+          "name": "Drum Die",
+          "progression": [
+            { "level": 3, "value": "1d6" },
+            { "level": 10, "value": "1d8" }
+          ]
+        }
+      ],
+      "features": [
+        {
+          "id": "war-drum",
+          "level": 3,
+          "name": "War Drum",
+          "text": "As a Bonus Action while raging, spend a Drum Beat to quicken your stride.",
+          "excerpt": "Bonus Action: spend a Drum Beat for +10 feet of Speed while raging.",
+          "grants": {
+            "activations": [
+              {
+                "id": "war-drum",
+                "name": "War Drum",
+                "resource": "drum-beats",
+                "modifiers": [{ "target": "speed", "add": 10 }]
+              }
+            ]
+          }
+        },
+        {
+          "id": "thunder-ward",
+          "level": 6,
+          "name": "Thunder Ward",
+          "text": "You have Resistance to Thunder damage.",
+          "excerpt": "",
+          "grants": { "resistances": ["thunder"] }
+        },
+        {
+          "id": "rolling-thunder",
+          "level": 10,
+          "name": "Rolling Thunder",
+          "text": "Your drumming can be heard a mile away.",
+          "excerpt": ""
+        },
+        {
+          "id": "storm-voice",
+          "level": 14,
+          "name": "Storm Voice",
+          "text": "You gain proficiency in Intimidation and have Advantage on Intimidation checks.",
+          "excerpt": "Proficiency and Advantage in Intimidation.",
+          "grants": {
+            "skills": ["intimidation"],
+            "advantages": [{ "on": "check", "skills": ["intimidation"] }]
+          }
+        }
+      ],
+      "updatedAt": 5
+    },
+    {
+      "id": "rune-scribe",
+      "schemaVersion": 1,
+      "name": "Rune Scribe",
+      "classId": "fighter",
+      "subclassLevel": 3,
+      "text": "Fighters who carve wizard runes into their armor.",
+      "excerpt": "",
+      "spells": [{ "level": 7, "ids": ["shield"], "alwaysPrepared": true }],
+      "classResources": [],
+      "tableColumns": [],
+      "spellcasting": {
+        "ability": "INT",
+        "type": "third",
+        "startLevel": 3,
+        "prepares": "list",
+        "spellListClassId": "wizard"
+      },
+      "progression": [
+        { "level": 3, "cantripsKnown": 2, "preparedSpells": 3, "spellSlots": [2] },
+        { "level": 4, "cantripsKnown": 2, "preparedSpells": 4, "spellSlots": [3] }
+      ],
+      "features": [],
+      "updatedAt": 1
+    }
+  ],
+  "invalid": [
+    { "name": "an unknown field", "change": { "colour": "red" } },
+    { "name": "a level below 1", "change": { "subclassLevel": 0 } },
+    { "name": "a class id in capitals", "change": { "classId": "Barbarian" } },
+    { "name": "a two-line excerpt", "change": { "excerpt": "First line\nsecond line" } },
+    { "name": "an unknown grant", "change": { "grants": { "teleport": 30 } } },
+    {
+      "name": "a resource without a key",
+      "change": { "classResources": [{ "name": "Drum Beats" }] }
+    },
+    {
+      "name": "a die written without a count",
+      "change": {
+        "tableColumns": [
+          { "key": "drum-die", "name": "Drum Die", "progression": [{ "level": 3, "value": "d6" }] }
+        ]
+      }
+    },
+    {
+      "name": "a spell entry with an unknown field",
+      "change": { "spells": [{ "level": 3, "ids": ["bless"], "colour": "red" }] }
+    },
+    {
+      "name": "spellcasting without progression",
+      "change": {
+        "spellcasting": {
+          "ability": "INT",
+          "type": "third",
+          "startLevel": 3,
+          "prepares": "list",
+          "spellListClassId": "wizard"
+        }
+      }
+    },
+    {
+      "name": "a feature id used twice",
+      "change": {
+        "features": [
+          { "id": "war-drum", "level": 3, "name": "War Drum", "text": "", "excerpt": "" },
+          { "id": "war-drum", "level": 6, "name": "War Drum Again", "text": "", "excerpt": "" }
+        ]
+      }
+    },
+    {
+      "name": "a feature grant with a number as text",
+      "change": {
+        "features": [
+          {
+            "id": "war-drum",
+            "level": 3,
+            "name": "War Drum",
+            "text": "",
+            "excerpt": "",
+            "grants": { "resources": [{ "key": "beats", "fixed": "2" }] }
+          }
+        ]
+      }
+    },
+    {
+      "name": "a feature above level 20",
+      "change": {
+        "features": [
+          { "id": "war-drum", "level": 21, "name": "War Drum", "text": "", "excerpt": "" }
+        ]
+      }
+    }
+  ],
+  "published": {
+    "id": "hb.storm-drum",
+    "schemaVersion": 1,
+    "subclassId": "storm-drum",
+    "classId": "barbarian",
+    "withdrawn": false,
+    "records": [
+      {
+        "kind": "subclass",
+        "id": "hb.storm-drum",
+        "name": "Path of the Storm Drum",
+        "edition": "2024",
+        "book": "homebrew",
+        "classId": "barbarian",
+        "subclassLevel": 3,
+        "features": [
+          { "level": 3, "id": "war-drum", "name": "War Drum" },
+          { "level": 6, "id": "thunder-ward", "name": "Thunder Ward" },
+          { "level": 10, "id": "rolling-thunder", "name": "Rolling Thunder" },
+          { "level": 14, "id": "storm-voice", "name": "Storm Voice" }
+        ],
+        "spells": [],
+        "grants": { "languages": ["primordial"] },
+        "classResources": [
+          {
+            "key": "drum-beats",
+            "name": "Drum Beats",
+            "abilityMod": "CON",
+            "min": 1,
+            "recharge": "long"
+          }
+        ],
+        "tableColumns": [
+          {
+            "key": "drum-die",
+            "name": "Drum Die",
+            "progression": [
+              { "level": 3, "value": "1d6" },
+              { "level": 10, "value": "1d8" }
+            ]
+          }
+        ],
+        "excerpt": "Drum beats that speed allies, thunder resistance and an intimidating roar.",
+        "text": "Barbarians of this path beat war drums that call the storm."
+      },
+      {
+        "kind": "feature",
+        "id": "hb.storm-drum.war-drum",
+        "name": "War Drum",
+        "edition": "2024",
+        "book": "homebrew",
+        "classId": "barbarian",
+        "subclassId": "hb.storm-drum",
+        "level": 3,
+        "localId": "war-drum",
+        "grants": {
+          "activations": [
+            {
+              "id": "war-drum",
+              "name": "War Drum",
+              "resource": "drum-beats",
+              "modifiers": [{ "target": "speed", "add": 10 }]
+            }
+          ]
+        },
+        "excerpt": "Bonus Action: spend a Drum Beat for +10 feet of Speed while raging.",
+        "text": "As a Bonus Action while raging, spend a Drum Beat to quicken your stride."
+      },
+      {
+        "kind": "feature",
+        "id": "hb.storm-drum.thunder-ward",
+        "name": "Thunder Ward",
+        "edition": "2024",
+        "book": "homebrew",
+        "classId": "barbarian",
+        "subclassId": "hb.storm-drum",
+        "level": 6,
+        "localId": "thunder-ward",
+        "grants": { "resistances": ["thunder"] },
+        "text": "You have Resistance to Thunder damage."
+      },
+      {
+        "kind": "feature",
+        "id": "hb.storm-drum.rolling-thunder",
+        "name": "Rolling Thunder",
+        "edition": "2024",
+        "book": "homebrew",
+        "classId": "barbarian",
+        "subclassId": "hb.storm-drum",
+        "level": 10,
+        "localId": "rolling-thunder",
+        "text": "Your drumming can be heard a mile away."
+      },
+      {
+        "kind": "feature",
+        "id": "hb.storm-drum.storm-voice",
+        "name": "Storm Voice",
+        "edition": "2024",
+        "book": "homebrew",
+        "classId": "barbarian",
+        "subclassId": "hb.storm-drum",
+        "level": 14,
+        "localId": "storm-voice",
+        "grants": {
+          "skills": ["intimidation"],
+          "advantages": [{ "on": "check", "skills": ["intimidation"] }]
+        },
+        "excerpt": "Proficiency and Advantage in Intimidation.",
+        "text": "You gain proficiency in Intimidation and have Advantage on Intimidation checks."
+      }
+    ]
+  }
+}

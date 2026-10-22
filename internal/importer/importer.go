@@ -58,12 +58,44 @@ type stored struct {
 	revision int64
 }
 
-// drafts is the stored set and item drafts with the revisions they were read at.
+// drafts is the stored drafts of each kind with the revisions they were read at.
 type drafts struct {
-	sets      map[string]stored
-	items     map[string]stored
-	revisions []workerrpc.AddonDataSetRevision
+	sets       map[string]stored
+	items      map[string]stored
+	subclasses map[string]stored
+	revisions  []workerrpc.AddonDataSetRevision
 }
+
+func noDrafts() drafts {
+	return drafts{sets: map[string]stored{}, items: map[string]stored{}, subclasses: map[string]stored{}}
+}
+
+// draftKind is what normalize needs to know about one kind of draft: the
+// defaults of a new draft and the optional object fields `{}` clears; a
+// cleared field takes its partner with it.
+type draftKind struct {
+	defaults map[string]json.RawMessage
+	optional []string
+	partner  map[string]string
+	item     bool
+}
+
+var (
+	setKind = draftKind{
+		defaults: map[string]json.RawMessage{"description": json.RawMessage(`""`), "curse": json.RawMessage(`""`), "attunement": json.RawMessage(`false`), "bodyPlacements": json.RawMessage(`[]`), "tags": json.RawMessage(`[]`), "namePrefix": json.RawMessage(`""`), "playerVisible": json.RawMessage(`false`)},
+		optional: []string{"condition"},
+	}
+	itemKind = draftKind{
+		defaults: map[string]json.RawMessage{"setId": json.RawMessage(`""`), "text": json.RawMessage(`""`), "overrides": json.RawMessage(`{}`), "tags": json.RawMessage(`[]`), "characterEffects": json.RawMessage(`[]`), "playerVisible": json.RawMessage(`false`), "retired": json.RawMessage(`false`)},
+		optional: []string{"grants", "attunementPrerequisites", "container"},
+		item:     true,
+	}
+	subclassKind = draftKind{
+		defaults: map[string]json.RawMessage{"text": json.RawMessage(`""`), "excerpt": json.RawMessage(`""`), "spells": json.RawMessage(`[]`), "classResources": json.RawMessage(`[]`), "tableColumns": json.RawMessage(`[]`), "features": json.RawMessage(`[]`)},
+		optional: []string{"grants", "spellcasting"},
+		partner:  map[string]string{"spellcasting": "progression"},
+	}
+)
 
 type document struct {
 	Format        string            `json:"format"`
@@ -72,6 +104,7 @@ type document struct {
 	Mode          string            `json:"mode,omitempty"`
 	Sets          []json.RawMessage `json:"sets"`
 	Items         []json.RawMessage `json:"items"`
+	Subclasses    []json.RawMessage `json:"subclasses,omitempty"`
 }
 
 type summary struct {
@@ -155,7 +188,7 @@ func (handler *Handler) preview(ctx context.Context, meta *workerrpc.Meta, body 
 	if err != nil {
 		return nil, err
 	}
-	plan, err := buildPlan(body, current.sets, current.items, handler.now().UnixMilli())
+	plan, err := buildPlan(body, current, handler.now().UnixMilli())
 	if err != nil {
 		return nil, invalid("homebrew import document is invalid", map[string]any{"issue": err.Error()})
 	}
@@ -172,7 +205,8 @@ func (handler *Handler) preview(ctx context.Context, meta *workerrpc.Meta, body 
 // buildPlan normalizes an import document against the stored drafts. A field
 // an entry omits keeps its stored value, or takes its default for a new draft,
 // so re-importing a card pack never resets the DM's visibility choices.
-func buildPlan(body json.RawMessage, storedSets, storedItems map[string]stored, now int64) (importPlan, error) {
+func buildPlan(body json.RawMessage, current drafts, now int64) (importPlan, error) {
+	storedSets, storedItems := current.sets, current.items
 	doc, err := decodeDocument(body)
 	if err != nil {
 		return importPlan{}, err
@@ -187,7 +221,7 @@ func buildPlan(body json.RawMessage, storedSets, storedItems map[string]stored, 
 	seen := make(map[string]bool)
 	for index, raw := range doc.Sets {
 		existing, exists := storedSets[idOf(raw)]
-		normalized, err := normalize(raw, existing.body, exists, setDefaults, now)
+		normalized, err := normalize(raw, existing.body, exists, setKind, now)
 		if err != nil {
 			return importPlan{}, fmt.Errorf("sets[%d]: %w", index, err)
 		}
@@ -202,7 +236,6 @@ func buildPlan(body json.RawMessage, storedSets, storedItems map[string]stored, 
 		finalSets[set.ID] = true
 		plan.add(homebrew.SetsCollection, set.ID, set.Name, normalized, existing, exists)
 	}
-	itemDefaults := map[string]json.RawMessage{"setId": json.RawMessage(`""`), "text": json.RawMessage(`""`), "overrides": json.RawMessage(`{}`), "tags": json.RawMessage(`[]`), "characterEffects": json.RawMessage(`[]`), "playerVisible": json.RawMessage(`false`), "retired": json.RawMessage(`false`)}
 	finalItems := make(map[string]homebrew.Item)
 	if doc.Mode == "merge" {
 		for id, item := range storedItems {
@@ -215,7 +248,7 @@ func buildPlan(body json.RawMessage, storedSets, storedItems map[string]stored, 
 	}
 	for index, raw := range doc.Items {
 		existing, exists := storedItems[idOf(raw)]
-		normalized, err := normalize(raw, existing.body, exists, itemDefaults, now)
+		normalized, err := normalize(raw, existing.body, exists, itemKind, now)
 		if err != nil {
 			return importPlan{}, fmt.Errorf("items[%d]: %w", index, err)
 		}
@@ -240,9 +273,26 @@ func buildPlan(body json.RawMessage, storedSets, storedItems map[string]stored, 
 			return importPlan{}, fmt.Errorf("item %s belongs to set %s, which the import neither contains nor keeps", id, item.SetID)
 		}
 	}
+	for index, raw := range doc.Subclasses {
+		existing, exists := current.subclasses[idOf(raw)]
+		normalized, err := normalize(raw, existing.body, exists, subclassKind, now)
+		if err != nil {
+			return importPlan{}, fmt.Errorf("subclasses[%d]: %w", index, err)
+		}
+		subclass, err := homebrew.DecodeSubclass(normalized)
+		if err != nil {
+			return importPlan{}, fmt.Errorf("subclasses[%d]: %w", index, err)
+		}
+		if seen["subclass:"+subclass.ID] {
+			return importPlan{}, fmt.Errorf("subclasses[%d]: subclass %s appears twice", index, subclass.ID)
+		}
+		seen["subclass:"+subclass.ID] = true
+		plan.add(homebrew.SubclassesCollection, subclass.ID, subclass.Name, normalized, existing, exists)
+	}
 	if doc.Mode == "replace" {
 		plan.deleteMissing(homebrew.SetsCollection, storedSets, seen, "set:")
 		plan.deleteMissing(homebrew.ItemsCollection, storedItems, seen, "item:")
+		plan.deleteMissing(homebrew.SubclassesCollection, current.subclasses, seen, "subclass:")
 		if plan.Summary.Deletes > 0 {
 			plan.Warnings = append(plan.Warnings, "Replacing removes drafts that are not in this file. Their published records stay on character sheets until the next publish, which removes them and blocks characters that still hold them.")
 		}
@@ -251,14 +301,15 @@ func buildPlan(body json.RawMessage, storedSets, storedItems map[string]stored, 
 		return importPlan{}, fmt.Errorf("the import changes %d drafts; split it into files of at most %d changes", len(plan.Mutations), maximumWrites)
 	}
 	if plan.Summary.Creates+plan.Summary.Updates > 0 {
-		plan.Warnings = append(plan.Warnings, "Imported items are drafts. Publish them from Homebrew to use them on character sheets.")
+		plan.Warnings = append(plan.Warnings, "Imports write drafts. Publish them from Homebrew to use them on character sheets.")
 	}
-	// Sets come before their items, then each collection by id.
+	// Sets, their items, then subclasses; each collection by id.
 	sort.Slice(plan.Changes, func(i, j int) bool {
-		if plan.Changes[i].Collection == plan.Changes[j].Collection {
-			return plan.Changes[i].ID < plan.Changes[j].ID
+		left, right := collectionOrder[plan.Changes[i].Collection], collectionOrder[plan.Changes[j].Collection]
+		if left != right {
+			return left < right
 		}
-		return plan.Changes[i].Collection == homebrew.SetsCollection
+		return plan.Changes[i].ID < plan.Changes[j].ID
 	})
 	return plan, nil
 }
@@ -277,7 +328,7 @@ type Report struct {
 // for an empty campaign. Tombstones of deleted drafts are not known offline;
 // the worker resolves them at preview.
 func Check(document, current []byte, now int64) (Report, error) {
-	sets, items := map[string]stored{}, map[string]stored{}
+	drafts := noDrafts()
 	if current != nil {
 		export, err := decodeDocument(current)
 		if err != nil {
@@ -287,7 +338,7 @@ func Check(document, current []byte, now int64) (Report, error) {
 			raw    []json.RawMessage
 			target map[string]stored
 			label  string
-		}{{export.Sets, sets, "sets"}, {export.Items, items, "items"}} {
+		}{{export.Sets, drafts.sets, "sets"}, {export.Items, drafts.items, "items"}, {export.Subclasses, drafts.subclasses, "subclasses"}} {
 			for index, raw := range list.raw {
 				id := idOf(raw)
 				if id == "" {
@@ -297,14 +348,14 @@ func Check(document, current []byte, now int64) (Report, error) {
 			}
 		}
 	}
-	plan, err := buildPlan(document, sets, items, now)
+	plan, err := buildPlan(document, drafts, now)
 	if err != nil {
 		return Report{}, err
 	}
 	return Report{Mode: plan.Mode, Summary: plan.Summary, Warnings: plan.Warnings, Changes: plan.Changes}, nil
 }
 
-var setDefaults = map[string]json.RawMessage{"description": json.RawMessage(`""`), "curse": json.RawMessage(`""`), "attunement": json.RawMessage(`false`), "bodyPlacements": json.RawMessage(`[]`), "tags": json.RawMessage(`[]`), "namePrefix": json.RawMessage(`""`), "playerVisible": json.RawMessage(`false`)}
+var collectionOrder = map[string]int{homebrew.SetsCollection: 0, homebrew.ItemsCollection: 1, homebrew.SubclassesCollection: 2}
 
 func (plan *importPlan) add(collection, id, name string, normalized json.RawMessage, existing stored, exists bool) {
 	if exists && equivalent(existing.body, normalized) {
@@ -362,15 +413,15 @@ func decodeDocument(body json.RawMessage) (document, error) {
 	if doc.Mode != "merge" && doc.Mode != "replace" {
 		return document{}, errors.New("mode must be merge or replace")
 	}
-	if len(doc.Sets)+len(doc.Items) > 2000 {
-		return document{}, errors.New("an import holds at most 2000 sets and items")
+	if len(doc.Sets)+len(doc.Items)+len(doc.Subclasses) > 2000 {
+		return document{}, errors.New("an import holds at most 2000 sets, items and subclasses")
 	}
 	return doc, nil
 }
 
 // normalize overlays an entry's fields on the stored draft (or the defaults)
 // and stamps schemaVersion and updatedAt.
-func normalize(raw, existing json.RawMessage, exists bool, defaults map[string]json.RawMessage, now int64) (json.RawMessage, error) {
+func normalize(raw, existing json.RawMessage, exists bool, kind draftKind, now int64) (json.RawMessage, error) {
 	var entry map[string]json.RawMessage
 	if jsonexact.Decode(raw, &entry) != nil {
 		return nil, errors.New("entry must be a JSON object")
@@ -384,26 +435,22 @@ func normalize(raw, existing json.RawMessage, exists bool, defaults map[string]j
 			return nil, errors.New("the stored draft is unreadable")
 		}
 	} else {
-		for key, value := range defaults {
+		for key, value := range kind.defaults {
 			fields[key] = value
 		}
 	}
 	for key, value := range entry {
 		fields[key] = value
 	}
-	_, isItem := defaults["characterEffects"]
-	// An empty object clears an optional field, as [] clears effects.
-	optional := []string{"condition"}
-	if isItem {
-		optional = []string{"grants", "attunementPrerequisites", "container"}
-	}
-	for _, field := range optional {
+	// An empty object clears an optional field, as [] clears a list.
+	for _, field := range kind.optional {
 		var cleared map[string]json.RawMessage
 		if value, present := entry[field]; present && json.Unmarshal(value, &cleared) == nil && cleared != nil && len(cleared) == 0 {
 			delete(fields, field)
+			delete(fields, kind.partner[field])
 		}
 	}
-	if _, present := entry["characterMechanics"]; !present && isItem {
+	if _, present := entry["characterMechanics"]; !present && kind.item {
 		mechanics := `"narrative"`
 		var effects []json.RawMessage
 		_, hasGrants := fields["grants"]
@@ -468,12 +515,12 @@ func (handler *Handler) commit(ctx context.Context, meta *workerrpc.Meta, token 
 }
 
 func (handler *Handler) read(ctx context.Context, meta *workerrpc.Meta) (drafts, error) {
-	current := drafts{sets: map[string]stored{}, items: map[string]stored{}}
-	for _, collection := range []string{homebrew.SetsCollection, homebrew.ItemsCollection} {
-		target := current.sets
-		if collection == homebrew.ItemsCollection {
-			target = current.items
-		}
+	current := noDrafts()
+	for _, source := range []struct {
+		collection string
+		target     map[string]stored
+	}{{homebrew.SetsCollection, current.sets}, {homebrew.ItemsCollection, current.items}, {homebrew.SubclassesCollection, current.subclasses}} {
+		collection, target := source.collection, source.target
 		cursor := ""
 		var revision *int64
 		for {

@@ -77,7 +77,7 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plan, err := buildPlan(example, map[string]stored{}, map[string]stored{}, 1)
+	plan, err := buildPlan(example, noDrafts(), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	plans := []importPlan{plan}
 	for _, testCase := range imports.Cases {
 		if testCase.ErrorIncludes == "" {
-			planned, err := buildPlan(testCase.Document, storedMap(t, imports.Stored.Sets), storedMap(t, imports.Stored.Items), imports.Now)
+			planned, err := buildPlan(testCase.Document, drafts{sets: storedMap(t, imports.Stored.Sets), items: storedMap(t, imports.Stored.Items), subclasses: map[string]stored{}}, imports.Now)
 			if err != nil {
 				t.Fatal(err)
 			}

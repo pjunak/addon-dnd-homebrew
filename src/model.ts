@@ -1,6 +1,9 @@
-// Stored shapes and rules for item sets, item drafts and published records.
+// Stored shapes and rules for item sets, items, subclasses and published records.
 // internal/homebrew (Go) enforces the same rules for imports and serving; the
 // shared fixtures in tests/fixtures keep the two in step.
+
+import { grantsSchema } from "./grants-schema.js";
+import { schemaProblem, type SchemaNode } from "./schema.js";
 
 export const abilities = ["STR", "DEX", "CON", "INT", "WIS", "CHA"] as const;
 export const skills = [
@@ -150,6 +153,8 @@ export const collections = {
   items: "homebrew_items",
   published: "homebrew_published",
   meta: "homebrew_meta",
+  subclasses: "homebrew_subclasses",
+  publishedSubclasses: "homebrew_published_subclasses",
 } as const;
 export const metaKey = "publish";
 export const idPrefix = "hb.";
@@ -991,7 +996,7 @@ const itemFields = [
 ] as const;
 const overrideFields = ["itemType", "rarity", "attunement", "bodyPlacements", "weightLb"] as const;
 
-function exactFields(
+export function exactFields(
   value: unknown,
   required: readonly string[],
   optional: readonly string[] = [],
@@ -1178,6 +1183,379 @@ export function newItem(name: string, id: string, setId: string, now: number): I
   };
 }
 
+// --- Subclasses --------------------------------------------------------------
+
+// internal/homebrew/subclass.go enforces the same rules through the contracts;
+// the shared fixture tests/fixtures/subclasses.json keeps the two in step.
+// Mechanics are the Engine's grants vocabulary, checked against its schema.
+
+/** JSON in the Engine's grants vocabulary; src/schema.ts checks it. */
+export type VocabularyValue = Readonly<Record<string, unknown>>;
+export interface SubclassFeature {
+  readonly id: string;
+  readonly level: number;
+  readonly name: string;
+  readonly text: string;
+  /** A one-line summary the sheet shows on the feature, or "". */
+  readonly excerpt: string;
+  readonly grants?: VocabularyValue;
+}
+/** A printed per-level value, such as a die that grows. */
+export interface TableColumn {
+  readonly key: string;
+  readonly name: string;
+  readonly progression: readonly { readonly level: number; readonly value: number | string }[];
+}
+/** A third caster's own spellcasting, with its per-level table. */
+export interface SubclassSpellcasting {
+  readonly ability: Ability;
+  readonly type: "third";
+  readonly startLevel: number;
+  readonly prepares: "list" | "spellbook";
+  readonly spellListClassId: string;
+  readonly levelReplacements?: number;
+  readonly ritual?: boolean;
+}
+export interface CastingRow {
+  readonly level: number;
+  readonly cantripsKnown: number;
+  readonly preparedSpells: number;
+  readonly spellSlots: readonly number[];
+}
+export interface Subclass {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly name: string;
+  /** The D&D class it belongs to, such as fighter. */
+  readonly classId: string;
+  readonly subclassLevel: number;
+  readonly text: string;
+  readonly excerpt: string;
+  /** Subclass spells (SpellGrantDecl with a level), such as domain spells. */
+  readonly spells: readonly VocabularyValue[];
+  readonly grants?: VocabularyValue;
+  /** Pools such as superiority dice (ResourceGrant). */
+  readonly classResources: readonly VocabularyValue[];
+  readonly tableColumns: readonly TableColumn[];
+  readonly spellcasting?: SubclassSpellcasting;
+  readonly progression?: readonly CastingRow[];
+  readonly features: readonly SubclassFeature[];
+  readonly updatedAt: number;
+}
+/** One served subclass: its subclass record first, then its feature records. */
+export interface PublishedSubclass {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly subclassId: string;
+  readonly classId: string;
+  readonly withdrawn: boolean;
+  readonly records: readonly VocabularyValue[];
+}
+
+export const maxFeatures = 40;
+const subclassFields = [
+  "id",
+  "schemaVersion",
+  "name",
+  "classId",
+  "subclassLevel",
+  "text",
+  "excerpt",
+  "spells",
+  "classResources",
+  "tableColumns",
+  "features",
+  "updatedAt",
+] as const;
+const featureFields = ["id", "level", "name", "text", "excerpt"] as const;
+const vocabulary = (name: string): SchemaNode => ({ $ref: `#/$defs/grants/$defs/${name}` });
+export const spellGrantSchema = vocabulary("SpellGrantDecl");
+export const resourceGrantSchema = vocabulary("ResourceGrant");
+
+const isLevel = (value: unknown): value is number => isInteger(value, 1, 20);
+/** A summary line: empty, or one line of at most 300 characters. */
+export function excerptProblem(value: unknown): Problem | undefined {
+  return value === "" ||
+    (typeof value === "string" && length(value) <= 300 && /^\S[^\n\r]*$/u.test(value))
+    ? undefined
+    : problem("A summary is one line of at most 300 characters.");
+}
+function vocabularyProblem(node: SchemaNode, value: unknown, path: string): Problem | undefined {
+  const failure = schemaProblem(node, value, path);
+  return failure ? problem(failure.text, failure.params) : undefined;
+}
+function listProblem(
+  value: unknown,
+  limit: number,
+  path: string,
+  check: (entry: unknown, path: string) => Problem | undefined,
+): Problem | undefined {
+  if (!Array.isArray(value) || value.length > limit)
+    return problem("{path} lists at most {count} entries.", { path, count: limit });
+  for (const [index, entry] of value.entries()) {
+    const failure = check(entry, `${path}[${index}]`);
+    if (failure) return failure;
+  }
+  return undefined;
+}
+function tableColumnProblem(value: unknown, path: string): Problem | undefined {
+  const shape = exactFields(value, ["key", "name", "progression"]);
+  if (shape) return shape;
+  const column = value as Json;
+  if (!validId(column["key"]))
+    return problem("{path}: the key must be lowercase words joined by hyphens.", { path });
+  if (!validName(column["name"]))
+    return problem("{path}: give the column a one-line name.", { path });
+  const rows = column["progression"];
+  if (!Array.isArray(rows) || rows.length < 1 || rows.length > 20)
+    return problem("{path}: list 1 to 20 levels.", { path });
+  for (const row of rows) {
+    const rowShape = exactFields(row, ["level", "value"]);
+    if (rowShape) return rowShape;
+    const entry = row as Json;
+    const value = entry["value"];
+    if (
+      !isLevel(entry["level"]) ||
+      !(
+        isInteger(value, -100, 100) ||
+        (typeof value === "string" && /^[1-9][0-9]?d[1-9][0-9]?$/u.test(value))
+      )
+    )
+      return problem("{path}: each level gives a whole number or a die such as 1d8.", { path });
+  }
+  return undefined;
+}
+function spellcastingProblem(value: unknown): Problem | undefined {
+  const shape = exactFields(
+    value,
+    ["ability", "type", "startLevel", "prepares", "spellListClassId"],
+    ["levelReplacements", "ritual"],
+  );
+  if (shape) return shape;
+  const casting = value as Json;
+  const valid =
+    oneOf(abilities, casting["ability"]) &&
+    casting["type"] === "third" &&
+    isLevel(casting["startLevel"]) &&
+    (casting["prepares"] === "list" || casting["prepares"] === "spellbook") &&
+    validId(casting["spellListClassId"]) &&
+    (casting["levelReplacements"] === undefined || isInteger(casting["levelReplacements"], 0, 1)) &&
+    (casting["ritual"] === undefined || typeof casting["ritual"] === "boolean");
+  return valid
+    ? undefined
+    : problem(
+        "Spellcasting needs an ability, a start level, how spells are prepared and a class spell list.",
+      );
+}
+function castingRowProblem(value: unknown, path: string): Problem | undefined {
+  const shape = exactFields(value, ["level", "cantripsKnown", "preparedSpells", "spellSlots"]);
+  if (shape) return shape;
+  const row = value as Json;
+  const slots = row["spellSlots"];
+  return isLevel(row["level"]) &&
+    isInteger(row["cantripsKnown"], 0, 20) &&
+    isInteger(row["preparedSpells"], 0, 40) &&
+    Array.isArray(slots) &&
+    slots.length <= 9 &&
+    slots.every((count) => isInteger(count, 0, 9))
+    ? undefined
+    : problem("{path}: give the level, cantrips, prepared spells and slots per spell level.", {
+        path,
+      });
+}
+function featureProblem(value: unknown, path: string): Problem | undefined {
+  const shape = exactFields(value, featureFields, ["grants"]);
+  if (shape) return problem("{path}: {problem}", { path, problem: fill(shape.text, shape.params) });
+  const feature = value as SubclassFeature;
+  if (!validId(feature.id))
+    return problem("{path}: the id must be lowercase words joined by hyphens.", { path });
+  if (!isLevel(feature.level))
+    return problem("{path}: the level is a whole number from 1 to 20.", { path });
+  if (!validName(feature.name))
+    return problem("{path}: give the feature a one-line name of at most 120 characters.", {
+      path,
+    });
+  if (!validMarkdown(feature.text))
+    return problem("Descriptions are limited to {count} characters.", { count: maxMarkdown });
+  return (
+    excerptProblem(feature.excerpt) ??
+    (feature.grants === undefined
+      ? undefined
+      : vocabularyProblem(grantsSchema, feature.grants, `${path}.grants`))
+  );
+}
+
+export function subclassProblem(value: Subclass): Problem | undefined {
+  if (value.schemaVersion !== 1) return problem("Unsupported subclass version.");
+  if (!validId(value.id)) return problem("The id must be lowercase words joined by hyphens.");
+  if (!validName(value.name))
+    return problem("Give the subclass a one-line name of at most 120 characters.");
+  if (!validId(value.classId)) return problem("Choose the class this subclass belongs to.");
+  if (!isLevel(value.subclassLevel))
+    return problem("The subclass level is a whole number from 1 to 20.");
+  if (!validMarkdown(value.text))
+    return problem("Descriptions are limited to {count} characters.", { count: maxMarkdown });
+  if (!Number.isSafeInteger(value.updatedAt) || value.updatedAt < 0)
+    return problem("The subclass is malformed.");
+  if ((value.spellcasting === undefined) !== (value.progression === undefined))
+    return problem("Spellcasting and its table go together.");
+  const features = value.features;
+  if (
+    Array.isArray(features) &&
+    !distinct(features.map((feature) => (isRecord(feature) ? feature["id"] : undefined)))
+  )
+    return problem("Each feature needs its own id.");
+  return (
+    excerptProblem(value.excerpt) ??
+    listProblem(value.spells, 30, "spells", (entry, path) =>
+      vocabularyProblem(spellGrantSchema, entry, path),
+    ) ??
+    (value.grants === undefined
+      ? undefined
+      : vocabularyProblem(grantsSchema, value.grants, "grants")) ??
+    listProblem(value.classResources, 10, "classResources", (entry, path) =>
+      vocabularyProblem(resourceGrantSchema, entry, path),
+    ) ??
+    listProblem(value.tableColumns, 10, "tableColumns", tableColumnProblem) ??
+    (value.spellcasting === undefined ? undefined : spellcastingProblem(value.spellcasting)) ??
+    (value.progression === undefined
+      ? undefined
+      : value.progression.length < 1
+        ? problem("Spellcasting and its table go together.")
+        : listProblem(value.progression, 20, "progression", castingRowProblem)) ??
+    listProblem(features, maxFeatures, "features", featureProblem)
+  );
+}
+
+/** Checks an untrusted value as a stored subclass draft and returns it. */
+export function parseSubclass(value: unknown): Subclass {
+  const failure =
+    exactFields(value, subclassFields, ["grants", "spellcasting", "progression"]) ??
+    subclassProblem(value as unknown as Subclass);
+  if (failure) throw new HomebrewError(failure.text, failure.params);
+  return value as unknown as Subclass;
+}
+
+export function newSubclass(name: string, id: string, classId: string, now: number): Subclass {
+  return {
+    id,
+    schemaVersion: 1,
+    name,
+    classId,
+    subclassLevel: 3,
+    text: "",
+    excerpt: "",
+    spells: [],
+    classResources: [],
+    tableColumns: [],
+    features: [],
+    updatedAt: now,
+  };
+}
+
+/** A feature's record id: ids hold no dot, so two subclasses never collide. */
+export function featureRecordId(subclassRecordId: string, featureId: string): string {
+  return `${subclassRecordId}.${featureId}`;
+}
+const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+
+/** The subclass and feature records the Engine reads, features by level. */
+export function flattenSubclass(subclass: Subclass): PublishedSubclass {
+  const id = idPrefix + subclass.id;
+  const features = [...subclass.features].sort((left, right) => left.level - right.level);
+  const record: Record<string, unknown> = {
+    kind: "subclass",
+    id,
+    name: subclass.name,
+    edition: "2024",
+    book: "homebrew",
+    classId: subclass.classId,
+    subclassLevel: subclass.subclassLevel,
+    features: features.map((feature) => ({
+      level: feature.level,
+      id: feature.id,
+      name: feature.name,
+    })),
+    spells: copy(subclass.spells),
+    ...(subclass.grants ? { grants: copy(subclass.grants) } : {}),
+    ...(subclass.classResources.length > 0
+      ? { classResources: copy(subclass.classResources) }
+      : {}),
+    ...(subclass.tableColumns.length > 0 ? { tableColumns: copy(subclass.tableColumns) } : {}),
+    ...(subclass.spellcasting && subclass.progression
+      ? { spellcasting: copy(subclass.spellcasting), progression: copy(subclass.progression) }
+      : {}),
+    ...(subclass.excerpt ? { excerpt: subclass.excerpt } : {}),
+    text: subclass.text,
+  };
+  return {
+    id,
+    schemaVersion: 1,
+    subclassId: subclass.id,
+    classId: subclass.classId,
+    withdrawn: false,
+    records: [
+      record,
+      ...features.map((feature) => ({
+        kind: "feature",
+        id: featureRecordId(id, feature.id),
+        name: feature.name,
+        edition: "2024",
+        book: "homebrew",
+        classId: subclass.classId,
+        subclassId: id,
+        level: feature.level,
+        localId: feature.id,
+        ...(feature.grants ? { grants: copy(feature.grants) } : {}),
+        ...(feature.excerpt ? { excerpt: feature.excerpt } : {}),
+        text: feature.text,
+      })),
+    ],
+  };
+}
+
+/** Checks an untrusted value as a published subclass and returns it. */
+export function parsePublishedSubclass(value: unknown): PublishedSubclass {
+  const shape = exactFields(value, [
+    "id",
+    "schemaVersion",
+    "subclassId",
+    "classId",
+    "withdrawn",
+    "records",
+  ]);
+  if (shape) throw new HomebrewError(shape.text, shape.params);
+  const published = value as PublishedSubclass;
+  const records = published.records;
+  const valid =
+    published.schemaVersion === 1 &&
+    validId(published.subclassId) &&
+    published.id === idPrefix + published.subclassId &&
+    validId(published.classId) &&
+    typeof published.withdrawn === "boolean" &&
+    Array.isArray(records) &&
+    records.length >= 1 &&
+    records.length <= maxFeatures + 1 &&
+    records.every(
+      (record, index) =>
+        isRecord(record) &&
+        record["classId"] === published.classId &&
+        validName(record["name"]) &&
+        typeof record["text"] === "string" &&
+        (index === 0
+          ? record["kind"] === "subclass" && record["id"] === published.id
+          : record["kind"] === "feature" &&
+            record["subclassId"] === published.id &&
+            typeof record["localId"] === "string" &&
+            record["id"] === featureRecordId(published.id, record["localId"])) &&
+        (record["grants"] === undefined ||
+          schemaProblem(grantsSchema, record["grants"], "grants") === undefined),
+    ) &&
+    distinct(records.map((record) => record["id"]));
+  if (!valid) throw new HomebrewError("A published subclass is invalid.");
+  return published;
+}
+
 // --- Publishing ------------------------------------------------------------
 
 /** Set defaults, per-item overrides and the item's own text, as one record. */
@@ -1294,6 +1672,7 @@ export type CollectionMutation =
       readonly expectedRevision: number;
     };
 export interface PublishPlan {
+  /** `itemId` names the draft: an item, or a subclass. */
   readonly problems: readonly { readonly itemId: string; readonly problem: Problem }[];
   readonly changes: readonly PublishChange[];
   readonly mutations: readonly CollectionMutation[];
@@ -1311,6 +1690,8 @@ export function planPublish(
   published: ReadonlyMap<string, Stored<Published>>,
   meta: Stored<PublishMeta> | undefined,
   now: number,
+  subclasses: readonly Subclass[] = [],
+  publishedSubclasses: ReadonlyMap<string, Stored<PublishedSubclass>> = new Map(),
 ): PublishPlan {
   const bySet = new Map(sets.map((entry) => [entry.id, entry]));
   const problems: { itemId: string; problem: Problem }[] = [];
@@ -1363,6 +1744,48 @@ export function planPublish(
     put(id, { ...current.value, withdrawn: true }, current.revision);
     changes.push({ id, name: current.value.record.name, operation: "withdraw" });
   }
+  const desiredSubclasses = new Map<string, PublishedSubclass>();
+  for (const subclass of subclasses) {
+    const failure = subclassProblem(subclass);
+    if (failure) problems.push({ itemId: subclass.id, problem: failure });
+    else desiredSubclasses.set(idPrefix + subclass.id, flattenSubclass(subclass));
+  }
+  const putSubclass = (key: string, value: unknown, expectedRevision: number): void => {
+    mutations.push({
+      operation: "put",
+      kind: "collection",
+      dataId: collections.publishedSubclasses,
+      key,
+      expectedRevision,
+      value,
+    });
+  };
+  const nameOf = (published: PublishedSubclass): string =>
+    typeof published.records[0]?.["name"] === "string"
+      ? published.records[0]["name"]
+      : published.id;
+  for (const [id, value] of [...desiredSubclasses].sort(([left], [right]) =>
+    compare(left, right),
+  )) {
+    const current = publishedSubclasses.get(id);
+    if (current && canonical(current.value) === canonical(value)) continue;
+    putSubclass(id, value, current?.revision ?? 0);
+    changes.push({
+      id,
+      name: nameOf(value),
+      operation: current && !current.value.withdrawn ? "update" : "add",
+    });
+  }
+  for (const [id, current] of [...publishedSubclasses].sort(([left], [right]) =>
+    compare(left, right),
+  )) {
+    if (desiredSubclasses.has(id) || current.value.withdrawn) continue;
+    putSubclass(id, { ...current.value, withdrawn: true }, current.revision);
+    changes.push({ id, name: nameOf(current.value), operation: "withdraw" });
+  }
+  const recordCount =
+    desired.size +
+    [...desiredSubclasses.values()].reduce((total, value) => total + value.records.length, 0);
   if (mutations.length > 0)
     mutations.push({
       operation: "put",
@@ -1374,10 +1797,10 @@ export function planPublish(
         schemaVersion: 1,
         revision: (meta?.value.revision ?? 0) + 1,
         publishedAt: now,
-        recordCount: desired.size,
+        recordCount,
       } satisfies PublishMeta,
     });
-  return { problems, changes, mutations, recordCount: desired.size };
+  return { problems, changes, mutations, recordCount };
 }
 
 // --- Imports ---------------------------------------------------------------
@@ -1418,6 +1841,21 @@ const itemDefaults: Record<string, unknown> = {
   playerVisible: false,
   retired: false,
 };
+const subclassDefaults: Record<string, unknown> = {
+  text: "",
+  excerpt: "",
+  spells: [],
+  classResources: [],
+  tableColumns: [],
+  features: [],
+};
+/** Optional objects `{}` clears in an import; a cleared field takes its partner. */
+const clearable: Readonly<Record<"set" | "item" | "subclass", readonly string[]>> = {
+  set: ["condition"],
+  item: ["grants", "attunementPrerequisites", "container"],
+  subclass: ["grants", "spellcasting"],
+};
+const partners: Readonly<Record<string, string>> = { spellcasting: "progression" };
 
 /**
  * The import the worker would make, checked locally so the DM sees exactly
@@ -1429,11 +1867,12 @@ export function planImport(
   storedSets: ReadonlyMap<string, Stored<unknown>>,
   storedItems: ReadonlyMap<string, Stored<unknown>>,
   now: number,
+  storedSubclasses: ReadonlyMap<string, Stored<unknown>> = new Map(),
 ): ImportPlan {
   const unknownField = exactFields(
     document,
     ["format", "schemaVersion", "sets", "items"],
-    ["generatedAt", "mode"],
+    ["generatedAt", "mode", "subclasses"],
   );
   if (unknownField)
     throw new HomebrewError("The document is invalid: {problem}", {
@@ -1448,11 +1887,16 @@ export function planImport(
   if (mode !== "merge" && mode !== "replace")
     throw new HomebrewError("The mode must be merge or replace.");
   const incomingSets = source["sets"],
-    incomingItems = source["items"];
-  if (!Array.isArray(incomingSets) || !Array.isArray(incomingItems))
+    incomingItems = source["items"],
+    incomingSubclasses = source["subclasses"] ?? [];
+  if (
+    !Array.isArray(incomingSets) ||
+    !Array.isArray(incomingItems) ||
+    !Array.isArray(incomingSubclasses)
+  )
     throw new HomebrewError("The document needs sets and items lists.");
-  if (incomingSets.length + incomingItems.length > 2000)
-    throw new HomebrewError("An import holds at most 2000 sets and items.");
+  if (incomingSets.length + incomingItems.length + incomingSubclasses.length > 2000)
+    throw new HomebrewError("An import holds at most 2000 sets, items and subclasses.");
   let creates = 0,
     updates = 0,
     skips = 0,
@@ -1487,7 +1931,7 @@ export function planImport(
   for (const [index, raw] of incomingSets.entries()) {
     const at = `sets[${index}]`;
     const existing = storedSets.get(entryId(raw));
-    const value = guarded(at, () => parseSet(normalize(raw, existing, setDefaults, false, now)));
+    const value = guarded(at, () => parseSet(normalize(raw, existing, setDefaults, "set", now)));
     if (seen.has(`set:${value.id}`))
       throw new HomebrewError("{at}: set {id} appears twice.", { at, id: value.id });
     seen.add(`set:${value.id}`);
@@ -1504,7 +1948,7 @@ export function planImport(
   for (const [index, raw] of incomingItems.entries()) {
     const at = `items[${index}]`;
     const existing = storedItems.get(entryId(raw));
-    const value = guarded(at, () => parseItem(normalize(raw, existing, itemDefaults, true, now)));
+    const value = guarded(at, () => parseItem(normalize(raw, existing, itemDefaults, "item", now)));
     if (seen.has(`item:${value.id}`))
       throw new HomebrewError("{at}: item {id} appears twice.", { at, id: value.id });
     seen.add(`item:${value.id}`);
@@ -1519,10 +1963,22 @@ export function planImport(
         { id, setId: item.setId },
       );
   }
+  for (const [index, raw] of incomingSubclasses.entries()) {
+    const at = `subclasses[${index}]`;
+    const existing = storedSubclasses.get(entryId(raw));
+    const value = guarded(at, () =>
+      parseSubclass(normalize(raw, existing, subclassDefaults, "subclass", now)),
+    );
+    if (seen.has(`subclass:${value.id}`))
+      throw new HomebrewError("{at}: subclass {id} appears twice.", { at, id: value.id });
+    seen.add(`subclass:${value.id}`);
+    add(collections.subclasses, value.id, value.name, value, existing);
+  }
   if (mode === "replace")
     for (const [collection, stored, prefix] of [
       [collections.sets, storedSets, "set:"],
       [collections.items, storedItems, "item:"],
+      [collections.subclasses, storedSubclasses, "subclass:"],
     ] as const)
       for (const id of [...stored.keys()].sort(compare)) {
         if (seen.has(prefix + id)) continue;
@@ -1548,8 +2004,9 @@ export function planImport(
         count: mutations.length,
       },
     );
-  // Sets come before their items, then each collection by id.
-  const rank = (change: ImportChange): number => (change.collection === collections.sets ? 0 : 1);
+  // Sets, their items, then subclasses; each collection by id.
+  const order: readonly string[] = [collections.sets, collections.items, collections.subclasses];
+  const rank = (change: ImportChange): number => order.indexOf(change.collection);
   changes.sort((left, right) => rank(left) - rank(right) || compare(left.id, right.id));
   return { mode, summary: { creates, updates, skips, deletes }, changes, mutations };
 }
@@ -1570,7 +2027,7 @@ function normalize(
   raw: unknown,
   existing: Stored<unknown> | undefined,
   defaults: Record<string, unknown>,
-  item: boolean,
+  kind: "set" | "item" | "subclass",
   now: number,
 ): Record<string, unknown> {
   if (!isRecord(raw)) throw new HomebrewError("The entry must be an object.");
@@ -1578,14 +2035,16 @@ function normalize(
     throw new HomebrewError("schemaVersion must be 1.");
   const base = existing && isRecord(existing.value) ? existing.value : defaults;
   const fields: Record<string, unknown> = { ...base, ...raw };
-  // An empty object clears the optional field, as [] clears effects.
-  for (const optional of item
-    ? ["grants", "attunementPrerequisites", "container"]
-    : ["condition"]) {
+  // An empty object clears an optional field, as [] clears a list.
+  for (const optional of clearable[kind]) {
     const cleared = raw[optional];
-    if (isRecord(cleared) && Object.keys(cleared).length === 0) delete fields[optional];
+    if (isRecord(cleared) && Object.keys(cleared).length === 0) {
+      delete fields[optional];
+      const partner = partners[optional];
+      if (partner) delete fields[partner];
+    }
   }
-  if (item && raw["characterMechanics"] === undefined)
+  if (kind === "item" && raw["characterMechanics"] === undefined)
     fields["characterMechanics"] =
       (Array.isArray(fields["characterEffects"]) && fields["characterEffects"].length > 0) ||
       fields["grants"] !== undefined
@@ -1602,6 +2061,7 @@ export function exportDocument(
   sets: readonly ItemSet[],
   items: readonly Item[],
   now: number,
+  subclasses: readonly Subclass[] = [],
 ): unknown {
   return {
     format: importFormat,
@@ -1610,6 +2070,7 @@ export function exportDocument(
     mode: "merge",
     sets: [...sets].sort((left, right) => compare(left.id, right.id)),
     items: [...items].sort((left, right) => compare(left.id, right.id)),
+    subclasses: [...subclasses].sort((left, right) => compare(left.id, right.id)),
   };
 }
 

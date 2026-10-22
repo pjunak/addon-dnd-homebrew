@@ -430,6 +430,37 @@ export const cs: Readonly<Record<string, string>> = {
   "Applied on the character sheet:": "Uplatní se na deníku postavy:",
   "The linked item is not published.": "Odkazovaný předmět není zveřejněn.",
   // Model problems
+  "A summary is one line of at most 300 characters.":
+    "Shrnutí je jeden řádek o nejvýše 300 znacích.",
+  "{path} lists at most {count} entries.": "{path} obsahuje nejvýše {count} položek.",
+  "{path}: the key must be lowercase words joined by hyphens.":
+    "{path}: klíč musí být z malých slov spojených pomlčkami.",
+  "{path}: give the column a one-line name.": "{path}: zadejte sloupci jednořádkový název.",
+  "{path}: list 1 to 20 levels.": "{path}: uveďte 1 až 20 úrovní.",
+  "{path}: each level gives a whole number or a die such as 1d8.":
+    "{path}: každá úroveň má celé číslo nebo kostku, například 1d8.",
+  "Spellcasting needs an ability, a start level, how spells are prepared and a class spell list.":
+    "Sesílání kouzel potřebuje vlastnost, počáteční úroveň, způsob přípravy a seznam kouzel povolání.",
+  "{path}: give the level, cantrips, prepared spells and slots per spell level.":
+    "{path}: zadejte úroveň, triky, připravená kouzla a pozice podle úrovně kouzla.",
+  "{path}: {problem}": "{path}: {problem}",
+  "{path}: the id must be lowercase words joined by hyphens.":
+    "{path}: identifikátor musí být z malých slov spojených pomlčkami.",
+  "{path}: the level is a whole number from 1 to 20.": "{path}: úroveň je celé číslo od 1 do 20.",
+  "{path}: give the feature a one-line name of at most 120 characters.":
+    "{path}: zadejte schopnosti jednořádkový název o nejvýše 120 znacích.",
+  "Unsupported subclass version.": "Nepodporovaná verze podtřídy.",
+  "Give the subclass a one-line name of at most 120 characters.":
+    "Zadejte podtřídě jednořádkový název o nejvýše 120 znacích.",
+  "Choose the class this subclass belongs to.": "Zvolte povolání, ke kterému podtřída patří.",
+  "The subclass level is a whole number from 1 to 20.": "Úroveň podtřídy je celé číslo od 1 do 20.",
+  "The subclass is malformed.": "Podtřída je poškozená.",
+  "Spellcasting and its table go together.": "Sesílání kouzel a jeho tabulka patří k sobě.",
+  "Each feature needs its own id.": "Každá schopnost potřebuje vlastní identifikátor.",
+  "A published subclass is invalid.": "Zveřejněná podtřída je neplatná.",
+  "An import holds at most 2000 sets, items and subclasses.":
+    "Import obsahuje nejvýše 2000 sad, předmětů a podtříd.",
+  "{at}: subclass {id} appears twice.": "{at}: podtřída {id} se opakuje.",
   "{path} must be text.": "{path} musí být text.",
   "{path} must be a whole number.": "{path} musí být celé číslo.",
   "{path} must be a number.": "{path} musí být číslo.",

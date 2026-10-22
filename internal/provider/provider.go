@@ -1,12 +1,14 @@
-// Package provider serves published homebrew records as the dnd5e.rules-data
-// v3 content contract. The D&D Engine merges every compatible provider, so the
-// records appear in character sheets next to the compendium's.
+// Package provider serves published homebrew records (magic items, and
+// subclasses with their features) as the dnd5e.rules-data v3 content
+// contract. The D&D Engine merges every compatible provider, so the records
+// appear in character sheets next to the compendium's.
 //
 // Players reach this provider through their own sheet evaluations, so every
 // read runs with the caller's authority against public collections only.
 package provider
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
@@ -58,10 +60,13 @@ type snapshot struct {
 	metaRevision int64
 	revision     string
 	records      []servedRecord
-	byID         map[string]int
+	byKey        map[string]int
 }
 
+func recordKey(kind, id string) string { return kind + "\x00" + id }
+
 type servedRecord struct {
+	kind  string
 	id    string
 	value json.RawMessage
 }
@@ -90,8 +95,8 @@ func (handler *Handler) HandleRPC(ctx context.Context, request workerrpc.Request
 			return nil, err
 		}
 		kinds := map[string]int{}
-		if len(current.records) > 0 {
-			kinds[homebrew.RecordKind] = len(current.records)
+		for _, record := range current.records {
+			kinds[record.kind]++
 		}
 		return map[string]any{
 			"contractVersion": "content-catalog.v1",
@@ -113,14 +118,14 @@ func (handler *Handler) HandleRPC(ctx context.Context, request workerrpc.Request
 		if err != nil {
 			return nil, err
 		}
-		index, exists := current.byID[input.ID]
-		if input.Kind != homebrew.RecordKind || !exists {
+		index, exists := current.byKey[recordKey(input.Kind, input.ID)]
+		if !exists {
 			return nil, workerrpc.NewRPCError(workerrpc.JSONRPCInvalidParams, workerrpc.KindNotFound, "The homebrew record is not published.", false, nil)
 		}
 		record := current.records[index]
 		return map[string]any{
 			"contractVersion": "content-record.v1", "setId": SetID, "revision": current.revision,
-			"record": map[string]any{"kind": homebrew.RecordKind, "id": record.id, "value": record.value},
+			"record": map[string]any{"kind": record.kind, "id": record.id, "value": record.value},
 		}, nil
 	case MethodPrefix + "query":
 		var input struct {
@@ -149,8 +154,13 @@ func (handler *Handler) HandleRPC(ctx context.Context, request workerrpc.Request
 
 func (current *snapshot) page(kind, cursor string, limit int) (any, error) {
 	records := current.records
-	if kind != "" && kind != homebrew.RecordKind {
-		records = nil
+	if kind != "" {
+		records = make([]servedRecord, 0, len(current.records))
+		for _, record := range current.records {
+			if record.kind == kind {
+				records = append(records, record)
+			}
+		}
 	}
 	stamp := sha256.Sum256([]byte(current.revision + "\x00" + kind))
 	start := 0
@@ -167,7 +177,7 @@ func (current *snapshot) page(kind, cursor string, limit int) (any, error) {
 	end := min(start+limit, len(records))
 	served := make([]map[string]any, 0, end-start)
 	for _, record := range records[start:end] {
-		served = append(served, map[string]any{"kind": homebrew.RecordKind, "id": record.id, "value": record.value})
+		served = append(served, map[string]any{"kind": record.kind, "id": record.id, "value": record.value})
 	}
 	response := map[string]any{"contractVersion": "content-query-result.v1", "setId": SetID, "revision": current.revision, "records": served}
 	if end < len(records) {
@@ -258,7 +268,52 @@ func (handler *Handler) scan(ctx context.Context, meta *workerrpc.Meta) ([]serve
 			if err != nil {
 				return nil, unavailable("could not encode a published homebrew record")
 			}
-			records = append(records, servedRecord{id: published.ID, value: value})
+			records = append(records, servedRecord{kind: homebrew.RecordKind, id: published.ID, value: value})
+		}
+		if page.NextCursor == "" {
+			break
+		}
+		cursor = page.NextCursor
+	}
+	return handler.scanSubclasses(ctx, meta, records)
+}
+
+// scanSubclasses adds each published subclass's subclass and feature records.
+// A document that fails its contract is skipped as a whole, so a subclass is
+// never served without its features.
+func (handler *Handler) scanSubclasses(ctx context.Context, meta *workerrpc.Meta, records []servedRecord) ([]servedRecord, error) {
+	cursor := ""
+	for {
+		page, err := handler.data.Query(ctx, meta, workerrpc.AddonDataQuery{Reference: reference(homebrew.PublishedSubclassesCollection), Cursor: cursor, Limit: 200})
+		if err != nil {
+			return nil, dataFailure(ctx, err)
+		}
+		for _, document := range page.Documents {
+			published, err := homebrew.DecodePublishedSubclass(document.Value)
+			if err == nil && document.Key != published.ID {
+				err = fmt.Errorf("key %q does not match record %q", document.Key, published.ID)
+			}
+			if err != nil {
+				fmt.Fprintf(handler.log, "dnd-homebrew: not serving published subclass %q: %v\n", document.Key, err)
+				continue
+			}
+			if published.Withdrawn {
+				continue
+			}
+			for _, raw := range published.Records {
+				var identity struct {
+					Kind string `json:"kind"`
+					ID   string `json:"id"`
+				}
+				if err := json.Unmarshal(raw, &identity); err != nil {
+					return nil, unavailable("could not read a published homebrew subclass")
+				}
+				var compact bytes.Buffer
+				if err := json.Compact(&compact, raw); err != nil {
+					return nil, unavailable("could not read a published homebrew subclass")
+				}
+				records = append(records, servedRecord{kind: identity.Kind, id: identity.ID, value: compact.Bytes()})
+			}
 		}
 		if page.NextCursor == "" {
 			return records, nil
@@ -268,18 +323,25 @@ func (handler *Handler) scan(ctx context.Context, meta *workerrpc.Meta) ([]serve
 }
 
 func build(metaRevision int64, records []servedRecord) *snapshot {
-	sort.Slice(records, func(left, right int) bool { return records[left].id < records[right].id })
+	sort.Slice(records, func(left, right int) bool {
+		if records[left].kind != records[right].kind {
+			return records[left].kind < records[right].kind
+		}
+		return records[left].id < records[right].id
+	})
 	digest := sha256.New()
-	byID := make(map[string]int, len(records))
+	byKey := make(map[string]int, len(records))
 	for index, record := range records {
-		byID[record.id] = index
+		byKey[recordKey(record.kind, record.id)] = index
+		digest.Write([]byte(record.kind))
+		digest.Write([]byte{0})
 		digest.Write([]byte(record.id))
 		digest.Write([]byte{0})
 		digest.Write(record.value)
 		digest.Write([]byte{0})
 	}
 	revision := fmt.Sprintf("%d-%s", metaRevision, hex.EncodeToString(digest.Sum(nil))[:16])
-	return &snapshot{metaRevision: metaRevision, revision: revision, records: records, byID: byID}
+	return &snapshot{metaRevision: metaRevision, revision: revision, records: records, byKey: byKey}
 }
 
 func reference(collection string) workerrpc.AddonDataReference {

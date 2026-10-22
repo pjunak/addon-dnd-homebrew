@@ -57,7 +57,7 @@ func TestPlansMatchSharedFixture(t *testing.T) {
 	fixture := loadImportFixture(t)
 	for _, testCase := range fixture.Cases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			plan, err := buildPlan(testCase.Document, storedMap(t, fixture.Stored.Sets), storedMap(t, fixture.Stored.Items), fixture.Now)
+			plan, err := buildPlan(testCase.Document, drafts{sets: storedMap(t, fixture.Stored.Sets), items: storedMap(t, fixture.Stored.Items), subclasses: map[string]stored{}}, fixture.Now)
 			if testCase.ErrorIncludes != "" {
 				if err == nil || !strings.Contains(err.Error(), testCase.ErrorIncludes) {
 					t.Fatalf("expected an error mentioning %q, got %v", testCase.ErrorIncludes, err)
@@ -128,7 +128,7 @@ func TestSampleExampleImports(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plan, err := buildPlan(body, map[string]stored{}, map[string]stored{}, 1)
+	plan, err := buildPlan(body, noDrafts(), 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -355,4 +355,65 @@ func TestImportsRequireTheDM(t *testing.T) {
 	if _, err := handle(t, handler, dm, "preview", map[string]any{"contractVersion": "import-preview.v1", "format": "dm-tools-planning", "document": map[string]any{}}); kindOf(err) != workerrpc.KindValidationFailed {
 		t.Fatalf("foreign format: %v", err)
 	}
+}
+
+func TestSubclassesImportCreateUpdateClearAndReplace(t *testing.T) {
+	body, err := os.ReadFile("../../tests/fixtures/subclasses.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		Valid []map[string]any `json:"valid"`
+	}
+	if err := json.Unmarshal(body, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	entries := make([]any, 0, len(fixture.Valid))
+	for _, draft := range fixture.Valid {
+		entry := map[string]any{}
+		for key, value := range draft {
+			if key != "schemaVersion" && key != "updatedAt" {
+				entry[key] = value
+			}
+		}
+		entries = append(entries, entry)
+	}
+	document := func(mode string, subclasses ...any) json.RawMessage {
+		value, _ := json.Marshal(map[string]any{"format": "dnd-homebrew", "schemaVersion": 1, "mode": mode, "sets": []any{}, "items": []any{}, "subclasses": subclasses})
+		return value
+	}
+	created, err := buildPlan(document("merge", entries...), noDrafts(), 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created.Summary.Creates != 2 || created.Changes[0].Collection != homebrew.SubclassesCollection {
+		t.Fatalf("plan %+v", created.Summary)
+	}
+	stored := noDrafts()
+	for _, mutation := range created.Mutations {
+		stored.subclasses[mutation.Key] = storedValue(mutation.Value.(json.RawMessage), 3)
+	}
+	if again, err := buildPlan(document("merge", entries...), stored, 8); err != nil || again.Summary.Skips != 2 {
+		t.Fatalf("re-import %+v %v", again.Summary, err)
+	}
+	cleared, err := buildPlan(document("merge", map[string]any{"id": "rune-scribe", "spellcasting": map[string]any{}}), stored, 9)
+	if err != nil || cleared.Summary.Updates != 1 {
+		t.Fatalf("clearing %+v %v", cleared.Summary, err)
+	}
+	var scribe map[string]any
+	_ = json.Unmarshal(cleared.Mutations[0].Value.(json.RawMessage), &scribe)
+	if _, kept := scribe["progression"]; kept || scribe["spellcasting"] != nil {
+		t.Fatalf("clearing spellcasting keeps its progression: %v", scribe)
+	}
+	replaced, err := buildPlan(document("replace", entries[0]), stored, 10)
+	if err != nil || replaced.Summary.Deletes != 1 || replaced.Changes[len(replaced.Changes)-1].ID != "rune-scribe" {
+		t.Fatalf("replace %+v %v", replaced.Summary, err)
+	}
+	if _, err := buildPlan(document("merge", map[string]any{"id": "bad", "name": "Bad", "classId": "fighter", "subclassLevel": 3, "grants": map[string]any{"teleport": 30}}), noDrafts(), 11); err == nil || !strings.Contains(err.Error(), "subclasses[0]") {
+		t.Fatalf("an invalid grant must name the entry: %v", err)
+	}
+}
+
+func storedValue(body json.RawMessage, revision int64) stored {
+	return stored{body: body, revision: revision}
 }

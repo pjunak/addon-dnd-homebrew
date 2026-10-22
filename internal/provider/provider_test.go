@@ -387,3 +387,60 @@ func TestWithdrawnRecordsAreNotServed(t *testing.T) {
 		t.Fatalf("a withdrawn record is not a problem: %q", log.String())
 	}
 }
+
+func fixtureSubclass(t *testing.T) json.RawMessage {
+	t.Helper()
+	body, err := os.ReadFile("../../tests/fixtures/subclasses.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		Published json.RawMessage `json:"published"`
+	}
+	if err := json.Unmarshal(body, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	return fixture.Published
+}
+
+func TestServesSubclassesWithTheirFeatures(t *testing.T) {
+	data := newFakeData()
+	subclass := fixtureSubclass(t)
+	broken := json.RawMessage(strings.Replace(string(subclass), `"resistances": ["thunder"]`, `"teleport": 30`, 1))
+	broken = json.RawMessage(strings.ReplaceAll(string(broken), "storm-drum", "broken-drum"))
+	withdrawn := json.RawMessage(strings.Replace(strings.ReplaceAll(string(subclass), "storm-drum", "old-drum"), `"withdrawn": false`, `"withdrawn": true`, 1))
+	publish(t, data, fixtureRecords(t)[:1])
+	data.put(homebrew.PublishedSubclassesCollection, "hb.storm-drum", subclass)
+	data.put(homebrew.PublishedSubclassesCollection, "hb.broken-drum", broken)
+	data.put(homebrew.PublishedSubclassesCollection, "hb.old-drum", withdrawn)
+	var log bytes.Buffer
+	handler, _ := New(data, &log)
+	set := catalogSet(t, handler)
+	assertEngineCatalog(t, set)
+	kinds := set["kinds"].(map[string]any)
+	if kinds["magic-item"].(float64) != 1 || kinds["subclass"].(float64) != 1 || kinds["feature"].(float64) != 4 {
+		t.Fatalf("kinds %v", kinds)
+	}
+	if !strings.Contains(log.String(), "hb.broken-drum") {
+		t.Fatalf("an invalid subclass must be reported: %q", log.String())
+	}
+	features := call(t, handler, "query", `{"setId":"rules","kind":"feature","limit":200}`)["records"].([]any)
+	ids := []string{}
+	for _, raw := range features {
+		record := raw.(map[string]any)
+		if record["kind"] != "feature" || record["value"].(map[string]any)["subclassId"] != "hb.storm-drum" {
+			t.Fatalf("feature %v", record)
+		}
+		ids = append(ids, record["id"].(string))
+	}
+	if strings.Join(ids, ",") != "hb.storm-drum.rolling-thunder,hb.storm-drum.storm-voice,hb.storm-drum.thunder-ward,hb.storm-drum.war-drum" {
+		t.Fatalf("features %v", ids)
+	}
+	got := call(t, handler, "get", `{"setId":"rules","kind":"subclass","id":"hb.storm-drum"}`)["record"].(map[string]any)
+	if got["value"].(map[string]any)["classId"] != "barbarian" {
+		t.Fatalf("subclass %v", got)
+	}
+	if failure := callError(t, handler, "get", `{"setId":"rules","kind":"magic-item","id":"hb.storm-drum"}`); failure.Data.Kind != workerrpc.KindNotFound {
+		t.Fatalf("a subclass id is not an item: %v", failure)
+	}
+}

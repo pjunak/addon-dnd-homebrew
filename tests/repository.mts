@@ -9,6 +9,9 @@ const publish = JSON.parse(
   sets: { id: string }[];
   cases: { item: { id: string }; published: { id: string } }[];
 };
+const subclasses = JSON.parse(
+  await readFile(new URL("./fixtures/subclasses.json", import.meta.url), "utf8"),
+) as { valid: { id: string }[]; published: unknown };
 
 function fakeContext(stored: Record<string, { key: string; revision: number; value: unknown }[]>) {
   const queries: { id: string; options: Record<string, unknown> }[] = [];
@@ -53,10 +56,15 @@ void test("drafts are read with set revisions and broken documents are reported,
       ...publish.cases.map(({ item }) => ({ key: item.id, revision: 4, value: item })),
       { key: "broken", revision: 1, value: { id: "broken", name: "Broken" } },
     ],
+    homebrew_subclasses: subclasses.valid.map((value) => ({ key: value.id, revision: 3, value })),
   });
   const drafts = await new HomebrewRepository(context).drafts(new AbortController().signal);
   assert.equal(drafts.sets.length, 2);
   assert.equal(drafts.items.length, 5);
+  assert.deepEqual(
+    drafts.subclasses.map((entry) => entry.value.id),
+    subclasses.valid.map((value) => value.id),
+  );
   assert.deepEqual(
     drafts.unreadable.map((entry) => [entry.collection, entry.key]),
     [["homebrew_items", "broken"]],
@@ -64,6 +72,7 @@ void test("drafts are read with set revisions and broken documents are reported,
   assert.deepEqual(drafts.dataRevisions, [
     { kind: "collection", dataId: "homebrew_sets", revision: 9 },
     { kind: "collection", dataId: "homebrew_items", revision: 9 },
+    { kind: "collection", dataId: "homebrew_subclasses", revision: 9 },
   ]);
   assert.ok(queries.every((query) => query.options["includeDataRevision"] === true));
 });
@@ -75,6 +84,9 @@ void test("players read published records without set revisions", async () => {
       revision: 1,
       value: published,
     })),
+    homebrew_published_subclasses: [
+      { key: "hb.storm-drum", revision: 1, value: subclasses.published },
+    ],
     homebrew_meta: [
       {
         key: "publish",
@@ -85,6 +97,7 @@ void test("players read published records without set revisions", async () => {
   });
   const state = await new HomebrewRepository(context).published(new AbortController().signal);
   assert.equal(state.records.size, 5);
+  assert.deepEqual([...state.subclasses.keys()], ["hb.storm-drum"]);
   assert.equal(state.meta?.revision, 5);
   assert.equal(state.dataRevisions, undefined);
   assert.ok(queries.every((query) => query.options["includeDataRevision"] === undefined));

@@ -428,6 +428,8 @@ export function defineCatalogElement(generation?: string): string {
         this.#published.records,
         this.#published.meta,
         0,
+        this.#drafts.subclasses.map((entry) => entry.value),
+        this.#published.subclasses,
       );
       return plan.changes.length + plan.problems.length;
     }
@@ -1165,6 +1167,8 @@ export function defineCatalogElement(generation?: string): string {
           published.records,
           published.meta,
           Date.now(),
+          drafts.subclasses.map((entry) => entry.value),
+          published.subclasses,
         );
         const body = element(document, "div", "hb-dialog-body");
         let confirmable = plan.problems.length === 0 && plan.mutations.length > 0;
@@ -1272,6 +1276,7 @@ export function defineCatalogElement(generation?: string): string {
           new Map(this.#drafts.sets.map((entry) => [entry.value.id, entry])),
           new Map(this.#drafts.items.map((entry) => [entry.value.id, entry])),
           Date.now(),
+          new Map(this.#drafts.subclasses.map((entry) => [entry.value.id, entry])),
         );
       } catch (error) {
         return error instanceof HomebrewError
@@ -1369,6 +1374,7 @@ export function defineCatalogElement(generation?: string): string {
         this.#drafts.sets.map((entry) => entry.value),
         this.#drafts.items.map((entry) => entry.value),
         now.getTime(),
+        this.#drafts.subclasses.map((entry) => entry.value),
       );
       downloadFile(
         document,
