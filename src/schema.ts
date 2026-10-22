@@ -26,7 +26,7 @@ export interface SchemaProblem {
 
 const grantsRef = "#/$defs/grants";
 
-/** The node a reference names; references use the record schema's form. */
+/** The node a reference names, in contracts/engine-grants.schema.json's form. */
 export function resolveRef(ref: string): SchemaNode {
   if (ref === grantsRef) return grantsSchema;
   const name = ref.startsWith(`${grantsRef}/$defs/`) ? ref.slice(grantsRef.length + 7) : "";

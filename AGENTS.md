@@ -34,9 +34,11 @@ Tasks for all repositories live in the host's `docs/BACKLOG.md`.
   stricter, never looser. Extending either vocabulary starts in the Engine.
   `contracts/` must accept every draft and record the model accepts
   (`internal/importer/schema_test.go` checks this with the host's validator).
-  `contracts/rule-record.schema.json` is an exact copy of the Compendium's,
-  which applies the Engine's grants vocabulary to served records; copy it
-  again whenever the Compendium's changes.
+  `contracts/engine-grants.schema.json` is the Engine's grants vocabulary at
+  the Engine version `tools/engine-grants.mts` pins (the Compendium pins the
+  same one); `npm run check` fails when it differs, and
+  `npm run sync:engine-grants` copies it after a version change. Served
+  records follow Homebrew's own `published-record.schema.json`.
 - Published records are never deleted, only withdrawn: a browser cannot learn
   a deleted key's tombstone revision and could not publish that id again.
 - Every publish writes the records and the `homebrew_meta` revision in one

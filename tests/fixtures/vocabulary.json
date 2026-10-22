@@ -1,5 +1,5 @@
 {
- "$comment": "Built from the grants vocabulary in contracts/rule-record.schema.json: every field filled, each oneOf form, and breakages. Both test suites check these.",
+ "$comment": "Built from the grants vocabulary in contracts/engine-grants.schema.json: every field filled, each oneOf form, and breakages. Both test suites check these.",
  "valid": [
   {
    "name": "abilityScoreBonus, every part",

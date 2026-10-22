@@ -6,6 +6,6 @@
   "properties": {
     "kind": { "type": "string", "minLength": 1, "maxLength": 100 },
     "id": { "type": "string", "minLength": 1, "maxLength": 200 },
-    "value": { "$ref": "rule-record.schema.json" }
+    "value": { "$ref": "published-record.schema.json#/properties/record" }
   }
 }
