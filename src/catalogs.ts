@@ -954,11 +954,11 @@ export const cs: Readonly<Record<string, string>> = {
   "Name the sense or resource, such as darkvision.":
     "Pojmenujte smysl nebo zdroj, například darkvision.",
   "Effect {target} is not supported.": "Účinek {target} není podporován.",
-  "A text-only item cannot have effects or properties.":
-    "Předmět pouze s textem nemůže mít účinky ani schopnosti.",
+  "A text-only item cannot have effects, properties or a bonus.":
+    "Předmět pouze s textem nemůže mít účinky, schopnosti ani bonus.",
   "Choose automated or text-only mechanics.": "Zvolte automatizovanou mechaniku nebo pouze text.",
-  "An automated item needs at least one effect or property.":
-    "Automatizovaný předmět potřebuje alespoň jeden účinek nebo schopnost.",
+  "An automated item needs at least one effect, property or bonus.":
+    "Automatizovaný předmět potřebuje alespoň jeden účinek, schopnost nebo bonus.",
   "An item has at most {count} effects.": "Předmět má nejvýše {count} účinků.",
   "Effect {position}: {problem}": "Účinek {position}: {problem}",
   "Effect {position} repeats an earlier effect.": "Účinek {position} opakuje dřívější účinek.",
@@ -1091,6 +1091,54 @@ export const cs: Readonly<Record<string, string>> = {
     "Hostitel vrátil neplatnou stránku dat vlastních předmětů.",
   "Homebrew data changed while loading. Reload to try again.":
     "Data vlastních předmětů se během načítání změnila. Načtěte stránku znovu.",
+  // Weapons and armor
+  "Weapon or armor": "Zbraň nebo zbroj",
+  "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.":
+    "Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá hráče vybrat na deníku.",
+  "The item is": "Předmět je",
+  "Not a weapon or armor": "Není zbraň ani zbroj",
+  "A weapon": "Zbraň",
+  "Armor or a shield": "Zbroj nebo štít",
+  "These records": "Tyto záznamy",
+  "Any that match": "Jakýkoli odpovídající",
+  "Base weapons": "Základní zbraně",
+  "Weapon ids, separated by commas.": "Identifikátory zbraní oddělené čárkami.",
+  "Base armor": "Základní zbroj",
+  "Armor ids, separated by commas.": "Identifikátory zbrojí oddělené čárkami.",
+  Categories: "Kategorie",
+  Ranges: "Způsob boje",
+  "Weapon properties": "Vlastnosti zbraně",
+  Except: "Kromě",
+  "Ids left out, separated by commas.": "Vynechané identifikátory oddělené čárkami.",
+  Light: "Lehká",
+  Medium: "Střední",
+  Heavy: "Těžká",
+  Shield: "Štít",
+  Ammunition: "Střelivo",
+  Finesse: "Finesa",
+  Loading: "Nabíjení",
+  Reach: "Dosah",
+  Thrown: "Vrhací",
+  "Two-Handed": "Obouruční",
+  Versatile: "Univerzální",
+  any: "jakákoli",
+  "{list}, except {except}": "{list}, kromě {except}",
+  "Weapon ({base})": "Zbraň ({base})",
+  "Armor ({base})": "Zbroj ({base})",
+  "Weapon ({base}), {bonus} to attack and damage rolls":
+    "Zbraň ({base}), {bonus} k hodům na útok a zranění",
+  "Armor ({base}), {bonus} to Armor Class": "Zbroj ({base}), {bonus} k obrannému číslu",
+  "Choose a weapon or armor as the base.": "Jako základ zvolte zbraň nebo zbroj.",
+  "Name at most {count} base records by id, each once.":
+    "Uveďte nejvýše {count} základních záznamů podle identifikátoru, každý jednou.",
+  "Choose each base filter from its options, once.":
+    "Každý filtr základu zvolte z jeho možností, a to jednou.",
+  "Filter a weapon by category, range and property, and armor by armor type.":
+    "Zbraň filtrujte podle kategorie, způsobu boje a vlastnosti, zbroj podle typu zbroje.",
+  "Name the base records or filter them, not both.":
+    "Základní záznamy buď vyjmenujte, nebo je filtrujte, ne obojí.",
+  "A bonus is a whole number from 1 to {count}, or a list of them.":
+    "Bonus je celé číslo od 1 do {count}, nebo jejich seznam.",
   "The host returned an invalid document.": "Hostitel vrátil neplatný dokument.",
   "The stored id does not match its key.": "Uložený identifikátor neodpovídá svému klíči.",
   "The save was stored, but its receipt is incomplete. Reload the page.":

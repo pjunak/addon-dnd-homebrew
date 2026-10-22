@@ -150,6 +150,13 @@
       "text": "The satchel holds up to 100 pounds of gear, which weighs nothing while it is inside.",
       "overrides": { "rarity": "Uncommon", "weightLb": 1 },
       "container": { "capacityLb": 100, "weightless": true }
+    },
+    {
+      "id": "plus-one-longsword",
+      "name": "+1 Longsword",
+      "text": "You have a +1 bonus to attack rolls and damage rolls made with this magic weapon.",
+      "overrides": { "itemType": "Weapon (Longsword)", "rarity": "Uncommon" },
+      "baseItem": { "kind": "weapon", "ids": ["longsword"], "bonus": 1 }
     }
   ]
 }

@@ -83,6 +83,12 @@ With D&D Engine 5.4.0 or later, an item's **properties** also apply
 | Toggles the player switches on the sheet: Advantage, senses, resistances and immunities | In darkness: Darkvision 60 ft, or 30 ft more |
 | Resistances and immunities | fire resistance, immunity to the Frightened condition |
 
+With D&D Engine 6.1.0 or later, an item can be a **magic weapon or armor**
+([format](docs/FORMAT.md#weapon-or-armor)): a base weapon or armor from the
+Compendium, such as a longsword or a shield, with a bonus to attack and damage
+rolls or to Armor Class. Leave the base or the bonus open (any martial weapon,
++1 to +3) and the player picks it on the sheet.
+
 Items can also have a **weight** (the sheet adds it to the character's load),
 **hold other items** (with a capacity, and weightless contents like a Bag of
 Holding) and say **who can attune**: a spellcaster, members of certain classes,
@@ -165,15 +171,18 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.0.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.2.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are
 build output.
 
-[`host-tests/installed-homebrew.browser.mts`](host-tests/installed-homebrew.browser.mts)
-installs the Compendium, Engine, Character Sheets and this package on a
-disposable host, imports and publishes the sample items and subclass, checks
-DM and player sheets, a character with the subclass, withdrawal, and the real
-UI. It uses the host's installed-suite
-fixtures; the file header shows how to run it from a host checkout.
+The host's installed add-on suite (`installed-homebrew.browser.mts` in
+`ttrpg-codex`) installs the Compendium, Engine, Character Sheets and this
+package on a disposable host, imports and publishes sample items and a
+subclass, checks DM and player sheets, a character with the subclass,
+withdrawal, and the real UI. It runs nightly and before every deployment
+against the latest releases; to run it against a local build, set
+`CODEX_HOMEBREW_ZIP` as the host's
+[CONTRIBUTING.md](https://github.com/pjunak/ttrpg-codex/blob/main/CONTRIBUTING.md#installed-add-on-smoke-test)
+describes.

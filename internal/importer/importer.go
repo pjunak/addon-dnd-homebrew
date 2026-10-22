@@ -87,7 +87,7 @@ var (
 	}
 	itemKind = draftKind{
 		defaults: map[string]json.RawMessage{"setId": json.RawMessage(`""`), "text": json.RawMessage(`""`), "overrides": json.RawMessage(`{}`), "tags": json.RawMessage(`[]`), "characterEffects": json.RawMessage(`[]`), "playerVisible": json.RawMessage(`false`), "retired": json.RawMessage(`false`)},
-		optional: []string{"grants", "attunementPrerequisites", "container"},
+		optional: []string{"grants", "attunementPrerequisites", "container", "baseItem"},
 		item:     true,
 	}
 	subclassKind = draftKind{
@@ -453,8 +453,12 @@ func normalize(raw, existing json.RawMessage, exists bool, kind draftKind, now i
 	if _, present := entry["characterMechanics"]; !present && kind.item {
 		mechanics := `"narrative"`
 		var effects []json.RawMessage
+		var base struct {
+			Bonus json.RawMessage `json:"bonus"`
+		}
 		_, hasGrants := fields["grants"]
-		if json.Unmarshal(fields["characterEffects"], &effects) == nil && len(effects) > 0 || hasGrants {
+		hasBonus := json.Unmarshal(fields["baseItem"], &base) == nil && base.Bonus != nil
+		if json.Unmarshal(fields["characterEffects"], &effects) == nil && len(effects) > 0 || hasGrants || hasBonus {
 			mechanics = `"complete"`
 		}
 		fields["characterMechanics"] = json.RawMessage(mechanics)

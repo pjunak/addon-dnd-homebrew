@@ -1,6 +1,7 @@
 import { hostLocale, translator, type Translator } from "./catalogs.js";
 import { describeEffect } from "./effects.js";
 import { describeGrants } from "./grants.js";
+import { describeGear } from "./magic-gear.js";
 import { element, markdown, messageBlock, option } from "./fields.js";
 import { fold, revealed, served } from "./gallery-model.js";
 import { LiveRefresh } from "./live-refresh.js";
@@ -217,6 +218,7 @@ export function defineGalleryElement(generation?: string): string {
       );
       card.append(heading, meta, markdown(document, record.text));
       const lines = [
+        ...describeGear(record.baseItem, t),
         ...record.characterEffects.map((effect) => describeEffect(effect, t)),
         ...describeGrants(record.grants, t),
       ];

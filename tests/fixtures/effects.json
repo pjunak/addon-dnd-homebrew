@@ -165,5 +165,36 @@
         { "level": 5 }
       ]
     }
+  },
+  "baseItems": {
+    "valid": [
+      { "kind": "weapon", "ids": ["longsword"], "bonus": 1 },
+      { "kind": "weapon", "categories": ["simple", "martial"], "bonus": [1, 2, 3] },
+      { "kind": "weapon", "ranges": ["melee"], "properties": ["thrown"] },
+      { "kind": "armor", "armorTypes": ["shield"], "bonus": 2 },
+      { "kind": "armor", "armorTypes": ["medium", "heavy"], "except": ["hide-armor"], "bonus": [1, 2] },
+      { "kind": "armor" }
+    ],
+    "invalid": [
+      {},
+      { "kind": "sword" },
+      { "kind": "weapon", "ids": [] },
+      { "kind": "weapon", "ids": ["longsword", "longsword"] },
+      { "kind": "weapon", "ids": ["Longsword"] },
+      { "kind": "weapon", "ids": ["longsword"], "categories": ["martial"] },
+      { "kind": "weapon", "ids": ["longsword"], "except": ["dagger"] },
+      { "kind": "weapon", "armorTypes": ["shield"] },
+      { "kind": "armor", "categories": ["simple"] },
+      { "kind": "weapon", "categories": ["exotic"] },
+      { "kind": "weapon", "ranges": ["melee", "melee"] },
+      { "kind": "weapon", "bonus": 0 },
+      { "kind": "weapon", "bonus": 6 },
+      { "kind": "weapon", "bonus": [] },
+      { "kind": "weapon", "bonus": [1, 1] },
+      { "kind": "weapon", "bonus": "1" },
+      { "kind": "weapon", "bonus": 1.5 },
+      { "kind": "weapon", "bonus": null },
+      { "kind": "weapon", "material": "silver" }
+    ]
   }
 }

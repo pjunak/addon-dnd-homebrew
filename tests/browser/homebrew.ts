@@ -113,24 +113,29 @@ const rules: ServiceHandle = {
   ],
   async call<T>(method: string, params: unknown): Promise<T> {
     if (method === "catalog")
-      return { sets: [{ id: "rules", kinds: { spell: 2, class: 3 } }] } as T;
+      return { sets: [{ id: "rules", kinds: { spell: 2, class: 3, weapon: 1, armor: 1 } }] } as T;
     const record = (kind: string, id: string, name: string, level?: number) => ({
       kind,
       id,
       value: { id, kind, name, ...(level === undefined ? {} : { level, school: "Divination" }) },
     });
+    const kind = (params as { kind: string }).kind;
     return {
       records:
-        (params as { kind: string }).kind === "spell"
+        kind === "spell"
           ? [
               record("spell", "detect-magic", "Detect Magic", 1),
               record("spell", "bless", "Bless", 1),
             ]
-          : [
-              record("class", "cleric", "Cleric"),
-              record("class", "sorcerer", "Sorcerer"),
-              record("class", "wizard", "Wizard"),
-            ],
+          : kind === "weapon"
+            ? [record("weapon", "longsword", "Longsword")]
+            : kind === "armor"
+              ? [record("armor", "shield", "Shield")]
+              : [
+                  record("class", "cleric", "Cleric"),
+                  record("class", "sorcerer", "Sorcerer"),
+                  record("class", "wizard", "Wizard"),
+                ],
     } as T;
   },
 };
@@ -155,6 +160,7 @@ const catalog = mount(catalogTag),
   ringCatalog = mount(catalogTag),
   lanternCatalog = mount(catalogTag),
   subclassCatalog = mount(catalogTag),
+  edgeCatalog = mount(catalogTag),
   gallery = mount(galleryTag),
   linked = mount(galleryTag, [["id", "hb.ring-of-wit"]]);
 
@@ -194,6 +200,21 @@ for (
 for (
   let attempt = 0;
   attempt < 60 && !lanternCatalog.querySelector('select[name="requirementClasses"]');
+  attempt++
+)
+  await frame();
+for (
+  let attempt = 0;
+  attempt < 60 && edgeCatalog.querySelectorAll(".hb-tree-item").length < 6;
+  attempt++
+)
+  await frame();
+[...edgeCatalog.querySelectorAll<HTMLButtonElement>(".hb-tree-item")]
+  .find((button) => button.textContent?.startsWith("Edge"))
+  ?.click();
+for (
+  let attempt = 0;
+  attempt < 60 && edgeCatalog.querySelector(".hb-preview-name")?.textContent !== "Edge";
   attempt++
 )
   await frame();
@@ -313,6 +334,7 @@ globalThis.runRenderingContract = () => {
         "Defense",
         "Omens",
         "Destiny",
+        "Edge",
         "Lantern",
         "Ring of Wit",
         "Trinket",
@@ -325,6 +347,7 @@ globalThis.runRenderingContract = () => {
       "Defense",
       "Omens",
       "Destiny",
+      "Edge",
       "Lantern",
       "Ring of Wit",
       "Trinket",
@@ -344,9 +367,9 @@ globalThis.runRenderingContract = () => {
   const status = catalog.querySelector(".hb-status")?.textContent ?? "";
   check(
     "status counts pending changes",
-    status.includes("Unpublished changes: 2."),
+    status.includes("Unpublished changes: 3."),
     status,
-    "…Unpublished changes: 2.",
+    "…Unpublished changes: 3.",
   );
   const preview = catalog.querySelector(".hb-preview-name")?.textContent;
   check(
@@ -395,6 +418,37 @@ globalThis.runRenderingContract = () => {
     JSON.stringify(carrying) === JSON.stringify(expectedCarrying),
     carrying,
     expectedCarrying,
+  );
+  const gearShown = (name: string): string | undefined => {
+    const control = edgeCatalog.querySelector<HTMLInputElement | HTMLSelectElement>(
+      `[name="${name}"]`,
+    );
+    if (!control || control.closest<HTMLElement>("[data-ui-field]")?.hidden) return undefined;
+    return control instanceof HTMLSelectElement && control.multiple
+      ? [...control.selectedOptions].map((entry) => entry.value).join(", ")
+      : control.value;
+  };
+  const gear = [
+    "baseKind",
+    "baseMode",
+    "baseWeapons",
+    "baseCategories",
+    "baseArmorTypes",
+    "baseBonus",
+  ].map(gearShown);
+  const expectedGear = ["weapon", "filter", undefined, "martial", undefined, "1, 2"];
+  check(
+    "the editor shows a weapon base by filter and its bonuses",
+    JSON.stringify(gear) === JSON.stringify(expectedGear),
+    gear,
+    expectedGear,
+  );
+  const gearLine = lines(edgeCatalog, ".hb-effect-summary")[0];
+  check(
+    "the preview names the base and the bonuses",
+    gearLine === "Weapon (Martial, Melee), +1 / +2 to attack and damage rolls",
+    gearLine,
+    "Weapon (Martial, Melee), +1 / +2 to attack and damage rolls",
   );
   const header =
     lanternCatalog.querySelector(".hb-preview codex-addon-markdown")?.textContent ?? "";

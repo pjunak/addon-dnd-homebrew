@@ -3,6 +3,7 @@ package importer
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -61,11 +62,12 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 		setSchema    = "homebrew-set.schema.json"
 		itemSchema   = "homebrew-item.schema.json"
 		recordSchema = "published-record.schema.json"
-		servedSchema = "rule-record.schema.json"
+		servedSchema = "content-record.schema.json#/properties/value"
+		engineGrants = homebrew.GrantsContract
 		recordGrants = "homebrew-common.schema.json#/$defs/recordGrants"
 		itemGrants   = "homebrew-common.schema.json#/$defs/itemGrants"
 	)
-	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, recordGrants, itemGrants)
+	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, engineGrants, recordGrants, itemGrants)
 	accept := func(name, label string, body []byte) {
 		t.Helper()
 		if err := validate(t, schemas[name], label, body); err != nil {
@@ -119,18 +121,39 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	for _, set := range publish.Sets {
 		accept(setSchema, "publish fixture set", set)
 	}
-	// The host validates served records against the Compendium's record
-	// schema (copied in contracts/), which applies the Engine's grants vocabulary.
+	// The host validates served records against the published record shape,
+	// and their grants must also be ones the Engine accepts.
 	for _, testCase := range publish.Cases {
 		accept(itemSchema, testCase.Name+" (item)", testCase.Item)
 		accept(recordSchema, testCase.Name+" (published)", testCase.Published)
 		var published struct {
+			Record struct {
+				Grants json.RawMessage `json:"grants"`
+			} `json:"record"`
+		}
+		var served struct {
 			Record json.RawMessage `json:"record"`
 		}
-		if err := json.Unmarshal(testCase.Published, &published); err != nil {
-			t.Fatal(err)
+		if json.Unmarshal(testCase.Published, &published) != nil || json.Unmarshal(testCase.Published, &served) != nil {
+			t.Fatal(testCase.Name)
 		}
-		accept(servedSchema, testCase.Name+" (served)", published.Record)
+		accept(servedSchema, testCase.Name+" (served)", served.Record)
+		if published.Record.Grants != nil {
+			accept(engineGrants, testCase.Name+" (served grants)", published.Record.Grants)
+		}
+	}
+
+	// Subclass and feature records are served under the same response schema.
+	var subclasses struct {
+		Published struct {
+			Records []json.RawMessage `json:"records"`
+		} `json:"published"`
+	}
+	if body, err := os.ReadFile("../../tests/fixtures/subclasses.json"); err != nil || json.Unmarshal(body, &subclasses) != nil {
+		t.Fatalf("subclass fixture: %v", err)
+	}
+	for index, record := range subclasses.Published.Records {
+		accept(servedSchema, fmt.Sprintf("published subclass record %d (served)", index+1), record)
 	}
 
 	var effects struct {
@@ -146,8 +169,7 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	}
 	for _, testCase := range effects.Grants.Valid {
 		accept(recordGrants, testCase.Name, testCase.Grants)
-		served, _ := json.Marshal(map[string]any{"kind": "magic-item", "id": "hb.case", "name": testCase.Name, "characterMechanics": "complete", "grants": testCase.Grants})
-		accept(servedSchema, testCase.Name+" (served)", served)
+		accept(engineGrants, testCase.Name+" (served)", testCase.Grants)
 		var grants map[string]json.RawMessage
 		_ = json.Unmarshal(testCase.Grants, &grants)
 		if _, conditions := grants["conditions"]; !conditions {

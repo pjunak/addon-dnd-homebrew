@@ -4,6 +4,7 @@ import { confirmDialog, openDialog } from "./dialogs.js";
 import { downloadFile } from "./download.js";
 import { describeEffect, effectsEditor, type EffectsEditor } from "./effects.js";
 import { describeGrants, grantsEditor, type GrantsEditor } from "./grants.js";
+import { describeGear, gearFields, readGear } from "./magic-gear.js";
 import {
   actionButton,
   badge,
@@ -898,7 +899,7 @@ export function defineCatalogElement(generation?: string): string {
         this.#references,
       );
       grants.append(this.#grants.root);
-      form.append(effects, grants);
+      form.append(gearFields(document, t, value, this.#references), effects, grants);
 
       const defaults = element(document, "details", "hb-defaults");
       const inherited = setOf(value.setId);
@@ -1023,10 +1024,13 @@ export function defineCatalogElement(generation?: string): string {
       const data = new FormData(form);
       const name = formText(data, "name").trim();
       const effects = this.#effects?.read() ?? [],
-        grants = this.#grants?.read();
+        grants = this.#grants?.read(),
+        gear = readGear(data);
       // An item is automated exactly when it declares something to automate.
       const mechanics: Mechanics =
-        effects.length > 0 || grants !== undefined ? "complete" : "narrative";
+        effects.length > 0 || grants !== undefined || gear.baseItem?.bonus !== undefined
+          ? "complete"
+          : "narrative";
       const itemType = formText(data, "overrideItemType").trim(),
         rarity = formText(data, "overrideRarity"),
         attunement = formText(data, "overrideAttunement"),
@@ -1055,6 +1059,7 @@ export function defineCatalogElement(generation?: string): string {
         updatedAt: Date.now(),
         ...(grants ? { grants } : {}),
         ...readCarrying(data, this.#formItems.get(form) ?? stored?.value),
+        ...gear,
       };
     }
     #updatePreview(form: HTMLFormElement, stored: Stored<Item> | undefined): void {
@@ -1073,6 +1078,7 @@ export function defineCatalogElement(generation?: string): string {
       );
       if (failure) preview.append(messageBlock(document, problemText(t, failure), "alert"));
       const lines = [
+        ...describeGear(published.record.baseItem, t, this.#references),
         ...published.record.characterEffects.map((effect) => describeEffect(effect, t)),
         ...describeGrants(published.record.grants, t),
       ];

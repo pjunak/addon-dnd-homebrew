@@ -17,11 +17,11 @@ import (
 
 // The host validates collection writes and served records against contracts/
 // with this library, so checking with it here refuses exactly what the host
-// would. GrantsContract is the Engine's grants vocabulary as the Compendium's
-// record schema copies it.
+// would. GrantsContract is the Engine's grants vocabulary, copied by
+// tools/engine-grants.mts.
 const (
 	contractBase   = "file:///addon/contracts/"
-	GrantsContract = "rule-record.schema.json#/$defs/grants"
+	GrantsContract = "engine-grants.schema.json#/$defs/grants"
 )
 
 var (

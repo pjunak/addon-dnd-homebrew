@@ -1,6 +1,6 @@
 {
   "name": "@ttrpg-codex/dnd-homebrew",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "imports": {
@@ -16,9 +16,10 @@
     "typecheck:source": "tsc -p tsconfig.json --noEmit",
     "typecheck:node": "tsc -p tsconfig.node.json",
     "typecheck": "npm run typecheck:source && npm run typecheck:node",
-    "check:source": "node tools/check-source.mts && node tools/codex-sdk.mts check && node tools/grants-schema.mts check",
+    "check:source": "node tools/check-source.mts && node tools/codex-sdk.mts check && node tools/engine-grants.mts check && node tools/grants-schema.mts check",
     "sync:codex-sdk": "node tools/codex-sdk.mts sync",
     "sync:grants-schema": "node tools/grants-schema.mts sync",
+    "sync:engine-grants": "node tools/engine-grants.mts sync",
     "check:go": "go run ./tools/check.go",
     "check:workflows": "go run ./tools/check.go workflows",
     "check:vulnerabilities": "go run ./tools/check.go vuln",

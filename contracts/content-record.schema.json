@@ -6,6 +6,12 @@
   "properties": {
     "kind": { "type": "string", "minLength": 1, "maxLength": 100 },
     "id": { "type": "string", "minLength": 1, "maxLength": 200 },
-    "value": { "$ref": "rule-record.schema.json" }
+    "value": {
+      "anyOf": [
+        { "$ref": "published-record.schema.json#/properties/record" },
+        { "$ref": "published-subclass.schema.json#/$defs/subclassRecord" },
+        { "$ref": "published-subclass.schema.json#/$defs/featureRecord" }
+      ]
+    }
   }
 }

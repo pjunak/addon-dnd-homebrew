@@ -19,7 +19,7 @@ friendly and the code clear. Old formats and extra hardening are low priority.
 | Publish revision, withdrawal, visibility and limits | [docs/DESIGN.md](docs/DESIGN.md) |
 | Subclass editor and the schema-driven grants form | [A form built from the grants schema](docs/DESIGN.md#a-form-built-from-the-grants-schema) |
 | Host integration, manifests and lifecycle | The host's [add-on guide](https://github.com/pjunak/ttrpg-codex/blob/main/examples/addons/AUTHORING.md) and [API reference](https://github.com/pjunak/ttrpg-codex/blob/main/examples/addons/API_V3.md) |
-| What the Engine accepts | `addon-dnd-engine/internal/provider/client.go` (provider contract), `internal/rules/character_items.go` (effects and the item grants allowlist) and `internal/rules/grants_vocabulary.go` (the full grants vocabulary) |
+| What the Engine accepts | `addon-dnd-engine/internal/provider/client.go` (provider contract), `internal/rules/character_items.go` (effects and the item grants allowlist), `internal/rules/grants_vocabulary.go` (the full grants vocabulary) and `internal/rules/magic_gear.go` (a magic weapon or armor's `baseItem`) |
 
 Tasks for all repositories live in the host's `docs/BACKLOG.md`.
 
@@ -31,15 +31,19 @@ Tasks for all repositories live in the host's `docs/BACKLOG.md`.
 - Flattening (`flatten` and `flattenSubclass` in `src/model.ts`) is the only
   place set defaults and item overrides combine and a subclass becomes its
   records. The worker serves what was published and never recomputes it.
-- Effects mirror the Engine's `validCharacterEffect` and proficiency rule, and
-  grants its item grants allowlist (`characterItemGrants`); Homebrew may be
+- Effects mirror the Engine's `validCharacterEffect` and proficiency rule,
+  grants its item grants allowlist (`characterItemGrants`), and `baseItem` its
+  magic weapons and armor (`magicBaseItem`); Homebrew may be
   stricter, never looser. Extending either vocabulary starts in the Engine.
   `contracts/` must accept every draft and record the model accepts
   (`internal/importer/schema_test.go` checks this with the host's validator).
-  `contracts/rule-record.schema.json` is an exact copy of the Compendium's,
-  which applies the Engine's grants vocabulary to served records; copy it
-  again whenever the Compendium's changes, then run `npm run
-  sync:grants-schema` for its browser copy `src/grants-schema.ts`.
+  `contracts/engine-grants.schema.json` is the Engine's grants vocabulary at
+  the Engine version `tools/engine-grants.mts` pins (the Compendium pins the
+  same one); `npm run check` fails when it or its browser copy
+  `src/grants-schema.ts` differs, and `npm run sync:engine-grants` then
+  `npm run sync:grants-schema` copy them after a version change. Served
+  records follow Homebrew's own `published-record.schema.json` and
+  `published-subclass.schema.json`.
 - Subclass grants are the Engine's full vocabulary, checked against that
   schema in both languages. The editor renders forms from the schema;
   `src/vocabulary.ts` only words them, and each of its English words needs a
@@ -69,7 +73,10 @@ go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-<version>.zi
 ```
 
 `npm run sync:codex-sdk` refreshes `src/codex/` after a host version change.
-After changing the provider, publishing or the manifest, also run
-`host-tests/installed-homebrew.browser.mts` from a host checkout (see its
-header); it is the only check that runs the real Engine and sheets.
+After changing the provider, publishing, the import format or the manifest,
+also run the host's installed suite with `CODEX_HOMEBREW_ZIP` set to the new
+build (see the host's CONTRIBUTING.md); `installed-homebrew.browser.mts` there
+is the only check that runs the real Engine and sheets. Its sample documents
+copy `docs/examples/sample-items.json` and `sample-subclass.json`; change them
+together.
 Ask before pushing, deploying, installing on a site or touching live data.

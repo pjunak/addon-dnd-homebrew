@@ -162,6 +162,24 @@ export const maxMarkdown = 20000;
 export const maxEffects = 40;
 export const maxConditionSummary = 2000;
 export const maxWeight = 100000;
+export const baseItemKinds = ["weapon", "armor"] as const;
+export const weaponCategories = ["simple", "martial"] as const;
+export const weaponRanges = ["melee", "ranged"] as const;
+export const armorTypes = ["light", "medium", "heavy", "shield"] as const;
+/** The weapon properties the rules data uses; a base filter may also name others. */
+export const weaponProperties = [
+  "ammunition",
+  "finesse",
+  "heavy",
+  "light",
+  "loading",
+  "reach",
+  "thrown",
+  "two-handed",
+  "versatile",
+] as const;
+export const maxBaseIds = 20;
+export const maxBonus = 5;
 export const importFormat = "dnd-homebrew";
 
 export interface Effect {
@@ -275,6 +293,20 @@ export type AttunementRequirement =
   | { readonly classes: ClassLevel }
   | { readonly any: readonly { readonly classes: ClassLevel }[] }
   | { readonly text: string };
+/**
+ * The weapon or armor a magic item is: fixed base record ids, or filters over
+ * every record of its kind, and a bonus (a list lets the player pick).
+ */
+export interface BaseItem {
+  readonly kind: (typeof baseItemKinds)[number];
+  readonly ids?: readonly string[];
+  readonly categories?: readonly (typeof weaponCategories)[number][];
+  readonly ranges?: readonly (typeof weaponRanges)[number][];
+  readonly properties?: readonly string[];
+  readonly armorTypes?: readonly (typeof armorTypes)[number][];
+  readonly except?: readonly string[];
+  readonly bonus?: number | readonly number[];
+}
 export interface Item {
   readonly id: string;
   readonly schemaVersion: 1;
@@ -291,6 +323,7 @@ export interface Item {
   readonly grants?: Grants;
   readonly attunementPrerequisites?: AttunementRequirement;
   readonly container?: Container;
+  readonly baseItem?: BaseItem;
 }
 /** The magic-item record served to the D&D Engine. */
 export interface ServedRecord {
@@ -311,6 +344,7 @@ export interface ServedRecord {
   readonly weightLb?: number;
   readonly attunementPrerequisites?: AttunementRequirement;
   readonly container?: Container;
+  readonly baseItem?: BaseItem;
 }
 /**
  * A removed item is withdrawn, never deleted: the browser cannot learn a
@@ -433,21 +467,24 @@ export function effectProblem(effect: Effect): Problem | undefined {
 }
 
 /**
- * "complete" needs at least one supported effect or grants; "narrative"
- * declares neither. Absent grants are `undefined`.
+ * "complete" needs at least one supported effect, grants or a weapon or armor
+ * bonus; "narrative" declares none of them, though it may name its base
+ * weapon or armor. Absent grants and base items are `undefined`.
  */
 export function mechanicsProblem(
   mechanics: unknown,
   effects: readonly Effect[],
   grants?: unknown,
+  baseItem?: BaseItem,
 ): Problem | undefined {
+  const bonus = baseItem?.bonus !== undefined;
   if (mechanics === "narrative")
-    return effects.length > 0 || grants !== undefined
-      ? problem("A text-only item cannot have effects or properties.")
+    return effects.length > 0 || grants !== undefined || bonus
+      ? problem("A text-only item cannot have effects, properties or a bonus.")
       : undefined;
   if (mechanics !== "complete") return problem("Choose automated or text-only mechanics.");
-  if (effects.length === 0 && grants === undefined)
-    return problem("An automated item needs at least one effect or property.");
+  if (effects.length === 0 && grants === undefined && !bonus)
+    return problem("An automated item needs at least one effect, property or bonus.");
   if (grants !== undefined) {
     const failure = grantsProblem(grants);
     if (failure) return failure;
@@ -896,6 +933,71 @@ export function requirementWords(requirement: AttunementRequirement): string {
   return `${/^[AEIOU]/u.test(list) ? "an" : "a"} ${list}`;
 }
 
+// --- Weapons and armor -----------------------------------------------------
+
+// internal/homebrew/gear.go enforces the same rules, a stricter subset of the
+// Engine's baseItem (internal/rules/magic_gear.go); the shared fixture
+// tests/fixtures/effects.json ("baseItems") keeps the two in step.
+
+/** A list field of a base item: present lists hold 1 to `limit` distinct entries. */
+function baseList(value: unknown, limit: number, valid: (entry: unknown) => boolean): boolean {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.length > 0 &&
+      value.length <= limit &&
+      value.every(valid) &&
+      distinct(value))
+  );
+}
+
+export function baseItemProblem(value: unknown): Problem | undefined {
+  const shape = exactFields(
+    value,
+    ["kind"],
+    ["ids", "categories", "ranges", "properties", "armorTypes", "except", "bonus"],
+  );
+  if (shape) return shape;
+  const base = value as Json,
+    kind = base["kind"];
+  if (!oneOf(baseItemKinds, kind)) return problem("Choose a weapon or armor as the base.");
+  if (!baseList(base["ids"], maxBaseIds, validId) || !baseList(base["except"], maxBaseIds, validId))
+    return problem("Name at most {count} base records by id, each once.", { count: maxBaseIds });
+  const weapon = kind === "weapon";
+  if (
+    !baseList(base["categories"], weaponCategories.length, (entry) =>
+      oneOf(weaponCategories, entry),
+    ) ||
+    !baseList(base["ranges"], weaponRanges.length, (entry) => oneOf(weaponRanges, entry)) ||
+    !baseList(base["properties"], 20, validId) ||
+    !baseList(base["armorTypes"], armorTypes.length, (entry) => oneOf(armorTypes, entry))
+  )
+    return problem("Choose each base filter from its options, once.");
+  if (
+    weapon
+      ? base["armorTypes"] !== undefined
+      : ["categories", "ranges", "properties"].some((field) => base[field] !== undefined)
+  )
+    return problem("Filter a weapon by category, range and property, and armor by armor type.");
+  if (
+    base["ids"] !== undefined &&
+    ["categories", "ranges", "properties", "armorTypes", "except"].some(
+      (field) => base[field] !== undefined,
+    )
+  )
+    return problem("Name the base records or filter them, not both.");
+  const bonus = base["bonus"],
+    validBonus = (entry: unknown): boolean => isInteger(entry, 1, maxBonus);
+  if (
+    bonus !== undefined &&
+    !(Array.isArray(bonus) ? baseList(bonus, maxBonus, validBonus) : validBonus(bonus))
+  )
+    return problem("A bonus is a whole number from 1 to {count}, or a list of them.", {
+      count: maxBonus,
+    });
+  return undefined;
+}
+
 /** Rules that span a flattened record: a requirement needs attunement. */
 export function recordProblem(record: ServedRecord): Problem | undefined {
   return record.attunementPrerequisites !== undefined && !record.attunement
@@ -961,7 +1063,8 @@ export function itemProblem(value: Item): Problem | undefined {
       ? undefined
       : requirementProblem(value.attunementPrerequisites)) ??
     (value.container === undefined ? undefined : containerProblem(value.container)) ??
-    mechanicsProblem(value.characterMechanics, value.characterEffects, value.grants)
+    (value.baseItem === undefined ? undefined : baseItemProblem(value.baseItem)) ??
+    mechanicsProblem(value.characterMechanics, value.characterEffects, value.grants, value.baseItem)
   );
 }
 
@@ -1032,7 +1135,12 @@ export function parseSet(value: unknown): ItemSet {
 /** Checks an untrusted value as a stored item draft and returns it. */
 export function parseItem(value: unknown): Item {
   const failure =
-    exactFields(value, itemFields, ["grants", "attunementPrerequisites", "container"]) ??
+    exactFields(value, itemFields, [
+      "grants",
+      "attunementPrerequisites",
+      "container",
+      "baseItem",
+    ]) ??
     exactFields((value as Record<string, unknown>)["overrides"], [], overrideFields) ??
     effectsShapeProblem((value as Record<string, unknown>)["characterEffects"]) ??
     itemProblem(value as unknown as Item);
@@ -1071,7 +1179,7 @@ export function parsePublished(value: unknown): Published {
       "characterMechanics",
       "characterEffects",
     ],
-    ["bodyPlacements", "grants", "weightLb", "attunementPrerequisites", "container"],
+    ["bodyPlacements", "grants", "weightLb", "attunementPrerequisites", "container", "baseItem"],
   );
   if (shape) throw new HomebrewError(shape.text, shape.params);
   const served = published.record;
@@ -1104,9 +1212,14 @@ export function parsePublished(value: unknown): Published {
     (served.attunementPrerequisites === undefined ||
       requirementProblem(served.attunementPrerequisites) === undefined) &&
     (served.container === undefined || containerProblem(served.container) === undefined) &&
+    (served.baseItem === undefined || baseItemProblem(served.baseItem) === undefined) &&
     recordProblem(served) === undefined &&
-    mechanicsProblem(served.characterMechanics, served.characterEffects, served.grants) ===
-      undefined;
+    mechanicsProblem(
+      served.characterMechanics,
+      served.characterEffects,
+      served.grants,
+      served.baseItem,
+    ) === undefined;
   if (!valid) throw new HomebrewError("A published record is invalid.");
   return published;
 }
@@ -1615,6 +1728,7 @@ export function flatten(itemSet: ItemSet | undefined, item: Item): Published {
         }
       : {}),
     ...(item.container ? { container: { ...item.container } } : {}),
+    ...(item.baseItem ? { baseItem: JSON.parse(JSON.stringify(item.baseItem)) as BaseItem } : {}),
   };
   return {
     id: record.id,
@@ -1852,7 +1966,7 @@ const subclassDefaults: Record<string, unknown> = {
 /** Optional objects `{}` clears in an import; a cleared field takes its partner. */
 const clearable: Readonly<Record<"set" | "item" | "subclass", readonly string[]>> = {
   set: ["condition"],
-  item: ["grants", "attunementPrerequisites", "container"],
+  item: ["grants", "attunementPrerequisites", "container", "baseItem"],
   subclass: ["grants", "spellcasting"],
 };
 const partners: Readonly<Record<string, string>> = { spellcasting: "progression" };
@@ -2047,7 +2161,8 @@ function normalize(
   if (kind === "item" && raw["characterMechanics"] === undefined)
     fields["characterMechanics"] =
       (Array.isArray(fields["characterEffects"]) && fields["characterEffects"].length > 0) ||
-      fields["grants"] !== undefined
+      fields["grants"] !== undefined ||
+      (isRecord(fields["baseItem"]) && fields["baseItem"]["bonus"] !== undefined)
         ? "complete"
         : "narrative";
   fields["schemaVersion"] = 1;

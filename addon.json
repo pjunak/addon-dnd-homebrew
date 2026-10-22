@@ -3,8 +3,8 @@
   "packageFormat": 1,
   "id": "dnd-homebrew",
   "name": "D&D Homebrew",
-  "version": "1.0.0",
-  "description": "DM-authored homebrew (items and item sets; subclasses and more to come) served to character sheets as rules data.",
+  "version": "1.2.0",
+  "description": "DM-authored homebrew (item sets, items and subclasses) served to character sheets as rules data.",
   "license": "MIT",
   "compatibility": {
     "host": ">=2.0.0 <3.0.0",

@@ -28,10 +28,44 @@ function handle(calls: string[], providers = ["compendium", "broken"]): ServiceH
       );
       if (options?.providerAddonId === "broken") throw new Error("unavailable");
       if (method === "catalog")
-        return { sets: [{ id: "rules", kinds: { spell: 3, class: 1, monster: 9 } }] } as T;
+        return {
+          sets: [{ id: "rules", kinds: { spell: 3, class: 1, weapon: 1, armor: 2, monster: 9 } }],
+        } as T;
       if (request.kind === "class")
         return {
           records: [{ kind: "class", id: "wizard", value: { id: "wizard", name: "Wizard" } }],
+        } as T;
+      if (request.kind === "weapon")
+        return {
+          records: [
+            {
+              kind: "weapon",
+              id: "longsword",
+              value: {
+                id: "longsword",
+                name: "Longsword",
+                category: "martial",
+                range: "melee",
+                damage: "1d8",
+                damageType: "slashing",
+              },
+            },
+          ],
+        } as T;
+      if (request.kind === "armor")
+        return {
+          records: [
+            {
+              kind: "armor",
+              id: "shield",
+              value: { id: "shield", name: "Shield", armorType: "shield", acBonus: 2 },
+            },
+            {
+              kind: "armor",
+              id: "chain-mail",
+              value: { id: "chain-mail", name: "Chain Mail", armorType: "heavy", baseAC: 16 },
+            },
+          ],
         } as T;
       return (
         request.cursor === undefined
@@ -50,7 +84,7 @@ function handle(calls: string[], providers = ["compendium", "broken"]): ServiceH
   };
 }
 
-void test("spells and classes come from the other providers, sorted, malformed ones skipped", async () => {
+void test("spells, classes, weapons and armor come from the other providers, sorted, malformed ones skipped", async () => {
   const calls: string[] = [];
   const loader = new ReferenceLoader(async () => handle(calls), new AbortController().signal);
   const references = await loader.load();
@@ -62,6 +96,16 @@ void test("spells and classes come from the other providers, sorted, malformed o
     ],
   );
   assert.deepEqual(references.classes, [{ id: "wizard", name: "Wizard", detail: "" }]);
+  assert.deepEqual(references.weapons, [
+    { id: "longsword", name: "Longsword", detail: "martial · melee · 1d8 slashing" },
+  ]);
+  assert.deepEqual(
+    references.armor.map((option) => [option.id, option.detail]),
+    [
+      ["chain-mail", "heavy · AC 16"],
+      ["shield", "shield · AC +2"],
+    ],
+  );
   assert.ok(!calls.some((call) => call.includes(":monster:")), "only the kinds the pickers need");
   assert.equal(await loader.load(), references, "loaded once per page");
 });

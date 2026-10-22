@@ -49,15 +49,15 @@ blocker. **Retire** keeps an item served while removing it from the gallery.
 Subclass features need the Engine's whole grants vocabulary: 49 grant fields
 and 31 nested definitions. Hand-written controls for each would fall behind
 the Engine, so the editor (`src/schema-form.ts`) renders any value from the
-vocabulary's JSON Schema (`src/grants-schema.ts`, a copy of the grants in
-`contracts/rule-record.schema.json`, itself the Compendium's): an object shows
+vocabulary's JSON Schema (`src/grants-schema.ts`, a copy of
+`contracts/engine-grants.schema.json`, itself the Engine's): an object shows
 its required fields and the optional ones it holds, and **Add field** offers
 the rest; lists, maps, alternatives and flat rows (as tables) have their own
 controls. Words come from `src/vocabulary.ts`: labels, hints, allowed values,
 the order of fields, starting entries and, for an activation change, which
 fields its target uses. A field without words still renders under its own
-name, so a new Engine field is editable once the record schema is copied again
-and `npm run sync:grants-schema` runs; giving it words and a Czech translation
+name, so a new Engine field is editable once `npm run sync:engine-grants` and
+`npm run sync:grants-schema` run; giving it words and a Czech translation
 is the follow-up. Item grants keep their own smaller editor (`src/grants.ts`),
 because items accept only an allowlist.
 
@@ -86,13 +86,16 @@ skips invalid ones with a diagnostic, and the next publish rewrites them.
   `internal/rules/character_items.go`, and the full grants vocabulary
   (`internal/rules/grants_vocabulary.go`) for subclasses. Anything else needs
   Engine support first, then its contract README, the Compendium schema and the
-  sheet's display. Grants need Engine 5.4.0; an older Engine ignores them.
+  sheet's display. Grants need Engine 5.4.0; an older Engine ignores them. A
+  weapon or armor base (`baseItem`) follows the Engine's magic weapons and
+  armor contract (`internal/rules/magic_gear.go`), with at most 20 ids and
+  bonuses up to +5, and needs Engine 6.1.0.
 - Subclass grants are checked for shape, not meaning: an unknown spell or class
   id, a toggle spending a use nobody declares, or a choice id another source
   also uses shows on the character, not in the editor. Some vocabulary fields
   apply only to feats, species or items; the editor lists them under *Not
   applied on subclasses*.
-- The editor picks spells and classes from the other `dnd5e.rules-data`
+- The editor picks spells, classes, weapons and armor from the other `dnd5e.rules-data`
   providers (the Compendium), which the browser reads once per page through
   an optional consumer that excludes this add-on's own records. Without a
   Compendium they are typed as ids. Either way the Engine checks them: an

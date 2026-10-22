@@ -100,10 +100,11 @@ takes the defaults below. Entries that match what is stored are skipped.
 | `text` | `""` | Markdown; the effect as the player reads it |
 | `characterEffects` | `[]` | See [Effects](#effects) |
 | `grants` | none | See [Grants](#grants) |
-| `characterMechanics` | from effects and grants | `"complete"` with effects or grants, `"narrative"` with neither |
+| `characterMechanics` | from effects, grants and bonus | `"complete"` with effects, grants or a weapon or armor bonus, `"narrative"` with none of them |
 | `overrides` | `{}` | Any of `itemType`, `rarity`, `attunement`, `bodyPlacements`, `weightLb`, replacing the set value |
 | `attunementPrerequisites` | none | Who may attune; see [Attunement requirement](#attunement-requirement) |
 | `container` | none | What the item holds: `{ "capacityLb": 30 }` (more than 0, at most 100000), `{ "weightless": true }` for contents that do not count toward the carrier's load, or both |
+| `baseItem` | none | The weapon or armor the item is, with its bonus; see [Weapon or armor](#weapon-or-armor) |
 | `tags` | `[]` | As for sets |
 | `playerVisible` | `false` | Listed in the gallery when its set is visible too |
 | `retired` | `false` | Hidden from the gallery; still usable on sheets |
@@ -214,6 +215,37 @@ character does not qualify; a requirement in words always needs the DM to
 confirm it on the character. An item with a requirement must require
 attunement, through its set or its override.
 
+## Weapon or armor
+
+A magic weapon or armor names its base, a weapon or armor record from the
+rules data (the Compendium's), and the bonus it adds. The sheet then treats it
+as that weapon or armor: attacks, Armor Class, hands and weight come from the
+base, and the bonus adds to attack and damage rolls (a weapon) or to Armor
+Class (armor or a shield).
+
+```json
+"baseItem": { "kind": "weapon", "ids": ["longsword"], "bonus": 1 }
+```
+
+| Field | Rule |
+| --- | --- |
+| `kind` | `weapon` or `armor` (armor includes shields) |
+| `ids` | 1 to 20 base record ids, each once, such as `longsword` or `chain-mail` |
+| `categories`, `ranges`, `properties` | Instead of `ids`, for a weapon: any weapon whose category (`simple`, `martial`), range (`melee`, `ranged`) and properties (`finesse`, `thrown`, …; it must have every one) match |
+| `armorTypes` | Instead of `ids`, for armor: any armor of these types (`light`, `medium`, `heavy`, `shield`) |
+| `except` | With filters, ids left out, such as `hide-armor` |
+| `bonus` | A whole number from 1 to 5, or a list such as `[1, 2, 3]` |
+
+With no `ids` and no filters, any weapon or any armor will do. When several
+records match, or `bonus` is a list, the player picks one on the sheet;
+"Weapon (Any Simple or Martial), +1, +2 or +3" is
+`{ "kind": "weapon", "categories": ["simple", "martial"], "bonus": [1, 2, 3] }`.
+A bonus makes the item automated and applies only while the item is equipped,
+and attuned when it requires attunement. A text-only item may name its base
+without a bonus. In an import, `"baseItem": {}` removes it. Use the
+Compendium's ids for the base; without the Compendium installed, the sheet
+cannot find the base and shows a warning instead.
+
 ## Published record
 
 Publishing combines a set and an item into one Engine `magic-item` record:
@@ -226,10 +258,10 @@ Publishing combines a set and an item into one Engine `magic-item` record:
 | `tags` | `homebrew`, the set id, set tags, item tags |
 | `text` | `*<type>, <rarity>[ (Requires Attunement[ by <who>])]*`, the item text, the set description, `**Curse.** <curse>` |
 | `weightLb` | the item override, else the set; absent when neither has one |
-| `attunementPrerequisites`, `container` | the item |
+| `attunementPrerequisites`, `container`, `baseItem` | the item |
 | `characterEffects` | the item |
 | `grants` | the item's grants, plus the set condition as `conditions: [{ id, name, summary }]`; absent when neither exists |
-| `characterMechanics` | `complete` when the record has effects or grants, else `narrative`. A text-only item in a set with a condition is `complete` and carries only the condition. |
+| `characterMechanics` | `complete` when the record has effects, grants or a bonus, else `narrative`. A text-only item in a set with a condition is `complete` and carries only the condition. |
 | `edition`, `book` | `2024`, `homebrew` |
 
 An item is in the gallery when the item and its set are both visible to

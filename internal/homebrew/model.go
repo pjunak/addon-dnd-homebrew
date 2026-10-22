@@ -97,6 +97,7 @@ type Item struct {
 	// ValidateRequirement.
 	AttunementPrerequisites map[string]any `json:"attunementPrerequisites,omitempty"`
 	Container               *Container     `json:"container,omitempty"`
+	BaseItem                *BaseItem      `json:"baseItem,omitempty"`
 }
 
 // Record is the magic-item record served as dnd5e.rules-data.
@@ -118,6 +119,7 @@ type Record struct {
 	WeightLb                *float64       `json:"weightLb,omitempty"`
 	AttunementPrerequisites map[string]any `json:"attunementPrerequisites,omitempty"`
 	Container               *Container     `json:"container,omitempty"`
+	BaseItem                *BaseItem      `json:"baseItem,omitempty"`
 }
 
 // Published is one served record. A removed item is withdrawn rather than
@@ -280,7 +282,12 @@ func ValidateItem(item Item) error {
 	if _, exists := item.Grants["conditions"]; exists {
 		return fmt.Errorf("item %s: conditions come from the item's set", item.ID)
 	}
-	if err := ValidateMechanics(item.CharacterMechanics, item.CharacterEffects, item.Grants); err != nil {
+	if item.BaseItem != nil {
+		if err := ValidateBaseItem(*item.BaseItem); err != nil {
+			return fmt.Errorf("item %s: %w", item.ID, err)
+		}
+	}
+	if err := ValidateMechanics(item.CharacterMechanics, item.CharacterEffects, item.Grants, item.BaseItem); err != nil {
 		return fmt.Errorf("item %s: %w", item.ID, err)
 	}
 	return nil
@@ -330,25 +337,32 @@ func ValidatePublished(published Published) error {
 	if record.AttunementPrerequisites != nil && !record.Attunement {
 		return fmt.Errorf("published record %s: %w", published.ID, errRequirementNeedsAttunement)
 	}
-	if err := ValidateMechanics(record.CharacterMechanics, record.CharacterEffects, record.Grants); err != nil {
+	if record.BaseItem != nil {
+		if err := ValidateBaseItem(*record.BaseItem); err != nil {
+			return fmt.Errorf("published record %s: %w", published.ID, err)
+		}
+	}
+	if err := ValidateMechanics(record.CharacterMechanics, record.CharacterEffects, record.Grants, record.BaseItem); err != nil {
 		return fmt.Errorf("published record %s: %w", published.ID, err)
 	}
 	return nil
 }
 
 // ValidateMechanics mirrors the Engine's item gate: "complete" needs at least
-// one supported effect or allowlisted grants, "narrative" declares neither.
-// A nil grants map means the field is absent.
-func ValidateMechanics(mechanics string, effects []Effect, grants map[string]any) error {
+// one supported effect, allowlisted grants or a weapon or armor bonus;
+// "narrative" declares none of them, though it may name its base. A nil
+// grants map or base means the field is absent.
+func ValidateMechanics(mechanics string, effects []Effect, grants map[string]any, base *BaseItem) error {
+	bonus := base != nil && base.Bonus != nil
 	switch mechanics {
 	case "narrative":
-		if len(effects) > 0 || grants != nil {
-			return errors.New("a narrative item cannot declare character effects or grants")
+		if len(effects) > 0 || grants != nil || bonus {
+			return errors.New("a narrative item cannot declare character effects, grants or a bonus")
 		}
 		return nil
 	case "complete":
-		if len(effects) == 0 && grants == nil {
-			return errors.New("an automated item needs at least one character effect or grant")
+		if len(effects) == 0 && grants == nil && !bonus {
+			return errors.New("an automated item needs at least one character effect, grant or bonus")
 		}
 	default:
 		return errors.New(`characterMechanics must be "complete" or "narrative"`)
@@ -504,8 +518,8 @@ func validTags(values []string) error {
 	return nil
 }
 
-func hasDuplicate(values []string) bool {
-	seen := make(map[string]bool, len(values))
+func hasDuplicate[T comparable](values []T) bool {
+	seen := make(map[T]bool, len(values))
 	for _, value := range values {
 		if seen[value] {
 			return true
