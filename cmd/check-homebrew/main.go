@@ -1,4 +1,4 @@
-// Command check-homebrew checks a dnd-homebrew-items file offline with the
+// Command check-homebrew checks a dnd-homebrew file offline with the
 // importer's own rules, so a file written by hand or by a tool can be fixed
 // before the DM previews it in the add-on or the Import Center:
 //

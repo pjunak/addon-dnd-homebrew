@@ -34,11 +34,11 @@ func TestAnExportTurnsTheReportIntoUpdates(t *testing.T) {
 		t.Fatal(err)
 	}
 	export := write(t, "export.json", map[string]any{
-		"format": "dnd-homebrew-items", "schemaVersion": 1, "generatedAt": 1, "mode": "merge",
+		"format": "dnd-homebrew", "schemaVersion": 1, "generatedAt": 1, "mode": "merge",
 		"sets": fixture.Stored.Sets, "items": fixture.Stored.Items,
 	})
 	document := write(t, "items.json", map[string]any{
-		"format": "dnd-homebrew-items", "schemaVersion": 1, "sets": []any{},
+		"format": "dnd-homebrew", "schemaVersion": 1, "sets": []any{},
 		"items": []any{map[string]any{"id": "defense", "text": "+1 bonus to Armor Class while carried."}},
 	})
 	var out bytes.Buffer
@@ -53,7 +53,7 @@ func TestAnExportTurnsTheReportIntoUpdates(t *testing.T) {
 
 func TestAProblemNamesTheEntry(t *testing.T) {
 	document := write(t, "items.json", map[string]any{
-		"format": "dnd-homebrew-items", "schemaVersion": 1, "sets": []any{},
+		"format": "dnd-homebrew", "schemaVersion": 1, "sets": []any{},
 		"items": []any{map[string]any{"id": "ring", "name": "Ring",
 			"characterEffects": []any{map[string]any{"target": "armorClass", "key": "DEX", "mode": "add", "value": 1}}}},
 	})

@@ -1,12 +1,12 @@
 # Homebrew items format
 
-One JSON document holds item sets and items. Import it from **Homebrew Items
+One JSON document holds item sets and items. Import it from **Homebrew
 → Import file** or from the DM Tools Import Center; **Export** writes the same
 shape. Files are limited to 2 MiB and 256 changes per import.
 
 ```json
 {
-  "format": "dnd-homebrew-items",
+  "format": "dnd-homebrew",
   "schemaVersion": 1,
   "mode": "merge",
   "sets": [
@@ -34,7 +34,7 @@ A file can hold a whole card pack or treasure list, up to 256 changes per
 import. To turn notes, a PDF or a conversation into a file, by hand or with an
 AI assistant:
 
-1. **Export** the current drafts from Homebrew Items, so ids and sets that
+1. **Export** the current drafts from Homebrew, so ids and sets that
    already exist are reused rather than duplicated.
 2. Give the writer this page, the [sample](examples/sample-items.json), the
    export and the source text. Ask for a `merge` file with only the sets and
@@ -44,7 +44,7 @@ AI assistant:
    problem it names until it prints `VALID`:
 
    ```text
-   go run ./cmd/check-homebrew items.json homebrew-items-<date>.json
+   go run ./cmd/check-homebrew items.json homebrew-<date>.json
    ```
 
    The second file is the export; leave it out for an empty campaign. The
@@ -56,7 +56,7 @@ AI assistant:
 
 | Field | Required | Meaning |
 | --- | --- | --- |
-| `format` | yes | `"dnd-homebrew-items"` |
+| `format` | yes | `"dnd-homebrew"` |
 | `schemaVersion` | yes | `1` |
 | `mode` | no | `"merge"` (default) adds and updates; `"replace"` also deletes drafts missing from the file |
 | `generatedAt` | no | Informational timestamp written by Export |

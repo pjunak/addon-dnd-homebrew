@@ -157,7 +157,7 @@ export const maxMarkdown = 20000;
 export const maxEffects = 40;
 export const maxConditionSummary = 2000;
 export const maxWeight = 100000;
-export const importFormat = "dnd-homebrew-items";
+export const importFormat = "dnd-homebrew";
 
 export interface Effect {
   readonly target: EffectTarget;

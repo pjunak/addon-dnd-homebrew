@@ -265,7 +265,7 @@ func TestPreviewCommitRoundTrip(t *testing.T) {
 	if err != nil || described["formats"].([]any)[0] != Format {
 		t.Fatalf("describe %v %v", described, err)
 	}
-	document := json.RawMessage(`{"format":"dnd-homebrew-items","schemaVersion":1,"sets":[{"id":"omens","name":"Omens","itemType":"Wondrous Item","rarity":"Rare"}],"items":[{"id":"destiny","setId":"omens","name":"Destiny"}]}`)
+	document := json.RawMessage(`{"format":"dnd-homebrew","schemaVersion":1,"sets":[{"id":"omens","name":"Omens","itemType":"Wondrous Item","rarity":"Rare"}],"items":[{"id":"destiny","setId":"omens","name":"Destiny"}]}`)
 	preview, err := handle(t, handler, dm, "preview", map[string]any{"contractVersion": "import-preview.v1", "format": Format, "document": document})
 	if err != nil {
 		t.Fatal(err)
@@ -305,12 +305,12 @@ func TestReplaceThenRecreateUsesTombstones(t *testing.T) {
 			t.Fatalf("commit %s: %v", document, err)
 		}
 	}
-	run(`{"format":"dnd-homebrew-items","schemaVersion":1,"sets":[],"items":[{"id":"luna","name":"Luna"}]}`)
-	run(`{"format":"dnd-homebrew-items","schemaVersion":1,"mode":"replace","sets":[],"items":[]}`)
+	run(`{"format":"dnd-homebrew","schemaVersion":1,"sets":[],"items":[{"id":"luna","name":"Luna"}]}`)
+	run(`{"format":"dnd-homebrew","schemaVersion":1,"mode":"replace","sets":[],"items":[]}`)
 	if len(store.collections[homebrew.ItemsCollection]) != 0 {
 		t.Fatal("replace kept a draft")
 	}
-	run(`{"format":"dnd-homebrew-items","schemaVersion":1,"sets":[],"items":[{"id":"luna","name":"Luna"}]}`)
+	run(`{"format":"dnd-homebrew","schemaVersion":1,"sets":[],"items":[{"id":"luna","name":"Luna"}]}`)
 	if store.collections[homebrew.ItemsCollection]["luna"].Revision != 3 {
 		t.Fatalf("recreated revision %d", store.collections[homebrew.ItemsCollection]["luna"].Revision)
 	}
@@ -319,7 +319,7 @@ func TestReplaceThenRecreateUsesTombstones(t *testing.T) {
 func TestCommitRefusesStalePlans(t *testing.T) {
 	store := newFakeStore()
 	handler, _ := New(store)
-	document := json.RawMessage(`{"format":"dnd-homebrew-items","schemaVersion":1,"sets":[],"items":[{"id":"luna","name":"Luna"}]}`)
+	document := json.RawMessage(`{"format":"dnd-homebrew","schemaVersion":1,"sets":[],"items":[{"id":"luna","name":"Luna"}]}`)
 	preview, err := handle(t, handler, dm, "preview", map[string]any{"contractVersion": "import-preview.v1", "format": Format, "document": document})
 	if err != nil {
 		t.Fatal(err)
@@ -334,7 +334,7 @@ func TestPlansExpire(t *testing.T) {
 	handler, _ := New(newFakeStore())
 	now := time.Unix(100, 0)
 	handler.now = func() time.Time { return now }
-	document := json.RawMessage(`{"format":"dnd-homebrew-items","schemaVersion":1,"sets":[],"items":[]}`)
+	document := json.RawMessage(`{"format":"dnd-homebrew","schemaVersion":1,"sets":[],"items":[]}`)
 	preview, err := handle(t, handler, dm, "preview", map[string]any{"contractVersion": "import-preview.v1", "format": Format, "document": document})
 	if err != nil {
 		t.Fatal(err)

@@ -24,7 +24,7 @@ export function problemText(t: Translator, problem: Problem): string {
 
 export const cs: Readonly<Record<string, string>> = {
   // Page
-  "Homebrew Items": "Vlastní předměty",
+  Homebrew: "Vlastní obsah",
   "Item Gallery": "Galerie předmětů",
   "Create item sets and items, then publish them to use them on character sheets.":
     "Vytvářejte sady předmětů a předměty a pak je zveřejněte, aby šly použít na deníkách postav.",
@@ -402,7 +402,7 @@ export const cs: Readonly<Record<string, string>> = {
     "Během kontroly se něco změnilo. Zkontrolujte zveřejnění znovu.",
   "Publishing failed. Nothing was changed.": "Zveřejnění selhalo. Nic se nezměnilo.",
   // Import
-  "Import homebrew items": "Import vlastních předmětů",
+  "Import homebrew": "Import vlastního obsahu",
   "Imported items are drafts; publish them afterwards.":
     "Importované předměty jsou koncepty; poté je zveřejněte.",
   "Import files are limited to 2 MiB.": "Soubory pro import mají limit 2 MiB.",

@@ -1,5 +1,5 @@
 // Package importer implements the codex.import-adapter for the
-// dnd-homebrew-items format. Preview reads the stored drafts, normalizes the
+// dnd-homebrew format. Preview reads the stored drafts, normalizes the
 // document and retains the exact guarded mutations behind a single-use token;
 // commit submits only that reviewed plan. Imports write drafts: nothing reaches
 // character sheets until the DM publishes.
@@ -26,7 +26,7 @@ const (
 	Contract        = "codex.import-adapter"
 	ContractVersion = "2.0.0"
 	MethodPrefix    = "service/" + Contract + "/"
-	Format          = "dnd-homebrew-items"
+	Format          = "dnd-homebrew"
 	maximumPlans    = 128
 	maximumWrites   = 256
 	planLifetime    = 15 * time.Minute
@@ -109,8 +109,8 @@ func (handler *Handler) HandleRPC(ctx context.Context, request workerrpc.Request
 		}
 		return map[string]any{
 			"contractVersion": "import-adapter-description.v1", "id": "dnd-homebrew",
-			"label":       "D&D homebrew items",
-			"description": "Custom item sets and items as drafts; publish them from Homebrew Items to use them on character sheets.",
+			"label":       "D&D homebrew",
+			"description": "Custom item sets and items as drafts; publish them from Homebrew to use them on character sheets.",
 			"formats":     []string{Format},
 		}, nil
 	case MethodPrefix + "preview":
@@ -251,7 +251,7 @@ func buildPlan(body json.RawMessage, storedSets, storedItems map[string]stored, 
 		return importPlan{}, fmt.Errorf("the import changes %d drafts; split it into files of at most %d changes", len(plan.Mutations), maximumWrites)
 	}
 	if plan.Summary.Creates+plan.Summary.Updates > 0 {
-		plan.Warnings = append(plan.Warnings, "Imported items are drafts. Publish them from Homebrew Items to use them on character sheets.")
+		plan.Warnings = append(plan.Warnings, "Imported items are drafts. Publish them from Homebrew to use them on character sheets.")
 	}
 	// Sets come before their items, then each collection by id.
 	sort.Slice(plan.Changes, func(i, j int) bool {

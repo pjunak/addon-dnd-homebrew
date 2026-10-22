@@ -5,7 +5,7 @@ import { parseImportCommit, parseImportPreview } from "#web/import-review";
 const preview = {
   contractVersion: "import-preview-result.v1",
   token: "t".repeat(32),
-  format: "dnd-homebrew-items",
+  format: "dnd-homebrew",
   mode: "merge",
   summary: { creates: 2, updates: 0, skips: 1, deletes: 0 },
   warnings: ["Imported items are drafts."],

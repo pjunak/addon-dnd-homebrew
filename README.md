@@ -1,6 +1,6 @@
-# D&D Homebrew Items
+# D&D Homebrew
 
-D&D Homebrew Items lets the DM create and import custom magic items and
+D&D Homebrew lets the DM create and import custom magic items and
 **item sets** for TTRPG Codex, then use them on character sheets. A set
 holds what its items share: item type, rarity, attunement, body placements, a
 shared description, a curse and optionally a condition every item gives. Each
@@ -8,12 +8,15 @@ item adds its own description and, where the D&D Engine can apply them,
 effects such as +1 Armor Class and properties such as Advantage, limited uses
 and spells cast from the item.
 
+Items are the first kind of homebrew; subclasses and others will join this
+add-on, published together and imported from the same file format.
+
 English and Czech controls follow the host language.
 
 ## How it fits together
 
 ```text
-Homebrew Items (DM)        drafts: sets and items, DM-only
+Homebrew (DM)              drafts: sets and items, DM-only
         │ Publish
         ▼
 homebrew_published         one flattened magic-item record per item, readable by players
@@ -35,7 +38,7 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 
 ## Use it
 
-1. **Homebrew Items** (DM sidebar): create a set, add items to it, or import a
+1. **Homebrew** (DM sidebar): create a set, add items to it, or import a
    file. Drafts are private to the DM and never touch character sheets.
    **Save and add another** keeps the set for the next item, and
    **Duplicate** starts a new item from an existing one.
@@ -94,7 +97,7 @@ without a set.
 
 ## Import and export
 
-Import a `dnd-homebrew-items` JSON file from **Homebrew Items → Import file** or
+Import a `dnd-homebrew` JSON file from **Homebrew → Import file** or
 from the DM Tools Import Center. The page checks the file first and names the
 exact entry that is wrong; the worker then shows a review of what will change.
 **Export** downloads every draft in the same format. See the

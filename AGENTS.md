@@ -1,4 +1,4 @@
-# D&D Homebrew Items add-on
+# D&D Homebrew add-on
 
 A TTRPG Codex add-on (TypeScript UI plus a native Go worker) for DM-authored
 item sets and items, served to the D&D Engine as `dnd5e.rules-data`. Its

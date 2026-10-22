@@ -2,9 +2,9 @@
   "$schema": "../ttrpg-codex/contracts/addons/v3/manifest.schema.json",
   "packageFormat": 1,
   "id": "dnd-homebrew",
-  "name": "D&D Homebrew Items",
+  "name": "D&D Homebrew",
   "version": "1.0.0",
-  "description": "DM-authored custom items and item sets served to character sheets as rules data.",
+  "description": "DM-authored homebrew (items and item sets; subclasses and more to come) served to character sheets as rules data.",
   "license": "MIT",
   "compatibility": {
     "host": ">=2.0.0 <3.0.0",
@@ -40,17 +40,17 @@
     {
       "id": "homebrew.route",
       "surface": "route",
-      "label": "Homebrew Items",
+      "label": "Homebrew",
       "roles": ["dm"],
-      "config": { "path": "homebrew", "labels": { "cs": "Vlastní předměty" } }
+      "config": { "path": "homebrew", "labels": { "cs": "Vlastní obsah" } }
     },
     {
       "id": "homebrew.sidebar",
       "surface": "sidebar",
-      "label": "Homebrew Items",
+      "label": "Homebrew",
       "roles": ["dm"],
       "order": 220,
-      "config": { "route": "homebrew.route", "labels": { "cs": "Vlastní předměty" } }
+      "config": { "route": "homebrew.route", "labels": { "cs": "Vlastní obsah" } }
     },
     {
       "id": "gallery.route",

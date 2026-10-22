@@ -205,7 +205,7 @@ type Evaluation = {
 void test("the DM imports the sample items through the add-on's own worker", async () => {
   const importer = await connect(dm, dmCsrf, "dnd-homebrew", { contract: "codex.import-adapter", own: true });
   const document = JSON.parse(await readFile(resolve(homebrewRoot, "docs/examples/sample-items.json"), "utf8"));
-  const preview = await importer("preview", { contractVersion: "import-preview.v1", format: "dnd-homebrew-items", document });
+  const preview = await importer("preview", { contractVersion: "import-preview.v1", format: "dnd-homebrew", document });
   assert.equal(preview.status, 200, JSON.stringify(preview.body));
   assert.deepEqual(preview.body.result.summary, { creates: 14, updates: 0, skips: 0, deletes: 0 });
   const commit = await importer("commit", { contractVersion: "import-commit.v1", token: preview.body.result.token }, "import-1");
@@ -242,8 +242,8 @@ void test("published items apply on DM and player sheets", async () => {
     assert.equal(sheet.derived.maxHp, base.derived.maxHp + 5);
     assert.equal(sheet.abilities.INT.score, Math.min(20, base.abilities.INT.score + 1));
     assert.equal(sheet.skills.insight.proficient, true);
-    const itemIssues = equipped.evaluation.issues.filter((issue) => /^(item-|placement-)/u.test(issue.id));
-    assert.deepEqual(itemIssues, [], "items must not raise item blockers");
+    const itemIssues = equipped.evaluation.issues.filter((issue) => /^(item-|placement-|rules-data:magic-item:hb\.)/u.test(issue.id));
+    assert.deepEqual(itemIssues, [], "items must not raise item blockers or break the Engine's grants vocabulary");
   }
 });
 
@@ -318,7 +318,7 @@ void test("the real UI edits, publishes and shows the gallery", async () => {
       if (message.type() === "error") errors.push(message.text());
     });
     await page.goto(`${(await dm.get("/api/health")).url().replace("/api/health", "")}/#/addons/dnd-homebrew/homebrew`);
-    await page.getByRole("heading", { name: "Homebrew Items" }).waitFor();
+    await page.getByRole("heading", { name: "Homebrew", exact: true }).waitFor();
     assert.equal(await page.locator('a[href="#/addons/dnd-homebrew/homebrew"]').count(), 1);
     await page.getByRole("button", { name: /^Ward/u }).click();
     await page.locator(".hb-effect-row").first().waitFor();
@@ -365,7 +365,7 @@ void test("the real UI edits, publishes and shows the gallery", async () => {
     const created = (await all("homebrew_items")).documents.find((document) => document.key === "temp")!;
     await data("transactions", { contractVersion: "addon-data-transaction.v1", mutations: [{ operation: "delete", kind: "collection", dataId: "homebrew_items", key: "temp", expectedRevision: created.revision }] });
     await page.reload();
-    await page.getByRole("heading", { name: "Homebrew Items" }).waitFor();
+    await page.getByRole("heading", { name: "Homebrew", exact: true }).waitFor();
     await page.getByRole("button", { name: "New item" }).click();
     await page.locator('input[name="name"]').fill("Temp");
     await page.locator(".hb-editor-actions").getByRole("button", { name: "Save and add another" }).click();

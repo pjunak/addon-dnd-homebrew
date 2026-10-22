@@ -237,7 +237,7 @@ export function defineCatalogElement(generation?: string): string {
       const t = this.#t;
       const title = element(document, "div", "hb-title");
       title.append(
-        element(document, "h1", "", t("Homebrew Items")),
+        element(document, "h1", "", t("Homebrew")),
         element(
           document,
           "p",
@@ -305,7 +305,7 @@ export function defineCatalogElement(generation?: string): string {
     }
     #renderTree(): void {
       const t = this.#t;
-      this.#tree.setAttribute("aria-label", t("Homebrew Items"));
+      this.#tree.setAttribute("aria-label", t("Homebrew"));
       const search = element(document, "input");
       search.type = "search";
       search.dataset["ui"] = "search";
@@ -1334,7 +1334,7 @@ export function defineCatalogElement(generation?: string): string {
           !(await openDialog(
             this,
             t,
-            t("Import homebrew items"),
+            t("Import homebrew"),
             body,
             changed ? t("Import") : undefined,
           ))
@@ -1373,7 +1373,7 @@ export function defineCatalogElement(generation?: string): string {
       downloadFile(
         document,
         `${JSON.stringify(document_, null, 2)}\n`,
-        `homebrew-items-${now.toISOString().slice(0, 10)}.json`,
+        `homebrew-${now.toISOString().slice(0, 10)}.json`,
         "application/json",
       );
     }
