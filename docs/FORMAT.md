@@ -1,6 +1,6 @@
-# Homebrew items format
+# Homebrew format
 
-One JSON document holds item sets and items. Import it from **Homebrew
+One JSON document holds item sets, items and subclasses. Import it from **Homebrew
 → Import file** or from the DM Tools Import Center; **Export** writes the same
 shape. Files are limited to 2 MiB and 256 changes per import.
 
@@ -26,7 +26,9 @@ shape. Files are limited to 2 MiB and 256 changes per import.
 ```
 
 [`examples/sample-items.json`](examples/sample-items.json) is a complete file
-with every kind of effect and property.
+with every kind of effect and property, and
+[`examples/sample-subclass.json`](examples/sample-subclass.json) holds a
+[subclass](#subclass).
 
 ## Write many items at once
 
@@ -37,9 +39,11 @@ AI assistant:
 1. **Export** the current drafts from Homebrew, so ids and sets that
    already exist are reused rather than duplicated.
 2. Give the writer this page, the [sample](examples/sample-items.json), the
-   export and the source text. Ask for a `merge` file with only the sets and
-   items to add or change, effects and grants only where the item's rule
-   matches them exactly, and the rest of the rule in `text`.
+   export and the source text. Ask for a `merge` file with only the sets,
+   items and subclasses to add or change, effects and grants only where the
+   rule matches them exactly, and the rest of the rule in `text`. For a
+   subclass, also give the writer the Compendium's record schema
+   (`addon-dnd-2024-compendium/data/SCHEMA.md`), which explains the grants.
 3. Check the file offline from a clone of this repository, and fix every
    problem it names until it prints `VALID`:
 
@@ -61,6 +65,7 @@ AI assistant:
 | `mode` | no | `"merge"` (default) adds and updates; `"replace"` also deletes drafts missing from the file |
 | `generatedAt` | no | Informational timestamp written by Export |
 | `sets`, `items` | yes | Lists, possibly empty |
+| `subclasses` | no | A list of [subclasses](#subclass) |
 
 Unknown fields anywhere are refused. In `merge` mode an entry updates the draft
 with the same `id`; a field the entry leaves out keeps its stored value, so
@@ -229,3 +234,83 @@ Publishing combines a set and an item into one Engine `magic-item` record:
 
 An item is in the gallery when the item and its set are both visible to
 players and it is not retired.
+
+## Subclass
+
+```json
+{ "id": "banner-warden", "name": "Banner Warden", "classId": "fighter", "subclassLevel": 3,
+  "text": "Banner Wardens carry their company's colors into battle.",
+  "classResources": [{ "key": "rallying-cries", "name": "Rallying Cries", "fixed": 1,
+    "proficiencyBonus": true, "recharge": "long" }],
+  "features": [
+    { "id": "raise-the-banner", "level": 3, "name": "Raise the Banner",
+      "text": "As a Bonus Action, expend one Rallying Cry: +1 AC while the banner is raised.",
+      "grants": { "activations": [{ "id": "raise-the-banner", "name": "Raise the Banner",
+        "resource": "rallying-cries", "modifiers": [{ "target": "armorClass", "add": 1 }] }] } }
+  ] }
+```
+
+| Field | Required | Default | Meaning |
+| --- | --- | --- | --- |
+| `id` | yes | | Lowercase words joined by hyphens, at most 64 characters; permanent |
+| `name` | yes | | One line, at most 120 characters |
+| `classId` | yes | | The class it belongs to, by the Compendium's id (`fighter`) |
+| `subclassLevel` | yes | | The class level a character chooses it at, 1–20 (usually 3) |
+| `text` | no | `""` | Markdown, at most 20,000 characters |
+| `excerpt` | no | `""` | A one-line summary, at most 300 characters |
+| `features` | no | `[]` | Up to 40 features, below |
+| `grants` | no | | Grants of the subclass itself, from its subclass level |
+| `spells` | no | `[]` | Up to 30 spell grants with a class `level`, such as `{ "level": 3, "ids": ["bless"], "alwaysPrepared": true }` for domain spells |
+| `classResources` | no | `[]` | Up to 10 pools, such as superiority dice, in the grants' `resources` shape |
+| `tableColumns` | no | `[]` | Up to 10 printed columns: `key`, `name` and `progression`, 1–20 `{ "level", "value" }` rows whose value is a whole number (−100 to 100) or a die such as `1d8` |
+| `spellcasting`, `progression` | no | | A third caster's own spellcasting; both or neither, below |
+
+A feature has `id` (distinct within the subclass), `level` (1–20), `name`,
+`text`, `excerpt` (the line the sheet shows on the feature; may be empty) and
+optional `grants`.
+
+`grants` here is the D&D Engine's whole grants vocabulary, the one the
+Compendium's classes, subclasses and features use; its record schema
+(`addon-dnd-2024-compendium/data/SCHEMA.md`) explains each field. The add-on
+checks grants against the Engine's schema, so a misspelt field or a value of
+the wrong type is refused with its place, such as
+`features[0].grants.resources[0].fixed must be a whole number`. Only the
+Engine checks the meaning: a spell or class id that does not exist, or a toggle
+that spends a use nobody declares, shows on the character instead. A grant's
+keys and ids (a use `key`, a toggle or choice `id`) are permanent once
+characters use the subclass; choice ids must be unique among all choices the
+character has. `abilityScoreIncrease`, `weaponMasterySlots`, `spellSlot`,
+`spellList` and `prepareSpellListOf` apply only to feats, `acBonus` only to
+species and `conditions` only to items; `bonuses` and
+`unquantifiable_modifiers` are notes nothing applies.
+
+`spellcasting` makes the subclass a third caster such as the Eldritch Knight:
+
+```json
+"spellcasting": { "ability": "INT", "type": "third", "startLevel": 3, "prepares": "list",
+  "spellListClassId": "wizard" },
+"progression": [{ "level": 3, "cantripsKnown": 2, "preparedSpells": 3, "spellSlots": [2] }]
+```
+
+`prepares` is `list` or `spellbook`, `levelReplacements` (optional, 0 or 1)
+lets the player replace a spell at each later level, and `ritual` (optional)
+allows ritual casting. `progression` has 1–20 rows: the class level,
+cantrips (0–20), prepared spells (0–40) and up to nine slot counts for spell
+levels 1, 2, 3 and on. The editor starts a new table with a third caster's slots.
+
+In an import, `"grants": {}` removes the subclass's grants, and
+`"spellcasting": {}` removes its spellcasting with its `progression`.
+
+### Published subclass
+
+Publishing writes one document per subclass to
+`homebrew_published_subclasses`, holding the records the Engine reads:
+
+| Record | `id` | Fields |
+| --- | --- | --- |
+| `subclass` | `hb.<id>` | `name`, `classId`, `subclassLevel`, `features` (each one's `level`, `id` and `name`), `spells`, `grants` when set, `classResources` and `tableColumns` when not empty, `spellcasting` with `progression`, `excerpt` when set, `text` |
+| `feature`, one per feature by level | `hb.<id>.<feature id>` | `name`, `classId`, `subclassId` (`hb.<id>`), `localId`, `level`, `excerpt` when set, `text`, `grants` when set |
+
+Every record also has `edition` `2024` and `book` `homebrew`. Ids hold no dot,
+so feature records of two subclasses never collide. Deleting a subclass
+withdraws its document at the next publish, as for items.

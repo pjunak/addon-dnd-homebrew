@@ -233,6 +233,120 @@
   border-bottom: 0;
   padding-bottom: 0;
 }
+/* Subclass features and the schema-driven grants forms (src/schema-form.ts). */
+.hb-mechanics,
+.hb-feature-list {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+.hb-feature-head {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.5rem;
+}
+.hb-feature > button[data-ui-variant="danger"] {
+  justify-self: start;
+}
+.hb-schema-group {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border-subtle, #ffffff12);
+  border-radius: var(--radius, 6px);
+  min-width: 0;
+}
+.hb-schema-group .hb-schema-group {
+  padding: 0.5rem;
+}
+.hb-schema-group legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.35rem;
+  color: var(--accent-gold, #c8a040);
+}
+.hb-schema-group > .hb-hint {
+  margin: 0;
+}
+.hb-schema-group > button {
+  justify-self: start;
+}
+.hb-schema-fields,
+.hb-schema-entries,
+.hb-schema-variant {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+/* A Remove button is small and sits on its field's label line or in a legend,
+   so nesting costs no width. 1.5rem still meets the minimum target size. */
+.hb-schema-remove {
+  flex: none;
+  min-height: 1.5rem;
+  padding: 0 0.4rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.hb-schema-field {
+  position: relative;
+  min-width: 0;
+}
+.hb-schema-field > .hb-schema-remove {
+  position: absolute;
+  top: -0.2rem;
+  right: 0;
+}
+.hb-schema-field > .hb-check {
+  padding-right: 5rem;
+}
+.hb-schema-pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem;
+}
+.hb-schema-pair > [data-ui-field],
+.hb-schema-pair > .hb-schema-variant {
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+.hb-schema-pair > fieldset {
+  flex: 1 1 100%;
+}
+.hb-schema-scroll {
+  overflow-x: auto;
+}
+.hb-schema-table {
+  border-collapse: collapse;
+}
+.hb-schema-table th {
+  padding: 0 0.4rem 0.25rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+}
+.hb-schema-table td {
+  padding: 0 0.4rem 0.35rem 0;
+  vertical-align: top;
+}
+.hb-schema-table input:not([type="checkbox"]) {
+  width: 7rem;
+}
+/* Cells keep their labels for assistive technology; the header shows them. */
+.hb-schema-table [data-ui-field] > span,
+.hb-schema-table [data-ui-field] > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.hb-schema-table .hb-hint {
+  display: none;
+}
 .hb-preview-name {
   margin: 0;
   font-weight: 700;

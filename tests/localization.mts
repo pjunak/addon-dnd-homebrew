@@ -4,6 +4,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { cs } from "#web/catalogs";
 import { bodyPlacements, rarities, skills } from "#web/model";
 import { skillName } from "#web/effects";
+import { vocabularyWords } from "#web/vocabulary";
 
 const unescape = (text: string): string => JSON.parse(`"${text}"`) as string;
 
@@ -32,7 +33,12 @@ void test("every English message shown in the UI has a Czech translation", async
         for (const match of block[1]!.matchAll(/:\s*"((?:[^"\\]|\\.)*)"/gu))
           if (!(unescape(match[1]!) in cs)) missing.add(`${file}: ${match[1]}`);
   }
-  for (const text of [...rarities, ...bodyPlacements, ...skills.map(skillName)])
+  for (const text of [
+    ...rarities,
+    ...bodyPlacements,
+    ...skills.map(skillName),
+    ...vocabularyWords(),
+  ])
     if (!(text in cs)) missing.add(`vocabulary: ${text}`);
   assert.deepEqual([...missing], []);
 });

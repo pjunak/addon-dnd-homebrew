@@ -122,7 +122,8 @@ export function selectField(
   label: string,
   name: string,
   value: string,
-  options: readonly (readonly [string, string])[],
+  options: readonly (readonly [string, string, string?])[],
+  hint?: string,
 ): HTMLDivElement {
   const wrapper = document.createElement("div");
   wrapper.dataset["uiField"] = "";
@@ -134,12 +135,14 @@ export function selectField(
   text.htmlFor = input.id;
   input.name = name;
   if (options.length >= 12) input.dataset["ui"] = "combobox";
-  for (const [optionValue, optionLabel] of options) {
+  for (const [optionValue, optionLabel, details] of options) {
     const entry = option(document, optionValue, optionLabel);
     entry.selected = optionValue === value;
+    if (details) entry.title = details;
     input.append(entry);
   }
   wrapper.append(text, input);
+  if (hint) wrapper.append(help(document, hint));
   return wrapper;
 }
 export function checkField(
@@ -166,6 +169,7 @@ export function chipsField(
   name: string,
   selected: readonly string[],
   options: readonly (readonly [string, string, string?])[],
+  hint?: string,
 ): HTMLDivElement {
   const wrapper = document.createElement("div");
   wrapper.dataset["uiField"] = "";
@@ -186,6 +190,7 @@ export function chipsField(
     input.append(entry);
   }
   wrapper.append(text, input);
+  if (hint) wrapper.append(help(document, hint));
   return wrapper;
 }
 /**

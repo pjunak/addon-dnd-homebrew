@@ -42,7 +42,7 @@ import {
   type SpellSchool,
 } from "./model.js";
 
-const rollLabels: Readonly<Record<AdvantageRoll, string>> = {
+export const rollLabels: Readonly<Record<AdvantageRoll, string>> = {
   save: "Saving throws",
   check: "Ability checks",
   attack: "Attack rolls",
@@ -50,7 +50,7 @@ const rollLabels: Readonly<Record<AdvantageRoll, string>> = {
   concentration: "Concentration saving throws",
   deathSave: "Death saving throws",
 };
-const damageLabels: Readonly<Record<DamageType, string>> = {
+export const damageLabels: Readonly<Record<DamageType, string>> = {
   acid: "Acid",
   bludgeoning: "Bludgeoning",
   cold: "Cold",
@@ -65,7 +65,7 @@ const damageLabels: Readonly<Record<DamageType, string>> = {
   slashing: "Slashing",
   thunder: "Thunder",
 };
-const conditionLabels: Readonly<Record<ConditionId, string>> = {
+export const conditionLabels: Readonly<Record<ConditionId, string>> = {
   blinded: "Blinded",
   charmed: "Charmed",
   deafened: "Deafened",
@@ -82,7 +82,7 @@ const conditionLabels: Readonly<Record<ConditionId, string>> = {
   stunned: "Stunned",
   unconscious: "Unconscious",
 };
-const senseLabels: Readonly<Record<string, string>> = {
+export const senseLabels: Readonly<Record<string, string>> = {
   darkvision: "Darkvision",
   blindsight: "Blindsight",
   tremorsense: "Tremorsense",

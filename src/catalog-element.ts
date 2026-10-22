@@ -31,6 +31,7 @@ import {
   compare,
   exportDocument,
   flatten,
+  flattenSubclass,
   freeId,
   HomebrewError,
   importFormat,
@@ -40,11 +41,14 @@ import {
   maxWeight,
   newSet,
   newItem,
+  newSubclass,
   planImport,
   planPublish,
   rarities,
   recordProblem,
   slug,
+  subclassProblem,
+  titleOf,
   type BodyPlacement,
   type Item,
   type ItemSet,
@@ -53,10 +57,13 @@ import {
   type Problem,
   type Rarity,
   type Stored,
+  type Subclass,
 } from "./model.js";
 import type { References } from "./references.js";
 import type { Drafts, PublishedState } from "./repository.js";
 import { runtimeFor, type HomebrewRuntime } from "./runtime.js";
+import { mechanicsEditor, type MechanicsEditor } from "./subclass-editor.js";
+import { fieldLabel } from "./vocabulary.js";
 import type { ContributionContext } from "./sdk.js";
 
 export const catalogElementTag = "dnd-homebrew-catalog";
@@ -66,7 +73,9 @@ type Selection =
   | { readonly kind: "item"; readonly id: string }
   | { readonly kind: "new-set" }
   /** `template` prefills the editor, as Duplicate does. */
-  | { readonly kind: "new-item"; readonly setId: string; readonly template?: Item };
+  | { readonly kind: "new-item"; readonly setId: string; readonly template?: Item }
+  | { readonly kind: "subclass"; readonly id: string }
+  | { readonly kind: "new-subclass"; readonly template?: Subclass };
 
 /** Common item types, offered as suggestions; any one-line type is allowed. */
 const itemTypes = [
@@ -105,6 +114,7 @@ export function defineCatalogElement(generation?: string): string {
     /** Pickers' records; undefined until loaded, or when no Compendium answers. */
     #references: References | undefined;
     #grants: GrantsEditor | undefined;
+    #mechanics: MechanicsEditor | undefined;
     readonly #header = document.createElement("div");
     readonly #tree = document.createElement("nav");
     readonly #editor = document.createElement("section");
@@ -242,7 +252,9 @@ export function defineCatalogElement(generation?: string): string {
           document,
           "p",
           "",
-          t("Create item sets and items, then publish them to use them on character sheets."),
+          t(
+            "Create item sets, items and subclasses, then publish them to use them on character sheets.",
+          ),
         ),
       );
       const actions = element(document, "div", "hb-actions");
@@ -256,17 +268,23 @@ export function defineCatalogElement(generation?: string): string {
           t("New item"),
           () => void this.#select({ kind: "new-item", setId: this.#currentSetId() }),
         ),
-        actionButton(document, t("Import file"), () => this.#fileInput.click()),
-        actionButton(document, t("Export"), () => this.#export()),
         actionButton(
           document,
-          pending > 0 ? t("Publish changes ({count})", { count: pending }) : t("Publish"),
-          () => void this.#publish(),
-          "primary",
+          t("New subclass"),
+          () => void this.#select({ kind: "new-subclass" }),
         ),
+        actionButton(document, t("Import file"), () => this.#fileInput.click()),
+        actionButton(document, t("Export"), () => this.#export()),
       ];
+      const publish = actionButton(
+        document,
+        pending > 0 ? t("Publish changes ({count})", { count: pending }) : t("Publish"),
+        () => void this.#publish(),
+        "primary",
+      );
+      buttons.push(publish);
       for (const button of buttons) button.disabled = !ready;
-      if (pending === 0) buttons[4]!.disabled = true;
+      if (pending === 0) publish.disabled = true;
       actions.append(...buttons);
       const top = element(document, "header", "hb-header");
       top.append(title, actions);
@@ -275,7 +293,7 @@ export function defineCatalogElement(generation?: string): string {
         const meta = this.#published.meta;
         const status = [
           meta
-            ? t("Published revision {revision}, items: {count}.", {
+            ? t("Published revision {revision}, records: {count}.", {
                 revision: meta.value.revision,
                 count: meta.value.recordCount,
               })
@@ -310,8 +328,8 @@ export function defineCatalogElement(generation?: string): string {
       search.type = "search";
       search.dataset["ui"] = "search";
       search.dataset["uiKey"] = "tree-search";
-      search.placeholder = t("Search items");
-      search.setAttribute("aria-label", t("Search items"));
+      search.placeholder = t("Search homebrew");
+      search.setAttribute("aria-label", t("Search homebrew"));
       search.value = this.#query;
       search.addEventListener("input", () => {
         this.#query = search.value;
@@ -333,17 +351,20 @@ export function defineCatalogElement(generation?: string): string {
       const items = [...this.#drafts.items].sort((a, b) =>
         compare(fold(a.value.name), fold(b.value.name)),
       );
+      const subclasses = [...this.#drafts.subclasses].sort((a, b) =>
+        compare(fold(a.value.name), fold(b.value.name)),
+      );
       const matches = (item: Item, itemSet?: ItemSet): boolean =>
         !query ||
         fold(item.name).includes(query) ||
         (itemSet !== undefined && fold(itemSet.name).includes(query));
-      if (sets.length === 0 && items.length === 0) {
+      if (sets.length === 0 && items.length === 0 && subclasses.length === 0) {
         groups.append(
           element(
             document,
             "p",
             "hb-hint",
-            t("No items yet. Create a set or import a file to begin."),
+            t("Nothing yet. Create a set, an item or a subclass, or import a file to begin."),
           ),
         );
         return;
@@ -387,6 +408,37 @@ export function defineCatalogElement(generation?: string): string {
           item.value.setId === "" || !sets.some((entry) => entry.value.id === item.value.setId),
       );
       if (loose.length > 0) group(t("Items without a set"), undefined, loose);
+      const visible = subclasses.filter(
+        (entry) =>
+          !query ||
+          fold(entry.value.name).includes(query) ||
+          fold(this.#className(entry.value.classId)).includes(query),
+      );
+      if (visible.length === 0) return;
+      const section = element(document, "section", "hb-group");
+      section.append(element(document, "h2", "hb-group-head", t("Subclasses")));
+      const list = element(document, "ul");
+      for (const entry of visible) {
+        const button = this.#treeButton(entry.value.name, { kind: "subclass", id: entry.value.id });
+        button.append(badge(document, this.#className(entry.value.classId), "muted"));
+        const published = this.#published?.subclasses.get(`hb.${entry.value.id}`);
+        if (!published || published.value.withdrawn)
+          button.append(badge(document, t("Unpublished"), "warn"));
+        else if (canonical(published.value) !== canonical(flattenSubclass(entry.value)))
+          button.append(badge(document, t("Changed"), "warn"));
+        const row = element(document, "li");
+        row.append(button);
+        list.append(row);
+      }
+      section.append(list);
+      groups.append(section);
+    }
+    /** A class's name from the rules data, or its id in words. */
+    #className(classId: string): string {
+      return (
+        this.#references?.classes.find((entry) => entry.id === classId)?.name ??
+        (classId ? titleOf(classId) : this.#t("No class"))
+      );
     }
     #treeButton(label: string, selection: Selection): HTMLButtonElement {
       const button = element(document, "button", "hb-tree-item");
@@ -434,13 +486,15 @@ export function defineCatalogElement(generation?: string): string {
       return plan.changes.length + plan.problems.length;
     }
 
-    #selected(): Stored<ItemSet> | Stored<Item> | undefined {
+    #selected(): Stored<ItemSet> | Stored<Item> | Stored<Subclass> | undefined {
       const selection = this.#selection;
       if (!selection || !this.#drafts) return undefined;
       if (selection.kind === "set")
         return this.#drafts.sets.find((entry) => entry.value.id === selection.id);
       if (selection.kind === "item")
         return this.#drafts.items.find((entry) => entry.value.id === selection.id);
+      if (selection.kind === "subclass")
+        return this.#drafts.subclasses.find((entry) => entry.value.id === selection.id);
       return undefined;
     }
     #currentSetId(): string {
@@ -495,14 +549,26 @@ export function defineCatalogElement(generation?: string): string {
       const t = this.#t;
       this.#effects = undefined;
       this.#grants = undefined;
+      this.#mechanics = undefined;
       const selection = this.#selection;
       if (!selection || !this.#drafts) {
         this.#editor.replaceChildren(
-          element(document, "p", "hb-hint", t("Choose a set or an item to edit it.")),
+          element(document, "p", "hb-hint", t("Choose a set, an item or a subclass to edit it.")),
         );
         return;
       }
-      if (selection.kind === "set" || selection.kind === "new-set") {
+      if (selection.kind === "subclass" || selection.kind === "new-subclass") {
+        const stored =
+          selection.kind === "subclass"
+            ? this.#drafts.subclasses.find((entry) => entry.value.id === selection.id)
+            : undefined;
+        this.#editor.replaceChildren(
+          this.#subclassForm(
+            stored,
+            selection.kind === "new-subclass" ? selection.template : undefined,
+          ),
+        );
+      } else if (selection.kind === "set" || selection.kind === "new-set") {
         const stored =
           selection.kind === "set"
             ? this.#drafts.sets.find((entry) => entry.value.id === selection.id)
@@ -557,6 +623,13 @@ export function defineCatalogElement(generation?: string): string {
       return new Set([
         ...(this.#drafts?.items.map((entry) => entry.value.id) ?? []),
         ...[...(this.#published?.records.values() ?? [])].map((entry) => entry.value.itemId),
+      ]);
+    }
+    /** Subclass ids in use, including published subclasses whose draft was deleted. */
+    #subclassIds(): ReadonlySet<string> {
+      return new Set([
+        ...(this.#drafts?.subclasses.map((entry) => entry.value.id) ?? []),
+        ...[...(this.#published?.subclasses.values() ?? [])].map((entry) => entry.value.subclassId),
       ]);
     }
     #form(title: string): HTMLFormElement {
@@ -1035,6 +1108,220 @@ export function defineCatalogElement(generation?: string): string {
           : undefined,
       );
     }
+    #subclassForm(stored: Stored<Subclass> | undefined, template?: Subclass): HTMLFormElement {
+      const t = this.#t;
+      const value = stored?.value ?? template ?? newSubclass("", "", "", Date.now());
+      const form = this.#form(stored ? value.name : t("New subclass"));
+      const classes = this.#references?.classes;
+      const classField = classes
+        ? selectField(document, t("Class"), "classId", value.classId, [
+            ["", t("Choose a class")],
+            ...classes.map((entry) => [entry.id, entry.name] as const),
+            ...(value.classId && !classes.some((entry) => entry.id === value.classId)
+              ? [[value.classId, titleOf(value.classId)] as const]
+              : []),
+          ])
+        : textField(document, t("Class"), "classId", value.classId, {
+            maxLength: 64,
+            placeholder: "fighter",
+            hint: t(
+              "The class id, such as fighter. With the Compendium installed, pick it by name.",
+            ),
+          });
+      form.append(
+        textField(document, t("Name"), "name", value.name, { maxLength: 120 }),
+        this.#idField(stored !== undefined, value.id, "path-of-the-storm-drum"),
+        classField,
+        numberField(document, t("Subclass level"), "subclassLevel", value.subclassLevel, {
+          min: 1,
+          max: 20,
+          hint: t("The class level a character chooses the subclass at, usually 3."),
+        }),
+        textField(document, t("Summary"), "excerpt", value.excerpt, {
+          maxLength: 300,
+          hint: t("An optional one-line summary."),
+        }),
+        textArea(
+          document,
+          t("Description"),
+          "text",
+          value.text,
+          6,
+          maxMarkdown,
+          t("The subclass as players read it."),
+        ),
+      );
+      this.#mechanics = mechanicsEditor(
+        {
+          document,
+          t,
+          references: this.#references,
+          subclassLevel: () => formNumber(new FormData(form), "subclassLevel") ?? 3,
+          changed: () => {
+            this.#setDirty(true);
+            this.#updateSubclassPreview(form, stored);
+          },
+          restructured: () => this.#controls?.refresh(),
+        },
+        value,
+        new Set(stored?.value.features.map((feature) => feature.id) ?? []),
+      );
+      form.append(this.#mechanics.root);
+      const preview = element(document, "section", "hb-preview");
+      preview.setAttribute("aria-live", "polite");
+      form.append(preview);
+      this.#previewId(form, () => this.#subclassIds());
+      const actions = element(document, "div", "hb-editor-actions");
+      actions.dataset["uiActions"] = "";
+      const save = actionButton(
+        document,
+        t("Save"),
+        () => void this.#saveSubclass(form, stored),
+        "primary",
+      );
+      save.type = "submit";
+      actions.append(save);
+      if (stored)
+        actions.append(
+          actionButton(
+            document,
+            t("Duplicate"),
+            () =>
+              void this.#select({
+                kind: "new-subclass",
+                template: {
+                  ...stored.value,
+                  id: "",
+                  name: t("{name} (copy)", { name: stored.value.name }),
+                },
+              }),
+          ),
+          actionButton(document, t("Delete"), () => void this.#deleteSubclass(stored), "danger"),
+        );
+      form.append(actions);
+      form.addEventListener("submit", (event) => event.preventDefault());
+      form.addEventListener("input", () => this.#updateSubclassPreview(form, stored));
+      form.addEventListener("change", () => this.#updateSubclassPreview(form, stored));
+      this.#updateSubclassPreview(form, stored);
+      return form;
+    }
+    #readSubclass(form: HTMLFormElement, stored: Stored<Subclass> | undefined): Subclass {
+      const data = new FormData(form);
+      const name = formText(data, "name").trim();
+      const mechanics = this.#mechanics?.read() ?? {
+        spells: [],
+        classResources: [],
+        tableColumns: [],
+        features: [],
+      };
+      return {
+        id: stored?.value.id ?? (formText(data, "id").trim() || freeId(name, this.#subclassIds())),
+        schemaVersion: 1,
+        name,
+        classId: formText(data, "classId").trim(),
+        subclassLevel: formNumber(data, "subclassLevel") ?? 0,
+        text: formText(data, "text"),
+        excerpt: formText(data, "excerpt").trim(),
+        ...mechanics,
+        updatedAt: Date.now(),
+      };
+    }
+    #updateSubclassPreview(form: HTMLFormElement, stored: Stored<Subclass> | undefined): void {
+      const t = this.#t;
+      const preview = form.querySelector(".hb-preview");
+      if (!preview) return;
+      const subclass = this.#readSubclass(form, stored);
+      const failure = subclassProblem({
+        ...subclass,
+        id: subclass.id || "subclass",
+        name: subclass.name || "subclass",
+      });
+      preview.replaceChildren(
+        element(document, "h3", "", t("As published")),
+        element(document, "p", "hb-preview-name", subclass.name || t("New subclass")),
+        element(
+          document,
+          "p",
+          "hb-hint",
+          t("{class} subclass from level {level}; records: {count}.", {
+            class: this.#className(subclass.classId),
+            level: subclass.subclassLevel,
+            count: subclass.features.length + 1,
+          }),
+        ),
+      );
+      if (failure) preview.append(messageBlock(document, problemText(t, failure), "alert"));
+      const features = [...subclass.features].sort((left, right) => left.level - right.level);
+      if (features.length > 0) {
+        const list = element(document, "ul", "hb-effect-summary");
+        for (const feature of features) {
+          const granted = Object.keys(feature.grants ?? {})
+            .map((field) => t(fieldLabel("Grants", field)))
+            .join(", ");
+          list.append(
+            element(
+              document,
+              "li",
+              "",
+              granted
+                ? t("Level {level}: {name} ({grants})", {
+                    level: feature.level,
+                    name: feature.name,
+                    grants: granted,
+                  })
+                : t("Level {level}: {name}", { level: feature.level, name: feature.name }),
+            ),
+          );
+        }
+        preview.append(list);
+      }
+    }
+    async #saveSubclass(
+      form: HTMLFormElement,
+      stored: Stored<Subclass> | undefined,
+    ): Promise<void> {
+      const value = this.#readSubclass(form, stored);
+      const named = !stored && formText(new FormData(form), "id").trim() === "";
+      if (!stored && this.#subclassIds().has(value.id))
+        return this.#editorProblem({ text: "This id is already in use. Choose another id." });
+      const failure = subclassProblem(value);
+      if (failure) {
+        this.#editorProblem(failure);
+        // A problem names its field by path, as the form's controls are named.
+        const at = failure.params?.["path"];
+        if (typeof at === "string")
+          (
+            form.querySelector<HTMLElement>(`[name="${CSS.escape(at)}"]`) ??
+            form.querySelector<HTMLElement>(`[name^="${CSS.escape(at)}"]`)
+          )?.focus();
+        return;
+      }
+      await this.#save(
+        collections.subclasses,
+        value,
+        stored,
+        (saved) => ({ kind: "subclass", id: saved.id }),
+        named
+          ? (failed) => ({
+              ...value,
+              id: freeId(value.name, new Set([...this.#subclassIds(), ...failed])),
+            })
+          : undefined,
+      );
+    }
+    async #deleteSubclass(stored: Stored<Subclass>): Promise<void> {
+      const t = this.#t;
+      const published = this.#published?.subclasses.get(`hb.${stored.value.id}`);
+      const question =
+        published && !published.value.withdrawn
+          ? t(
+              "Deleting a published subclass withdraws it at the next publish; characters with it then show a missing-source problem. Delete {name}?",
+              { name: stored.value.name },
+            )
+          : t("Delete {name}?", { name: stored.value.name });
+      if (!(await confirmDialog(this, t, question, t("Delete")))) return;
+      await this.#remove(collections.subclasses, stored);
+    }
     #editorProblem(problem: Problem): void {
       this.#editorMessage = { text: problemText(this.#t, problem), kind: "alert" };
       const form = this.#editor.querySelector("form");
@@ -1047,8 +1334,9 @@ export function defineCatalogElement(generation?: string): string {
      * came from its name can still meet a deleted draft's key, which the
      * browser cannot reuse; `rename` then gives the next free id.
      */
-    async #save<T extends ItemSet | Item>(
-      collection: typeof collections.sets | typeof collections.items,
+    async #save<T extends ItemSet | Item | Subclass>(
+      collection:
+        typeof collections.sets | typeof collections.items | typeof collections.subclasses,
       value: T,
       stored: Stored<T> | undefined,
       select: (saved: T) => Selection,
@@ -1116,8 +1404,9 @@ export function defineCatalogElement(generation?: string): string {
       await this.#remove(collections.items, stored);
     }
     async #remove(
-      collection: typeof collections.sets | typeof collections.items,
-      stored: Stored<ItemSet> | Stored<Item>,
+      collection:
+        typeof collections.sets | typeof collections.items | typeof collections.subclasses,
+      stored: Stored<ItemSet> | Stored<Item> | Stored<Subclass>,
     ): Promise<void> {
       const runtime = this.#runtime;
       if (!runtime || this.#busy) return;
@@ -1178,6 +1467,8 @@ export function defineCatalogElement(generation?: string): string {
           for (const entry of plan.problems) {
             const name =
               drafts.items.find((item) => item.value.id === entry.itemId)?.value.name ??
+              drafts.subclasses.find((subclass) => subclass.value.id === entry.itemId)?.value
+                .name ??
               entry.itemId;
             list.append(element(document, "li", "", `${name}: ${problemText(t, entry.problem)}`));
           }
@@ -1222,7 +1513,7 @@ export function defineCatalogElement(generation?: string): string {
               messageBlock(
                 document,
                 t(
-                  "Characters holding a withdrawn item show a missing-source problem until it leaves their inventory.",
+                  "Characters with a withdrawn item or subclass show a missing-source problem until it is removed from them.",
                 ),
                 "alert",
               ),

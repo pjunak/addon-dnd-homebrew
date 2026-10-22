@@ -157,3 +157,25 @@ void test("an import adds subclasses after items and clears spellcasting with it
     /subclasses\[0\]/u,
   );
 });
+
+void test("the sample subclass imports and publishes as a subclass and four features", async () => {
+  const document = JSON.parse(
+    await readFile(new URL("../docs/examples/sample-subclass.json", import.meta.url), "utf8"),
+  ) as unknown;
+  const plan = planImport(document, new Map(), new Map(), 1);
+  assert.deepEqual(plan.summary, { creates: 1, updates: 0, skips: 0, deletes: 0 });
+  const write = plan.mutations[0];
+  assert.ok(write?.operation === "put");
+  const published = flattenSubclass(parseSubclass(write.value));
+  assert.deepEqual(
+    published.records.map((record) => record["id"]),
+    [
+      "hb.banner-warden",
+      "hb.banner-warden.colors-of-the-company",
+      "hb.banner-warden.stalwart-bearer",
+      "hb.banner-warden.raise-the-banner",
+      "hb.banner-warden.unbroken-line",
+    ],
+  );
+  assert.deepEqual(parsePublishedSubclass(published), published);
+});

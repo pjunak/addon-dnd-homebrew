@@ -1,25 +1,30 @@
 # D&D Homebrew
 
-D&D Homebrew lets the DM create and import custom magic items and
-**item sets** for TTRPG Codex, then use them on character sheets. A set
+D&D Homebrew lets the DM create and import custom magic items, **item
+sets** and **subclasses** for TTRPG Codex, then use them on character sheets.
+A set
 holds what its items share: item type, rarity, attunement, body placements, a
 shared description, a curse and optionally a condition every item gives. Each
 item adds its own description and, where the D&D Engine can apply them,
 effects such as +1 Armor Class and properties such as Advantage, limited uses
 and spells cast from the item.
 
-Items are the first kind of homebrew; subclasses and others will join this
-add-on, published together and imported from the same file format.
+A subclass has its features by level, and each feature can grant anything a
+printed subclass feature can: the editor covers the D&D Engine's whole grants
+vocabulary. More kinds of homebrew will join this add-on, published together
+and imported from the same file format.
 
 English and Czech controls follow the host language.
 
 ## How it fits together
 
 ```text
-Homebrew (DM)              drafts: sets and items, DM-only
+Homebrew (DM)                    drafts: sets, items and subclasses, DM-only
         │ Publish
         ▼
-homebrew_published         one flattened magic-item record per item, readable by players
+homebrew_published               one flattened magic-item record per item
+homebrew_published_subclasses    a subclass record and its feature records
+        │                        (both readable by players)
         │ dnd5e.rules-data (worker)
         ▼
 D&D Engine ── merges with the Compendium ──► Character Sheets
@@ -28,8 +33,9 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 - The add-on provides `dnd5e.rules-data` 3.0.0 from its worker. The D&D Engine
   reads every compatible provider, so published items appear in the sheet's
   equipment picker next to Compendium items and their effects apply while they
-  are equipped (and attuned, when they require attunement). Neither the Engine
-  nor Character Sheets changes.
+  are equipped (and attuned, when they require attunement). Published
+  subclasses appear in the Builder next to the class's own, and their features
+  apply from their levels. Neither the Engine nor Character Sheets changes.
 - The add-on also provides a `magic-item` wiki provider: a sheet's rule details
   for a homebrew item show its text, and `[[Runestone: Ward]]` links in
   campaign articles resolve to the gallery.
@@ -51,6 +57,10 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 4. **Item Gallery** (DM and players) lists items whose set and item are both
    marked *Visible to players*. A sheet link still opens a held item that is not
    listed.
+5. **New subclass** creates a subclass for a class. Add its features with their
+   levels, text and grants, and anything the subclass itself has: subclass
+   spells, pools such as superiority dice, table columns such as a die that
+   grows, and a third caster's spellcasting.
 
 ### What the Engine can apply
 
@@ -84,6 +94,20 @@ description. The [sample file](docs/examples/sample-items.json) shows each
 kind: a set of runestones with a condition, and a lantern and a satchel
 without a set.
 
+### Subclasses
+
+Subclass features use the D&D Engine's full grants vocabulary, the same one
+the Compendium's own subclasses use: proficiencies and Expertise, choices the
+player makes in the Builder, limited uses, toggles such as Rage with their
+changes, spells and spell lists, attacks and attack changes, Armor Class
+formulas, bonuses to rolls, speeds, senses, Hit Points, resistances and more.
+The editor builds its form from the Engine's schema, so a field the Engine adds
+is editable after the next schema sync, and it explains each field and offers
+its allowed values. A few fields apply only to feats, species or items; the
+editor lists them separately. The [sample subclass](docs/examples/sample-subclass.json)
+shows a fighter subclass with a skill, extra Hit Points, a pool of uses, a
+toggle that spends them and a feature at level 7.
+
 ### Change and remove published items
 
 - Editing an item changes its record at the next publish; characters keep the
@@ -93,7 +117,9 @@ without a set.
 - Deleting a published item **withdraws** it at the next publish. A character
   that still holds it shows a missing-source problem until it is removed.
 - The id of a set or item is permanent: saved characters refer to
-  `hb.<item id>`.
+  `hb.<item id>`. The same holds for a subclass (`hb.<subclass id>`) and its
+  features (`hb.<subclass id>.<feature id>`). Deleting a published subclass
+  withdraws it like an item.
 
 ## Import and export
 
@@ -110,8 +136,9 @@ file (by hand or with an AI assistant) and check it offline with
 Homebrew content is campaign data, not code. Drafts and published records live
 in the site's add-on collections, like planning notes and character sheets, so
 site backups include them and each campaign has its own. This repository holds
-only the [sample file](docs/examples/sample-items.json); keep your own import
-files outside it, and use **Export** to take a copy of a campaign's drafts.
+only the sample files ([items](docs/examples/sample-items.json),
+[subclass](docs/examples/sample-subclass.json)); keep your own import files
+outside it, and use **Export** to take a copy of a campaign's drafts.
 
 The permanent add-on namespace is `dnd-homebrew`.
 
@@ -121,6 +148,8 @@ The permanent add-on namespace is `dnd-homebrew`.
 | `homebrew_items` | DM | Item drafts |
 | `homebrew_published` | public | Flattened records the worker serves |
 | `homebrew_meta` | public | The publish revision the Engine sees |
+| `homebrew_subclasses` | DM | Subclass drafts with their features |
+| `homebrew_published_subclasses` | public | Each subclass's record and feature records the worker serves |
 
 Published records must be player-readable because each player's sheet evaluates
 them with that player's authority. *Visible to players* only controls the
@@ -144,6 +173,7 @@ build output.
 
 [`host-tests/installed-homebrew.browser.mts`](host-tests/installed-homebrew.browser.mts)
 installs the Compendium, Engine, Character Sheets and this package on a
-disposable host, imports and publishes the sample items, checks DM and player
-sheets, withdrawal, and the real UI. It uses the host's installed-suite
+disposable host, imports and publishes the sample items and subclass, checks
+DM and player sheets, a character with the subclass, withdrawal, and the real
+UI. It uses the host's installed-suite
 fixtures; the file header shows how to run it from a host checkout.
