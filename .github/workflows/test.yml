@@ -47,8 +47,14 @@ jobs:
         run: |
           git diff --exit-code
           test -z "$(git ls-files -- web worker)"
+      - name: Locate built package
+        id: package
+        run: |
+          archive="$(jq -er '"dist/\(.id)-\(.version).zip"' addon.json)"
+          test -f "$archive"
+          printf 'archive=%s\n' "$archive" >> "$GITHUB_OUTPUT"
       - name: Inspect release package with the host inspector
-        run: go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.0.0.zip
+        run: go tool -modfile=go.tools.mod codex-addon-inspect "${{ steps.package.outputs.archive }}"
       - uses: actions/upload-artifact@v7
         with:
           name: reviewed-package
