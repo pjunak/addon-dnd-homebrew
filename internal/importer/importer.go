@@ -395,7 +395,7 @@ func normalize(raw, existing json.RawMessage, exists bool, defaults map[string]j
 	// An empty object clears an optional field, as [] clears effects.
 	optional := []string{"condition"}
 	if isItem {
-		optional = []string{"grants", "attunementPrerequisites", "container"}
+		optional = []string{"grants", "attunementPrerequisites", "container", "baseItem"}
 	}
 	for _, field := range optional {
 		var cleared map[string]json.RawMessage
@@ -406,8 +406,12 @@ func normalize(raw, existing json.RawMessage, exists bool, defaults map[string]j
 	if _, present := entry["characterMechanics"]; !present && isItem {
 		mechanics := `"narrative"`
 		var effects []json.RawMessage
+		var base struct {
+			Bonus json.RawMessage `json:"bonus"`
+		}
 		_, hasGrants := fields["grants"]
-		if json.Unmarshal(fields["characterEffects"], &effects) == nil && len(effects) > 0 || hasGrants {
+		hasBonus := json.Unmarshal(fields["baseItem"], &base) == nil && base.Bonus != nil
+		if json.Unmarshal(fields["characterEffects"], &effects) == nil && len(effects) > 0 || hasGrants || hasBonus {
 			mechanics = `"complete"`
 		}
 		fields["characterMechanics"] = json.RawMessage(mechanics)

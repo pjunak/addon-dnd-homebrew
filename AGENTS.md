@@ -17,7 +17,7 @@ friendly and the code clear. Old formats and extra hardening are low priority.
 | Writing or checking an import file | [Write many items at once](docs/FORMAT.md#write-many-items-at-once) (`cmd/check-homebrew`) |
 | Publish revision, withdrawal, visibility and limits | [docs/DESIGN.md](docs/DESIGN.md) |
 | Host integration, manifests and lifecycle | The host's [add-on guide](https://github.com/pjunak/ttrpg-codex/blob/main/examples/addons/AUTHORING.md) and [API reference](https://github.com/pjunak/ttrpg-codex/blob/main/examples/addons/API_V3.md) |
-| What the Engine accepts | `addon-dnd-engine/internal/provider/client.go` (provider contract) and `internal/rules/character_items.go` (effects and the item grants allowlist) |
+| What the Engine accepts | `addon-dnd-engine/internal/provider/client.go` (provider contract), `internal/rules/character_items.go` (effects and the item grants allowlist) and `internal/rules/magic_gear.go` (a magic weapon or armor's `baseItem`) |
 
 Tasks for all repositories live in the host's `docs/BACKLOG.md`.
 
@@ -29,8 +29,9 @@ Tasks for all repositories live in the host's `docs/BACKLOG.md`.
 - Flattening (`flatten` in `src/model.ts`) is the only place set defaults and
   item overrides combine. The worker serves what was published and never
   recomputes it.
-- Effects mirror the Engine's `validCharacterEffect` and proficiency rule, and
-  grants its item grants allowlist (`characterItemGrants`); Homebrew may be
+- Effects mirror the Engine's `validCharacterEffect` and proficiency rule,
+  grants its item grants allowlist (`characterItemGrants`), and `baseItem` its
+  magic weapons and armor (`magicBaseItem`); Homebrew may be
   stricter, never looser. Extending either vocabulary starts in the Engine.
   `contracts/` must accept every draft and record the model accepts
   (`internal/importer/schema_test.go` checks this with the host's validator).

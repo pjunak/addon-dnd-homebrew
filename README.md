@@ -73,6 +73,12 @@ With D&D Engine 5.4.0 or later, an item's **properties** also apply
 | Toggles the player switches on the sheet: Advantage, senses, resistances and immunities | In darkness: Darkvision 60 ft, or 30 ft more |
 | Resistances and immunities | fire resistance, immunity to the Frightened condition |
 
+With D&D Engine 6.1.0 or later, an item can be a **magic weapon or armor**
+([format](docs/FORMAT.md#weapon-or-armor)): a base weapon or armor from the
+Compendium, such as a longsword or a shield, with a bonus to attack and damage
+rolls or to Armor Class. Leave the base or the bonus open (any martial weapon,
++1 to +3) and the player picks it on the sheet.
+
 Items can also have a **weight** (the sheet adds it to the character's load),
 **hold other items** (with a capacity, and weightless contents like a Bag of
 Holding) and say **who can attune**: a spellcaster, members of certain classes,
@@ -136,7 +142,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.0.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.1.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are

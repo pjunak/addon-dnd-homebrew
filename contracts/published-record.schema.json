@@ -30,16 +30,17 @@
         "grants": { "$ref": "homebrew-common.schema.json#/$defs/recordGrants" },
         "weightLb": { "$ref": "homebrew-common.schema.json#/$defs/weightLb" },
         "attunementPrerequisites": { "$ref": "homebrew-common.schema.json#/$defs/attunementRequirement" },
-        "container": { "$ref": "homebrew-common.schema.json#/$defs/container" }
+        "container": { "$ref": "homebrew-common.schema.json#/$defs/container" },
+        "baseItem": { "$ref": "homebrew-common.schema.json#/$defs/baseItem" }
       },
       "allOf": [
         {
           "if": { "properties": { "characterMechanics": { "const": "narrative" } } },
-          "then": { "properties": { "characterEffects": { "maxItems": 0 } }, "not": { "required": ["grants"] } }
+          "then": { "properties": { "characterEffects": { "maxItems": 0 } }, "not": { "anyOf": [{ "required": ["grants"] }, { "required": ["baseItem"], "properties": { "baseItem": { "required": ["bonus"] } } }] } }
         },
         {
           "if": { "properties": { "characterMechanics": { "const": "complete" } } },
-          "then": { "anyOf": [{ "properties": { "characterEffects": { "minItems": 1 } } }, { "required": ["grants"] }] }
+          "then": { "anyOf": [{ "properties": { "characterEffects": { "minItems": 1 } } }, { "required": ["grants"] }, { "required": ["baseItem"], "properties": { "baseItem": { "required": ["bonus"] } } }] }
         },
         {
           "if": { "required": ["attunementPrerequisites"] },

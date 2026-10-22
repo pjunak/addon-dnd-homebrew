@@ -71,6 +71,25 @@
       "values": { "homebrew_items/resilience": { "characterMechanics": "complete", "characterEffects": [], "grants": { "advantages": [{ "on": "deathSave" }] } } }
     },
     {
+      "name": "a bonus makes an imported magic weapon automated",
+      "document": { "format": "dnd-homebrew", "schemaVersion": 1, "sets": [], "items": [{ "id": "edge", "name": "+1 Longsword", "baseItem": { "kind": "weapon", "ids": ["longsword"], "bonus": 1 } }] },
+      "summary": { "creates": 1, "updates": 0, "skips": 0, "deletes": 0 },
+      "changes": [["homebrew_items", "edge", "create"]],
+      "values": { "homebrew_items/edge": { "characterMechanics": "complete", "characterEffects": [], "baseItem": { "kind": "weapon", "ids": ["longsword"], "bonus": 1 } } }
+    },
+    {
+      "name": "a base without a bonus stays text only",
+      "document": { "format": "dnd-homebrew", "schemaVersion": 1, "sets": [], "items": [{ "id": "guard", "name": "Old Guard", "baseItem": { "kind": "armor", "armorTypes": ["shield"] } }] },
+      "summary": { "creates": 1, "updates": 0, "skips": 0, "deletes": 0 },
+      "changes": [["homebrew_items", "guard", "create"]],
+      "values": { "homebrew_items/guard": { "characterMechanics": "narrative", "baseItem": { "kind": "armor", "armorTypes": ["shield"] } } }
+    },
+    {
+      "name": "an unsupported base item",
+      "document": { "format": "dnd-homebrew", "schemaVersion": 1, "sets": [], "items": [{ "id": "edge", "name": "Edge", "baseItem": { "kind": "weapon", "ids": ["longsword"], "bonus": 9 } }] },
+      "errorIncludes": "bonus"
+    },
+    {
       "name": "an update keeps stored grants",
       "document": { "format": "dnd-homebrew", "schemaVersion": 1, "sets": [], "items": [{ "id": "good-luck", "name": "Good Luck", "text": "Once per Long Rest, reroll a natural 1." }] },
       "summary": { "creates": 0, "updates": 1, "skips": 0, "deletes": 0 },

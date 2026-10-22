@@ -6,10 +6,12 @@ export interface RuleOption {
   readonly name: string;
   readonly detail: string;
 }
-/** Spells and classes from the installed rules data, sorted by name. */
+/** Spells, classes, weapons and armor from the installed rules data, sorted by name. */
 export interface References {
   readonly spells: readonly RuleOption[];
   readonly classes: readonly RuleOption[];
+  readonly weapons: readonly RuleOption[];
+  readonly armor: readonly RuleOption[];
 }
 
 /** Picker options from rule records: id, name, and details for the highlighted option. */
@@ -19,7 +21,7 @@ export function pickerOptions(
   return options.map((option) => [option.id, option.name, option.detail] as const);
 }
 
-const kinds = ["spell", "class"] as const;
+const kinds = ["spell", "class", "weapon", "armor"] as const;
 type Kind = (typeof kinds)[number];
 const pageLimit = 200;
 const deadlineMs = 5000;
@@ -33,6 +35,33 @@ function optionOf(kind: Kind, value: unknown): RuleOption | undefined {
   if (!isObject(value) || typeof value["id"] !== "string" || typeof value["name"] !== "string")
     return undefined;
   if (kind === "class") return { id: value["id"], name: value["name"], detail: "" };
+  const textOf = (field: string): string => (typeof value[field] === "string" ? value[field] : "");
+  // A weapon shows its category, range and damage; armor its type and AC.
+  if (kind === "weapon")
+    return {
+      id: value["id"],
+      name: value["name"],
+      detail: [
+        textOf("category"),
+        textOf("range"),
+        [textOf("damage"), textOf("damageType")].filter(Boolean).join(" "),
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    };
+  if (kind === "armor") {
+    const ac =
+      typeof value["baseAC"] === "number"
+        ? `AC ${value["baseAC"]}`
+        : typeof value["acBonus"] === "number"
+          ? `AC +${value["acBonus"]}`
+          : "";
+    return {
+      id: value["id"],
+      name: value["name"],
+      detail: [textOf("armorType"), ac].filter(Boolean).join(" · "),
+    };
+  }
   const level = value["level"],
     school = typeof value["school"] === "string" ? value["school"] : "",
     classes = Array.isArray(value["classes"])
@@ -69,7 +98,12 @@ export class ReferenceLoader {
   }
   async #read(signal: AbortSignal): Promise<References> {
     const handle = await this.#connect();
-    const found: Record<Kind, Map<string, RuleOption>> = { spell: new Map(), class: new Map() };
+    const found: Record<Kind, Map<string, RuleOption>> = {
+      spell: new Map(),
+      class: new Map(),
+      weapon: new Map(),
+      armor: new Map(),
+    };
     let answered = false;
     for (const provider of handle.providers) {
       const call = <T>(method: string, params: unknown): Promise<T> =>
@@ -106,6 +140,11 @@ export class ReferenceLoader {
     if (!answered) throw new Error("No rules-data provider answered.");
     const sorted = (options: Map<string, RuleOption>): RuleOption[] =>
       [...options.values()].sort((left, right) => left.name.localeCompare(right.name));
-    return { spells: sorted(found.spell), classes: sorted(found.class) };
+    return {
+      spells: sorted(found.spell),
+      classes: sorted(found.class),
+      weapons: sorted(found.weapon),
+      armor: sorted(found.armor),
+    };
   }
 }

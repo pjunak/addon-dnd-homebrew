@@ -32,6 +32,10 @@ type effectFixture struct {
 			Invalid []map[string]any `json:"invalid"`
 		} `json:"requirements"`
 	} `json:"carrying"`
+	BaseItems struct {
+		Valid   []json.RawMessage `json:"valid"`
+		Invalid []json.RawMessage `json:"invalid"`
+	} `json:"baseItems"`
 }
 
 type grantsCase struct {
@@ -65,12 +69,12 @@ func TestEffectsMatchSharedFixture(t *testing.T) {
 		}
 	}
 	for _, effects := range fixture.InvalidSets {
-		if ValidateMechanics("complete", effects, nil) == nil {
+		if ValidateMechanics("complete", effects, nil, nil) == nil {
 			t.Errorf("%+v was accepted", effects)
 		}
 	}
 	for _, effects := range fixture.ValidSets {
-		if err := ValidateMechanics("complete", effects, nil); err != nil {
+		if err := ValidateMechanics("complete", effects, nil, nil); err != nil {
 			t.Errorf("%+v: %v", effects, err)
 		}
 	}
@@ -118,6 +122,54 @@ func TestCarryingMatchesSharedFixture(t *testing.T) {
 	}
 }
 
+func TestBaseItemsMatchSharedFixture(t *testing.T) {
+	fixture := loadEffectFixture(t).BaseItems
+	// A base item is decoded exactly, as a draft or record holds it.
+	base := func(body json.RawMessage) (BaseItem, error) {
+		var value BaseItem
+		if err := decodeExact(body, &value, []string{"kind"}); err != nil {
+			return value, err
+		}
+		return value, ValidateBaseItem(value)
+	}
+	for _, body := range fixture.Valid {
+		value, err := base(body)
+		if err != nil {
+			t.Errorf("%s: %v", body, err)
+			continue
+		}
+		// Records round-trip exactly, so a bonus keeps the form it was written in.
+		if encoded, _ := json.Marshal(value); !bytes.Equal(compact(t, encoded), compact(t, body)) {
+			t.Errorf("%s re-encodes as %s", body, encoded)
+		}
+	}
+	for _, body := range fixture.Invalid {
+		if _, err := base(body); err == nil {
+			t.Errorf("%s was accepted", body)
+		}
+	}
+	bonus := &BaseItem{Kind: "weapon", IDs: []string{"longsword"}, Bonus: &Bonus{Values: []int{1}}}
+	if ValidateMechanics("narrative", nil, nil, bonus) == nil {
+		t.Error("a narrative item declared a bonus")
+	}
+	if err := ValidateMechanics("complete", nil, nil, bonus); err != nil {
+		t.Errorf("a bonus alone is not automation: %v", err)
+	}
+	if err := ValidateMechanics("narrative", nil, nil, &BaseItem{Kind: "weapon"}); err != nil {
+		t.Errorf("a narrative item cannot name its base: %v", err)
+	}
+}
+
+// compact removes insignificant whitespace from JSON.
+func compact(t *testing.T, body []byte) []byte {
+	t.Helper()
+	var buffer bytes.Buffer
+	if err := json.Compact(&buffer, body); err != nil {
+		t.Fatal(err)
+	}
+	return buffer.Bytes()
+}
+
 func TestGrantsMatchSharedFixture(t *testing.T) {
 	fixture := loadEffectFixture(t)
 	if len(fixture.Grants.Valid) == 0 || len(fixture.Grants.Invalid) == 0 {
@@ -138,25 +190,25 @@ func TestGrantsMatchSharedFixture(t *testing.T) {
 func TestMechanicsAgreeWithEngineGate(t *testing.T) {
 	effect := []Effect{{Target: "armorClass", Mode: "add", Value: 1}}
 	grants := map[string]any{"advantages": []any{map[string]any{"on": "deathSave"}}}
-	if ValidateMechanics("narrative", effect, nil) == nil {
+	if ValidateMechanics("narrative", effect, nil, nil) == nil {
 		t.Fatal("a narrative item with effects is an Engine blocker")
 	}
-	if ValidateMechanics("narrative", nil, grants) == nil {
+	if ValidateMechanics("narrative", nil, grants, nil) == nil {
 		t.Fatal("a narrative item with grants is an Engine blocker")
 	}
-	if ValidateMechanics("complete", nil, nil) == nil {
+	if ValidateMechanics("complete", nil, nil, nil) == nil {
 		t.Fatal("a complete item without effects or grants is meaningless")
 	}
-	if err := ValidateMechanics("complete", nil, grants); err != nil {
+	if err := ValidateMechanics("complete", nil, grants, nil); err != nil {
 		t.Fatalf("grants alone make an item complete: %v", err)
 	}
-	if ValidateMechanics("complete", effect, map[string]any{}) == nil {
+	if ValidateMechanics("complete", effect, map[string]any{}, nil) == nil {
 		t.Fatal("empty grants were accepted")
 	}
-	if ValidateMechanics("partial", nil, nil) == nil {
+	if ValidateMechanics("partial", nil, nil, nil) == nil {
 		t.Fatal("unknown mechanics were accepted")
 	}
-	if err := ValidateMechanics("narrative", []Effect{}, nil); err != nil {
+	if err := ValidateMechanics("narrative", []Effect{}, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 }

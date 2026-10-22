@@ -28,6 +28,11 @@
       "name": "item weight, container and attunement requirement",
       "item": { "id": "lantern", "schemaVersion": 1, "setId": "", "name": "Lantern", "text": "Holds one candle.", "overrides": { "attunement": true, "weightLb": 2 }, "tags": [], "characterMechanics": "narrative", "characterEffects": [], "playerVisible": false, "retired": false, "updatedAt": 4, "attunementPrerequisites": { "any": [{ "classes": { "cleric": 1 } }, { "classes": { "wizard": 1 } }] }, "container": { "capacityLb": 1 } },
       "published": { "id": "hb.lantern", "schemaVersion": 1, "itemId": "lantern", "setId": "", "setName": "", "playerVisible": false, "retired": false, "withdrawn": false, "record": { "kind": "magic-item", "id": "hb.lantern", "name": "Lantern", "edition": "2024", "book": "homebrew", "itemType": "Wondrous Item", "rarity": "Common", "attunement": true, "tags": ["homebrew"], "text": "*Wondrous Item, Common (Requires Attunement by a Cleric or Wizard)*\n\nHolds one candle.", "characterMechanics": "narrative", "characterEffects": [], "weightLb": 2, "attunementPrerequisites": { "any": [{ "classes": { "cleric": 1 } }, { "classes": { "wizard": 1 } }] }, "container": { "capacityLb": 1 } } }
+    },
+    {
+      "name": "a magic weapon carries its base and the bonuses to pick from",
+      "item": { "id": "edge", "schemaVersion": 1, "setId": "", "name": "Edge", "text": "A keen blade.", "overrides": { "itemType": "Weapon (Any Martial)" }, "tags": [], "characterMechanics": "complete", "characterEffects": [], "playerVisible": false, "retired": false, "updatedAt": 5, "baseItem": { "kind": "weapon", "categories": ["martial"], "ranges": ["melee"], "bonus": [1, 2] } },
+      "published": { "id": "hb.edge", "schemaVersion": 1, "itemId": "edge", "setId": "", "setName": "", "playerVisible": false, "retired": false, "withdrawn": false, "record": { "kind": "magic-item", "id": "hb.edge", "name": "Edge", "edition": "2024", "book": "homebrew", "itemType": "Weapon (Any Martial)", "rarity": "Common", "attunement": false, "tags": ["homebrew"], "text": "*Weapon (Any Martial), Common*\n\nA keen blade.", "characterMechanics": "complete", "characterEffects": [], "baseItem": { "kind": "weapon", "categories": ["martial"], "ranges": ["melee"], "bonus": [1, 2] } } }
     }
   ]
 }

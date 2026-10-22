@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
+  baseItemProblem,
   canonical,
   containerProblem,
   effectProblem,
@@ -20,6 +21,7 @@ import {
   requirementProblem,
   slug,
   weightProblem,
+  type BaseItem,
   type Effect,
   type Item,
   type ItemSet,
@@ -41,6 +43,7 @@ interface EffectFixture {
     containers: { valid: unknown[]; invalid: unknown[] };
     requirements: { valid: unknown[]; invalid: unknown[] };
   };
+  baseItems: { valid: unknown[]; invalid: unknown[] };
 }
 interface GrantsCase {
   name: string;
@@ -88,6 +91,17 @@ void test("weights, containers and attunement requirements follow the shared fix
       assert.equal(check(value as never), undefined, JSON.stringify(value));
     for (const value of cases.invalid) assert.ok(check(value as never), JSON.stringify(value));
   }
+});
+
+void test("weapon and armor bases follow the shared fixture", async () => {
+  const { baseItems } = await fixture<EffectFixture>("effects.json");
+  for (const value of baseItems.valid)
+    assert.equal(baseItemProblem(value), undefined, JSON.stringify(value));
+  for (const value of baseItems.invalid) assert.ok(baseItemProblem(value), JSON.stringify(value));
+  const bonus: BaseItem = { kind: "weapon", ids: ["longsword"], bonus: 1 };
+  assert.ok(mechanicsProblem("narrative", [], undefined, bonus));
+  assert.equal(mechanicsProblem("complete", [], undefined, bonus), undefined);
+  assert.equal(mechanicsProblem("narrative", [], undefined, { kind: "weapon" }), undefined);
 });
 
 void test("a requirement reads after 'by' and needs an item that requires attunement", () => {
@@ -213,17 +227,17 @@ void test("a set condition reaches every item, even a text-only one", async () =
   assert.ok(itemProblem(drafted), "a draft takes its conditions from the set");
 });
 
-void test("the sample file imports 1 set and 13 items, 11 automated", async () => {
+void test("the sample file imports 1 set and 14 items, 12 automated", async () => {
   const document = JSON.parse(
     await readFile(new URL("../docs/examples/sample-items.json", import.meta.url), "utf8"),
   ) as unknown;
   const plan = planImport(document, new Map(), new Map(), 1);
-  assert.equal(plan.summary.creates, 14);
+  assert.equal(plan.summary.creates, 15);
   const items = plan.mutations
     .filter((mutation) => mutation.dataId === "homebrew_items" && mutation.operation === "put")
     .map((mutation) => (mutation.operation === "put" ? parseItem(mutation.value) : undefined));
-  assert.equal(items.length, 13);
-  assert.equal(items.filter((item) => item?.characterMechanics === "complete").length, 11);
+  assert.equal(items.length, 14);
+  assert.equal(items.filter((item) => item?.characterMechanics === "complete").length, 12);
   assert.equal(items.filter((item) => item?.grants !== undefined).length, 7);
   const setWrite = plan.mutations.find((mutation) => mutation.dataId === "homebrew_sets");
   assert.ok(setWrite?.operation === "put");
@@ -247,6 +261,13 @@ void test("the sample file imports 1 set and 13 items, 11 automated", async () =
   assert.equal(record("lantern-of-embers").rarity, "Rare");
   assert.equal(record("lantern-of-embers").weightLb, 2);
   assert.match(record("lantern-of-embers").text, /Requires Attunement by a Sorcerer or Wizard/u);
+  // A bonus alone makes the longsword automated; its weight comes from the base.
+  assert.deepEqual(record("plus-one-longsword").baseItem, {
+    kind: "weapon",
+    ids: ["longsword"],
+    bonus: 1,
+  });
+  assert.equal(record("plus-one-longsword").weightLb, undefined);
   assert.equal(record("ward").weightLb, 0.5, "the set's weight");
   assert.deepEqual(record("bottomless-satchel").container, { capacityLb: 100, weightless: true });
   const lore = flatten(
@@ -263,8 +284,8 @@ void test("publishing writes only changes and always moves the metadata revision
   const items = publish.cases.map((testCase) => testCase.item);
   const first = planPublish(sets, items, new Map(), undefined, 50);
   assert.deepEqual(first.problems, []);
-  assert.equal(first.recordCount, 5);
-  assert.equal(first.mutations.length, 6);
+  assert.equal(first.recordCount, 6);
+  assert.equal(first.mutations.length, 7);
   const meta = first.mutations.at(-1)!;
   assert.equal(meta.dataId, "homebrew_meta");
   assert.equal(meta.expectedRevision, 0);
@@ -272,7 +293,7 @@ void test("publishing writes only changes and always moves the metadata revision
     schemaVersion: 1,
     revision: 1,
     publishedAt: 50,
-    recordCount: 5,
+    recordCount: 6,
   });
 
   const stored = new Map<string, Stored<Published>>(
@@ -282,7 +303,7 @@ void test("publishing writes only changes and always moves the metadata revision
     ]),
   );
   const metaStored = {
-    value: { schemaVersion: 1 as const, revision: 1, publishedAt: 50, recordCount: 5 },
+    value: { schemaVersion: 1 as const, revision: 1, publishedAt: 50, recordCount: 6 },
     revision: 7,
   };
   assert.equal(
@@ -329,9 +350,9 @@ void test("an export imports back unchanged", async () => {
   const items = publish.cases.map((testCase) => testCase.item);
   const document = JSON.parse(JSON.stringify(exportDocument(publish.sets, items, 9))) as unknown;
   const fresh = planImport(document, new Map(), new Map(), 10);
-  assert.deepEqual(fresh.summary, { creates: 7, updates: 0, skips: 0, deletes: 0 });
+  assert.deepEqual(fresh.summary, { creates: 8, updates: 0, skips: 0, deletes: 0 });
   const stored = <T extends { id: string }>(values: readonly T[]) =>
     new Map(values.map((value) => [value.id, { value: value as unknown, revision: 1 }]));
   const again = planImport(document, stored(publish.sets), stored(items), 10);
-  assert.deepEqual(again.summary, { creates: 0, updates: 0, skips: 7, deletes: 0 });
+  assert.deepEqual(again.summary, { creates: 0, updates: 0, skips: 8, deletes: 0 });
 });

@@ -132,7 +132,7 @@ func TestSampleExampleImports(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.Summary.Creates != 14 || len(plan.Mutations) != 14 {
+	if plan.Summary.Creates != 15 || len(plan.Mutations) != 15 {
 		t.Fatalf("summary %+v", plan.Summary)
 	}
 	complete, granted := 0, 0
@@ -158,8 +158,8 @@ func TestSampleExampleImports(t *testing.T) {
 			granted++
 		}
 	}
-	if complete != 11 || granted != 7 {
-		t.Fatalf("%d automated items and %d with grants, want 11 and 7", complete, granted)
+	if complete != 12 || granted != 7 {
+		t.Fatalf("%d automated items and %d with grants, want 12 and 7", complete, granted)
 	}
 }
 

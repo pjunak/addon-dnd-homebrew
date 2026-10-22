@@ -59,8 +59,11 @@ skips invalid ones with a diagnostic, and the next publish rewrites them.
   and the item grants allowlist (`characterItemGrants`), both in the Engine's
   `internal/rules/character_items.go`. Anything else needs Engine support
   first, then its contract README, the Compendium schema and the sheet's
-  display. Grants need Engine 5.4.0; an older Engine ignores them.
-- The editor picks spells and classes from the other `dnd5e.rules-data`
+  display. Grants need Engine 5.4.0; an older Engine ignores them. A weapon
+  or armor base (`baseItem`) follows the Engine's magic weapons and armor
+  contract (`internal/rules/magic_gear.go`), with at most 20 ids and bonuses
+  up to +5, and needs Engine 6.1.0.
+- The editor picks spells, classes, weapons and armor from the other `dnd5e.rules-data`
   providers (the Compendium), which the browser reads once per page through
   an optional consumer that excludes this add-on's own records. Without a
   Compendium they are typed as ids. Either way the Engine checks them: an
