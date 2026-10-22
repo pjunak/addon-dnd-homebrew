@@ -61,7 +61,9 @@ go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-<version>.zi
 ```
 
 `npm run sync:codex-sdk` refreshes `src/codex/` after a host version change.
-After changing the provider, publishing or the manifest, also run
-`host-tests/installed-homebrew.browser.mts` from a host checkout (see its
-header); it is the only check that runs the real Engine and sheets.
+After changing the provider, publishing, the import format or the manifest,
+also run the host's installed suite with `CODEX_HOMEBREW_ZIP` set to the new
+build (see the host's CONTRIBUTING.md); `installed-homebrew.browser.mts` there
+is the only check that runs the real Engine and sheets. Its sample document is
+a copy of `docs/examples/sample-items.json`; change both together.
 Ask before pushing, deploying, installing on a site or touching live data.

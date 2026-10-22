@@ -142,8 +142,11 @@ go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.0.0.zip
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are
 build output.
 
-[`host-tests/installed-homebrew.browser.mts`](host-tests/installed-homebrew.browser.mts)
-installs the Compendium, Engine, Character Sheets and this package on a
-disposable host, imports and publishes the sample items, checks DM and player
-sheets, withdrawal, and the real UI. It uses the host's installed-suite
-fixtures; the file header shows how to run it from a host checkout.
+The host's installed add-on suite (`installed-homebrew.browser.mts` in
+`ttrpg-codex`) installs the Compendium, Engine, Character Sheets and this
+package on a disposable host, imports and publishes sample items, checks DM and
+player sheets, withdrawal, and the real UI. It runs nightly and before every
+deployment against the latest releases; to run it against a local build, set
+`CODEX_HOMEBREW_ZIP` as the host's
+[CONTRIBUTING.md](https://github.com/pjunak/ttrpg-codex/blob/main/CONTRIBUTING.md#installed-add-on-smoke-test)
+describes.
