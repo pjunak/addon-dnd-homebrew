@@ -1,0 +1,2144 @@
+{
+ "$comment": "Built from the grants vocabulary in contracts/rule-record.schema.json: every field filled, each oneOf form, and breakages. Both test suites check these.",
+ "valid": [
+  {
+   "name": "abilityScoreBonus, every part",
+   "grants": {
+    "abilityScoreBonus": {
+     "assign": {
+      "example": 2
+     },
+     "cap": 2
+    }
+   }
+  },
+  {
+   "name": "abilityScoreIncrease, every part",
+   "grants": {
+    "abilityScoreIncrease": {
+     "amount": 2,
+     "cap": 2,
+     "choose": 2,
+     "from": [
+      "example"
+     ],
+     "fromCastingAbilityOf": "example"
+    }
+   }
+  },
+  {
+   "name": "acBonus, every part",
+   "grants": {
+    "acBonus": 2
+   }
+  },
+  {
+   "name": "acBonuses, every part",
+   "grants": {
+    "acBonuses": [
+     {
+      "add": 2,
+      "requires": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "acFormulas, every part",
+   "grants": {
+    "acFormulas": [
+     {
+      "addAbilities": [
+       "example"
+      ],
+      "base": 2,
+      "id": "example",
+      "name": "example",
+      "requires": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "activations, every part",
+   "grants": {
+    "activations": [
+     {
+      "condition": "example",
+      "exclusiveGroup": "example",
+      "extends": "example",
+      "id": "example",
+      "minLevel": 2,
+      "modifiers": [
+       {
+        "abilities": [
+         "example"
+        ],
+        "ability": "example",
+        "add": 2,
+        "addAbility": "example",
+        "attackBonus": 2,
+        "attackBonusAbility": "example",
+        "damageBonus": 2,
+        "damageBonusColumn": "example",
+        "damageDie": "example",
+        "damageDieColumn": "example",
+        "key": "example",
+        "match": [
+         {}
+        ],
+        "min": 2,
+        "mode": "example",
+        "multiply": 2,
+        "on": "example",
+        "proficient": true,
+        "requires": {},
+        "skills": [
+         "example"
+        ],
+        "target": "example",
+        "value": "example",
+        "when": "example"
+       }
+      ],
+      "name": "example",
+      "resource": "example",
+      "restrictions": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      },
+      "while": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "advantages, every part",
+   "grants": {
+    "advantages": [
+     {
+      "abilities": [
+       "example"
+      ],
+      "mode": "example",
+      "on": "example",
+      "requires": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      },
+      "skills": [
+       "example"
+      ],
+      "when": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "armor, every part",
+   "grants": {
+    "armor": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "attackModifiers, every part",
+   "grants": {
+    "attackModifiers": [
+     {
+      "ability": "example",
+      "attackBonus": 2,
+      "attackBonusAbility": "example",
+      "damageBonus": 2,
+      "damageBonusColumn": "example",
+      "damageDie": "example",
+      "damageDieColumn": "example",
+      "match": [
+       {
+        "attack": "example",
+        "attackAbility": "example",
+        "category": "example",
+        "property": "example",
+        "range": "example",
+        "unarmed": true
+       }
+      ],
+      "min": 2,
+      "requires": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "attacks, every part",
+   "grants": {
+    "attacks": [
+     {
+      "ability": "example",
+      "category": "example",
+      "damage": "example",
+      "damageType": "example",
+      "id": "example",
+      "mastery": "example",
+      "masteryActive": true,
+      "name": "example",
+      "proficient": true,
+      "properties": [
+       "example"
+      ],
+      "range": "example",
+      "rangeNormalLong": {
+       "long": 2,
+       "normal": 2
+      },
+      "thrownRange": {
+       "long": 2,
+       "normal": 2
+      },
+      "versatileDamage": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "attunementLimit, every part",
+   "grants": {
+    "attunementLimit": 2
+   }
+  },
+  {
+   "name": "bonuses, every part",
+   "grants": {
+    "bonuses": {
+     "example": 2
+    }
+   }
+  },
+  {
+   "name": "castingAbility, every part",
+   "grants": {
+    "castingAbility": {
+     "choose": [
+      "example"
+     ],
+     "fixed": "example",
+     "fromAbilityScoreIncrease": true,
+     "id": "example"
+    }
+   }
+  },
+  {
+   "name": "choiceOverrides, every part",
+   "grants": {
+    "choiceOverrides": [
+     {
+      "choiceId": "example",
+      "count": 2,
+      "countByLevel": {
+       "example": 2
+      },
+      "filter": {
+       "creatureType": "example",
+       "fly": true,
+       "itemTypes": [
+        "example"
+       ],
+       "maxCr": 1.5,
+       "notItemTypes": [
+        "example"
+       ],
+       "rarity": [
+        "example"
+       ]
+      },
+      "filterByLevel": {
+       "example": {
+        "creatureType": "example",
+        "fly": true,
+        "itemTypes": [
+         "example"
+        ],
+        "maxCr": 1.5,
+        "notItemTypes": [
+         "example"
+        ],
+        "rarity": [
+         "example"
+        ]
+       }
+      },
+      "from": [
+       "example"
+      ],
+      "fromByLevel": {
+       "example": [
+        "example"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "choicePackages, every part",
+   "grants": {
+    "choicePackages": [
+     {
+      "choiceId": "example",
+      "options": {
+       "example": {
+        "abilityScoreBonus": {
+         "assign": {}
+        },
+        "abilityScoreIncrease": {},
+        "acBonus": 2,
+        "acBonuses": [
+         {
+          "add": 2
+         }
+        ],
+        "acFormulas": [
+         {
+          "base": 2,
+          "id": "example"
+         }
+        ],
+        "activations": [
+         {}
+        ],
+        "advantages": [
+         {
+          "on": "example"
+         }
+        ],
+        "armor": [
+         "example"
+        ],
+        "attackModifiers": [
+         {}
+        ],
+        "attacks": [
+         {
+          "damage": "example",
+          "id": "example",
+          "name": "example"
+         }
+        ],
+        "attunementLimit": 2,
+        "bonuses": {
+         "example": 2
+        },
+        "castingAbility": {},
+        "choiceOverrides": [
+         {
+          "choiceId": "example"
+         }
+        ],
+        "choicePackages": [
+         {
+          "choiceId": "example",
+          "options": {}
+         }
+        ],
+        "choices": [
+         {
+          "id": "example"
+         }
+        ],
+        "conditionImmunities": [
+         "example"
+        ],
+        "conditions": [
+         {
+          "id": "example",
+          "name": "example"
+         }
+        ],
+        "criticalRange": 2,
+        "damageImmunities": [
+         "example"
+        ],
+        "expertise": [
+         "example"
+        ],
+        "hpBonus": 2,
+        "hpPerClassLevel": 2,
+        "hpPerLevel": 2,
+        "initiativeBonuses": [
+         {}
+        ],
+        "languages": [
+         "example"
+        ],
+        "prepareSpellListOf": "example",
+        "proficiencies": {},
+        "resistances": [
+         "example"
+        ],
+        "resources": [
+         {
+          "key": "example"
+         }
+        ],
+        "saveBonuses": [
+         {}
+        ],
+        "saveDCs": [
+         {
+          "abilities": []
+         }
+        ],
+        "savingThrows": [
+         "example"
+        ],
+        "senseBonuses": {
+         "example": 2
+        },
+        "senses": {
+         "example": 2
+        },
+        "skillBonuses": [
+         {}
+        ],
+        "skills": [
+         "example"
+        ],
+        "speedBonus": 2,
+        "speedBonuses": [
+         {}
+        ],
+        "speeds": {
+         "example": 1.5
+        },
+        "spellList": [
+         "example"
+        ],
+        "spellLists": [
+         "example"
+        ],
+        "spellSlot": {
+         "level": {}
+        },
+        "spellbookBonus": [
+         {
+          "count": 2,
+          "level": 2
+         }
+        ],
+        "spells": [
+         {}
+        ],
+        "tools": [
+         "example"
+        ],
+        "unquantifiable_modifiers": [
+         "example"
+        ],
+        "weaponMasterySlots": 2,
+        "weapons": [
+         "example"
+        ]
+       }
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "choices, every part",
+   "grants": {
+    "choices": [
+     {
+      "category": "example",
+      "changeOn": "example",
+      "count": 2,
+      "countByLevel": {
+       "example": 2
+      },
+      "default": "example",
+      "filter": {
+       "creatureType": "example",
+       "fly": true,
+       "itemTypes": [
+        "example"
+       ],
+       "maxCr": 1.5,
+       "notItemTypes": [
+        "example"
+       ],
+       "rarity": [
+        "example"
+       ]
+      },
+      "filterByLevel": {
+       "example": {
+        "creatureType": "example",
+        "fly": true,
+        "itemTypes": [
+         "example"
+        ],
+        "maxCr": 1.5,
+        "notItemTypes": [
+         "example"
+        ],
+        "rarity": [
+         "example"
+        ]
+       }
+      },
+      "from": [
+       "example"
+      ],
+      "fromByLevel": {
+       "example": [
+        "example"
+       ]
+      },
+      "fromCategory": "example",
+      "id": "example",
+      "levelReplacements": 2,
+      "optionKind": "example",
+      "prompt": "example",
+      "source": "example",
+      "swappableOn": "example",
+      "type": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "conditionImmunities, every part",
+   "grants": {
+    "conditionImmunities": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "conditions, every part",
+   "grants": {
+    "conditions": [
+     {
+      "id": "example",
+      "name": "example",
+      "summary": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "criticalRange, every part",
+   "grants": {
+    "criticalRange": 2
+   }
+  },
+  {
+   "name": "damageImmunities, every part",
+   "grants": {
+    "damageImmunities": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "expertise, every part",
+   "grants": {
+    "expertise": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "hpBonus, every part",
+   "grants": {
+    "hpBonus": 2
+   }
+  },
+  {
+   "name": "hpPerClassLevel, every part",
+   "grants": {
+    "hpPerClassLevel": 2
+   }
+  },
+  {
+   "name": "hpPerLevel, every part",
+   "grants": {
+    "hpPerLevel": 2
+   }
+  },
+  {
+   "name": "initiativeBonuses, every part",
+   "grants": {
+    "initiativeBonuses": [
+     {
+      "abilities": [
+       "example"
+      ],
+      "add": "example",
+      "addAbility": "example",
+      "min": 2,
+      "notProficient": true,
+      "skills": [
+       "example"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "languages, every part",
+   "grants": {
+    "languages": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "prepareSpellListOf, every part",
+   "grants": {
+    "prepareSpellListOf": "example"
+   }
+  },
+  {
+   "name": "proficiencies, every part",
+   "grants": {
+    "proficiencies": {
+     "armor": [
+      "example"
+     ],
+     "languages": [
+      "example"
+     ],
+     "skills": [
+      "example"
+     ],
+     "tools": [
+      "example"
+     ],
+     "weapons": [
+      "example"
+     ]
+    }
+   }
+  },
+  {
+   "name": "resistances, every part",
+   "grants": {
+    "resistances": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "resources, every part",
+   "grants": {
+    "resources": [
+     {
+      "abilityMod": "example",
+      "add": 2,
+      "fixed": 2,
+      "key": "example",
+      "min": 2,
+      "minLevel": 2,
+      "multiplier": 2,
+      "name": "example",
+      "perLevel": 1.5,
+      "proficiencyBonus": true,
+      "progression": [
+       {
+        "level": 2,
+        "max": 2
+       }
+      ],
+      "recharge": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "saveBonuses, every part",
+   "grants": {
+    "saveBonuses": [
+     {
+      "abilities": [
+       "example"
+      ],
+      "add": "example",
+      "addAbility": "example",
+      "min": 2,
+      "notProficient": true,
+      "skills": [
+       "example"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "saveDCs, every part",
+   "grants": {
+    "saveDCs": [
+     {
+      "abilities": [
+       "example"
+      ],
+      "name": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "savingThrows, every part",
+   "grants": {
+    "savingThrows": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "senseBonuses, every part",
+   "grants": {
+    "senseBonuses": {
+     "example": 2
+    }
+   }
+  },
+  {
+   "name": "senses, every part",
+   "grants": {
+    "senses": {
+     "example": 2
+    }
+   }
+  },
+  {
+   "name": "skillBonuses, every part",
+   "grants": {
+    "skillBonuses": [
+     {
+      "abilities": [
+       "example"
+      ],
+      "add": "example",
+      "addAbility": "example",
+      "min": 2,
+      "notProficient": true,
+      "skills": [
+       "example"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "skills, every part",
+   "grants": {
+    "skills": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "speedBonus, every part",
+   "grants": {
+    "speedBonus": 2
+   }
+  },
+  {
+   "name": "speedBonuses, every part",
+   "grants": {
+    "speedBonuses": [
+     {
+      "add": 2,
+      "column": "example",
+      "requires": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "speeds, every part",
+   "grants": {
+    "speeds": {
+     "example": 1.5
+    }
+   }
+  },
+  {
+   "name": "spellList, every part",
+   "grants": {
+    "spellList": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "spellLists, every part",
+   "grants": {
+    "spellLists": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "spellSlot, every part",
+   "grants": {
+    "spellSlot": {
+     "count": 2,
+     "level": {
+      "divisor": 2,
+      "max": 2,
+      "min": 2,
+      "round": "example"
+     },
+     "recharge": "example",
+     "restriction": "example"
+    }
+   }
+  },
+  {
+   "name": "spellbookBonus, every part",
+   "grants": {
+    "spellbookBonus": [
+     {
+      "count": 2,
+      "level": 2,
+      "school": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "spells, every part",
+   "grants": {
+    "spells": [
+     {
+      "alwaysPrepared": true,
+      "atLevel": 2,
+      "atWill": true,
+      "castAtLevelByLevel": [
+       {
+        "castAtLevel": 2,
+        "level": 2
+       }
+      ],
+      "choose": 2,
+      "classId": "example",
+      "components": true,
+      "default": "example",
+      "free": "example",
+      "from": {
+       "castingTime": "example",
+       "class": [
+        "example"
+       ],
+       "ids": [
+        "example"
+       ],
+       "ritual": true,
+       "school": [
+        "example"
+       ]
+      },
+      "id": "example",
+      "ids": [
+       "example"
+      ],
+      "level": 2,
+      "levelReplacements": 2,
+      "maxSpellLevel": 2,
+      "resource": "example",
+      "ritualOnly": true,
+      "spellLevel": 2
+     }
+    ]
+   }
+  },
+  {
+   "name": "tools, every part",
+   "grants": {
+    "tools": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "unquantifiable_modifiers, every part",
+   "grants": {
+    "unquantifiable_modifiers": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "weaponMasterySlots, every part",
+   "grants": {
+    "weaponMasterySlots": 2
+   }
+  },
+  {
+   "name": "weapons, every part",
+   "grants": {
+    "weapons": [
+     "example"
+    ]
+   }
+  },
+  {
+   "name": "activations with extends as its second form",
+   "grants": {
+    "activations": [
+     {
+      "condition": "example",
+      "exclusiveGroup": "example",
+      "extends": [
+       "example"
+      ],
+      "id": "example",
+      "minLevel": 2,
+      "modifiers": [
+       {
+        "abilities": [
+         "example"
+        ],
+        "ability": "example",
+        "add": 2,
+        "addAbility": "example",
+        "attackBonus": 2,
+        "attackBonusAbility": "example",
+        "damageBonus": 2,
+        "damageBonusColumn": "example",
+        "damageDie": "example",
+        "damageDieColumn": "example",
+        "key": "example",
+        "match": [
+         {}
+        ],
+        "min": 2,
+        "mode": "example",
+        "multiply": 2,
+        "on": "example",
+        "proficient": true,
+        "requires": {},
+        "skills": [
+         "example"
+        ],
+        "target": "example",
+        "value": "example",
+        "when": "example"
+       }
+      ],
+      "name": "example",
+      "resource": "example",
+      "restrictions": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      },
+      "while": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "activations with resource as its second form",
+   "grants": {
+    "activations": [
+     {
+      "condition": "example",
+      "exclusiveGroup": "example",
+      "extends": "example",
+      "id": "example",
+      "minLevel": 2,
+      "modifiers": [
+       {
+        "abilities": [
+         "example"
+        ],
+        "ability": "example",
+        "add": 2,
+        "addAbility": "example",
+        "attackBonus": 2,
+        "attackBonusAbility": "example",
+        "damageBonus": 2,
+        "damageBonusColumn": "example",
+        "damageDie": "example",
+        "damageDieColumn": "example",
+        "key": "example",
+        "match": [
+         {}
+        ],
+        "min": 2,
+        "mode": "example",
+        "multiply": 2,
+        "on": "example",
+        "proficient": true,
+        "requires": {},
+        "skills": [
+         "example"
+        ],
+        "target": "example",
+        "value": "example",
+        "when": "example"
+       }
+      ],
+      "name": "example",
+      "resource": {
+       "cost": 2,
+       "key": "example"
+      },
+      "restrictions": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      },
+      "while": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "activations with while as its second form",
+   "grants": {
+    "activations": [
+     {
+      "condition": "example",
+      "exclusiveGroup": "example",
+      "extends": "example",
+      "id": "example",
+      "minLevel": 2,
+      "modifiers": [
+       {
+        "abilities": [
+         "example"
+        ],
+        "ability": "example",
+        "add": 2,
+        "addAbility": "example",
+        "attackBonus": 2,
+        "attackBonusAbility": "example",
+        "damageBonus": 2,
+        "damageBonusColumn": "example",
+        "damageDie": "example",
+        "damageDieColumn": "example",
+        "key": "example",
+        "match": [
+         {}
+        ],
+        "min": 2,
+        "mode": "example",
+        "multiply": 2,
+        "on": "example",
+        "proficient": true,
+        "requires": {},
+        "skills": [
+         "example"
+        ],
+        "target": "example",
+        "value": "example",
+        "when": "example"
+       }
+      ],
+      "name": "example",
+      "resource": "example",
+      "restrictions": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      },
+      "while": [
+       "example"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "resources with recharge as its second form",
+   "grants": {
+    "resources": [
+     {
+      "abilityMod": "example",
+      "add": 2,
+      "fixed": 2,
+      "key": "example",
+      "min": 2,
+      "minLevel": 2,
+      "multiplier": 2,
+      "name": "example",
+      "perLevel": 1.5,
+      "proficiencyBonus": true,
+      "progression": [
+       {
+        "level": 2,
+        "max": 2
+       }
+      ],
+      "recharge": [
+       {
+        "amount": "example",
+        "minLevel": 2,
+        "on": "example"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "spells with maxSpellLevel as its second form",
+   "grants": {
+    "spells": [
+     {
+      "alwaysPrepared": true,
+      "atLevel": 2,
+      "atWill": true,
+      "castAtLevelByLevel": [
+       {
+        "castAtLevel": 2,
+        "level": 2
+       }
+      ],
+      "choose": 2,
+      "classId": "example",
+      "components": true,
+      "default": "example",
+      "free": "example",
+      "from": {
+       "castingTime": "example",
+       "class": [
+        "example"
+       ],
+       "ids": [
+        "example"
+       ],
+       "ritual": true,
+       "school": [
+        "example"
+       ]
+      },
+      "id": "example",
+      "ids": [
+       "example"
+      ],
+      "level": 2,
+      "levelReplacements": 2,
+      "maxSpellLevel": "class",
+      "resource": "example",
+      "ritualOnly": true,
+      "spellLevel": 2
+     }
+    ]
+   }
+  },
+  {
+   "name": "spells with resource as its second form",
+   "grants": {
+    "spells": [
+     {
+      "alwaysPrepared": true,
+      "atLevel": 2,
+      "atWill": true,
+      "castAtLevelByLevel": [
+       {
+        "castAtLevel": 2,
+        "level": 2
+       }
+      ],
+      "choose": 2,
+      "classId": "example",
+      "components": true,
+      "default": "example",
+      "free": "example",
+      "from": {
+       "castingTime": "example",
+       "class": [
+        "example"
+       ],
+       "ids": [
+        "example"
+       ],
+       "ritual": true,
+       "school": [
+        "example"
+       ]
+      },
+      "id": "example",
+      "ids": [
+       "example"
+      ],
+      "level": 2,
+      "levelReplacements": 2,
+      "maxSpellLevel": 2,
+      "resource": {
+       "cost": 2,
+       "key": "example"
+      },
+      "ritualOnly": true,
+      "spellLevel": 2
+     }
+    ]
+   }
+  },
+  {
+   "name": "spellSlot with recharge as its second form",
+   "grants": {
+    "spellSlot": {
+     "count": 2,
+     "level": {
+      "divisor": 2,
+      "max": 2,
+      "min": 2,
+      "round": "example"
+     },
+     "recharge": [
+      {
+       "amount": "example",
+       "minLevel": 2,
+       "on": "example"
+      }
+     ],
+     "restriction": "example"
+    }
+   }
+  }
+ ],
+ "invalid": [
+  {
+   "name": "abilityScoreBonus of the wrong type",
+   "grants": {
+    "abilityScoreBonus": "seven"
+   }
+  },
+  {
+   "name": "abilityScoreIncrease of the wrong type",
+   "grants": {
+    "abilityScoreIncrease": "seven"
+   }
+  },
+  {
+   "name": "acBonus of the wrong type",
+   "grants": {
+    "acBonus": "seven"
+   }
+  },
+  {
+   "name": "acBonuses of the wrong type",
+   "grants": {
+    "acBonuses": "seven"
+   }
+  },
+  {
+   "name": "acFormulas of the wrong type",
+   "grants": {
+    "acFormulas": "seven"
+   }
+  },
+  {
+   "name": "activations of the wrong type",
+   "grants": {
+    "activations": "seven"
+   }
+  },
+  {
+   "name": "advantages of the wrong type",
+   "grants": {
+    "advantages": "seven"
+   }
+  },
+  {
+   "name": "armor of the wrong type",
+   "grants": {
+    "armor": "seven"
+   }
+  },
+  {
+   "name": "attackModifiers of the wrong type",
+   "grants": {
+    "attackModifiers": "seven"
+   }
+  },
+  {
+   "name": "attacks of the wrong type",
+   "grants": {
+    "attacks": "seven"
+   }
+  },
+  {
+   "name": "attunementLimit of the wrong type",
+   "grants": {
+    "attunementLimit": "seven"
+   }
+  },
+  {
+   "name": "bonuses of the wrong type",
+   "grants": {
+    "bonuses": "seven"
+   }
+  },
+  {
+   "name": "castingAbility of the wrong type",
+   "grants": {
+    "castingAbility": "seven"
+   }
+  },
+  {
+   "name": "choiceOverrides of the wrong type",
+   "grants": {
+    "choiceOverrides": "seven"
+   }
+  },
+  {
+   "name": "choicePackages of the wrong type",
+   "grants": {
+    "choicePackages": "seven"
+   }
+  },
+  {
+   "name": "choices of the wrong type",
+   "grants": {
+    "choices": "seven"
+   }
+  },
+  {
+   "name": "conditionImmunities of the wrong type",
+   "grants": {
+    "conditionImmunities": "seven"
+   }
+  },
+  {
+   "name": "conditions of the wrong type",
+   "grants": {
+    "conditions": "seven"
+   }
+  },
+  {
+   "name": "criticalRange of the wrong type",
+   "grants": {
+    "criticalRange": "seven"
+   }
+  },
+  {
+   "name": "damageImmunities of the wrong type",
+   "grants": {
+    "damageImmunities": "seven"
+   }
+  },
+  {
+   "name": "expertise of the wrong type",
+   "grants": {
+    "expertise": "seven"
+   }
+  },
+  {
+   "name": "hpBonus of the wrong type",
+   "grants": {
+    "hpBonus": "seven"
+   }
+  },
+  {
+   "name": "hpPerClassLevel of the wrong type",
+   "grants": {
+    "hpPerClassLevel": "seven"
+   }
+  },
+  {
+   "name": "hpPerLevel of the wrong type",
+   "grants": {
+    "hpPerLevel": "seven"
+   }
+  },
+  {
+   "name": "initiativeBonuses of the wrong type",
+   "grants": {
+    "initiativeBonuses": "seven"
+   }
+  },
+  {
+   "name": "languages of the wrong type",
+   "grants": {
+    "languages": "seven"
+   }
+  },
+  {
+   "name": "prepareSpellListOf of the wrong type",
+   "grants": {
+    "prepareSpellListOf": 7
+   }
+  },
+  {
+   "name": "proficiencies of the wrong type",
+   "grants": {
+    "proficiencies": "seven"
+   }
+  },
+  {
+   "name": "resistances of the wrong type",
+   "grants": {
+    "resistances": "seven"
+   }
+  },
+  {
+   "name": "resources of the wrong type",
+   "grants": {
+    "resources": "seven"
+   }
+  },
+  {
+   "name": "saveBonuses of the wrong type",
+   "grants": {
+    "saveBonuses": "seven"
+   }
+  },
+  {
+   "name": "saveDCs of the wrong type",
+   "grants": {
+    "saveDCs": "seven"
+   }
+  },
+  {
+   "name": "savingThrows of the wrong type",
+   "grants": {
+    "savingThrows": "seven"
+   }
+  },
+  {
+   "name": "senseBonuses of the wrong type",
+   "grants": {
+    "senseBonuses": "seven"
+   }
+  },
+  {
+   "name": "senses of the wrong type",
+   "grants": {
+    "senses": "seven"
+   }
+  },
+  {
+   "name": "skillBonuses of the wrong type",
+   "grants": {
+    "skillBonuses": "seven"
+   }
+  },
+  {
+   "name": "skills of the wrong type",
+   "grants": {
+    "skills": "seven"
+   }
+  },
+  {
+   "name": "speedBonus of the wrong type",
+   "grants": {
+    "speedBonus": "seven"
+   }
+  },
+  {
+   "name": "speedBonuses of the wrong type",
+   "grants": {
+    "speedBonuses": "seven"
+   }
+  },
+  {
+   "name": "speeds of the wrong type",
+   "grants": {
+    "speeds": "seven"
+   }
+  },
+  {
+   "name": "spellList of the wrong type",
+   "grants": {
+    "spellList": "seven"
+   }
+  },
+  {
+   "name": "spellLists of the wrong type",
+   "grants": {
+    "spellLists": "seven"
+   }
+  },
+  {
+   "name": "spellSlot of the wrong type",
+   "grants": {
+    "spellSlot": "seven"
+   }
+  },
+  {
+   "name": "spellbookBonus of the wrong type",
+   "grants": {
+    "spellbookBonus": "seven"
+   }
+  },
+  {
+   "name": "spells of the wrong type",
+   "grants": {
+    "spells": "seven"
+   }
+  },
+  {
+   "name": "tools of the wrong type",
+   "grants": {
+    "tools": "seven"
+   }
+  },
+  {
+   "name": "unquantifiable_modifiers of the wrong type",
+   "grants": {
+    "unquantifiable_modifiers": "seven"
+   }
+  },
+  {
+   "name": "weaponMasterySlots of the wrong type",
+   "grants": {
+    "weaponMasterySlots": "seven"
+   }
+  },
+  {
+   "name": "weapons of the wrong type",
+   "grants": {
+    "weapons": "seven"
+   }
+  },
+  {
+   "name": "ACBonusGrant without add",
+   "grants": {
+    "acBonuses": [
+     {
+      "requires": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "ACFormulaGrant without id",
+   "grants": {
+    "acFormulas": [
+     {
+      "addAbilities": [
+       "example"
+      ],
+      "base": 2,
+      "name": "example",
+      "requires": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "ACFormulaGrant without base",
+   "grants": {
+    "acFormulas": [
+     {
+      "addAbilities": [
+       "example"
+      ],
+      "id": "example",
+      "name": "example",
+      "requires": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "AdvantageGrant without on",
+   "grants": {
+    "advantages": [
+     {
+      "abilities": [
+       "example"
+      ],
+      "mode": "example",
+      "requires": {
+       "armorTypes": [
+        "example"
+       ],
+       "noArmor": true,
+       "noShield": true,
+       "notArmorTypes": [
+        "example"
+       ]
+      },
+      "skills": [
+       "example"
+      ],
+      "when": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "AttackGrant without id",
+   "grants": {
+    "attacks": [
+     {
+      "ability": "example",
+      "category": "example",
+      "damage": "example",
+      "damageType": "example",
+      "mastery": "example",
+      "masteryActive": true,
+      "name": "example",
+      "proficient": true,
+      "properties": [
+       "example"
+      ],
+      "range": "example",
+      "rangeNormalLong": {
+       "long": 2,
+       "normal": 2
+      },
+      "thrownRange": {
+       "long": 2,
+       "normal": 2
+      },
+      "versatileDamage": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "AttackGrant without name",
+   "grants": {
+    "attacks": [
+     {
+      "ability": "example",
+      "category": "example",
+      "damage": "example",
+      "damageType": "example",
+      "id": "example",
+      "mastery": "example",
+      "masteryActive": true,
+      "proficient": true,
+      "properties": [
+       "example"
+      ],
+      "range": "example",
+      "rangeNormalLong": {
+       "long": 2,
+       "normal": 2
+      },
+      "thrownRange": {
+       "long": 2,
+       "normal": 2
+      },
+      "versatileDamage": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "AttackGrant without damage",
+   "grants": {
+    "attacks": [
+     {
+      "ability": "example",
+      "category": "example",
+      "damageType": "example",
+      "id": "example",
+      "mastery": "example",
+      "masteryActive": true,
+      "name": "example",
+      "proficient": true,
+      "properties": [
+       "example"
+      ],
+      "range": "example",
+      "rangeNormalLong": {
+       "long": 2,
+       "normal": 2
+      },
+      "thrownRange": {
+       "long": 2,
+       "normal": 2
+      },
+      "versatileDamage": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "ChoiceOverride without choiceId",
+   "grants": {
+    "choiceOverrides": [
+     {
+      "count": 2,
+      "countByLevel": {
+       "example": 2
+      },
+      "filter": {
+       "creatureType": "example",
+       "fly": true,
+       "itemTypes": [
+        "example"
+       ],
+       "maxCr": 1.5,
+       "notItemTypes": [
+        "example"
+       ],
+       "rarity": [
+        "example"
+       ]
+      },
+      "filterByLevel": {
+       "example": {
+        "creatureType": "example",
+        "fly": true,
+        "itemTypes": [
+         "example"
+        ],
+        "maxCr": 1.5,
+        "notItemTypes": [
+         "example"
+        ],
+        "rarity": [
+         "example"
+        ]
+       }
+      },
+      "from": [
+       "example"
+      ],
+      "fromByLevel": {
+       "example": [
+        "example"
+       ]
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "ChoicePackage without choiceId",
+   "grants": {
+    "choicePackages": [
+     {
+      "options": {
+       "example": {
+        "abilityScoreBonus": {
+         "assign": {}
+        },
+        "abilityScoreIncrease": {},
+        "acBonus": 2,
+        "acBonuses": [
+         {
+          "add": 2
+         }
+        ],
+        "acFormulas": [
+         {
+          "base": 2,
+          "id": "example"
+         }
+        ],
+        "activations": [
+         {}
+        ],
+        "advantages": [
+         {
+          "on": "example"
+         }
+        ],
+        "armor": [
+         "example"
+        ],
+        "attackModifiers": [
+         {}
+        ],
+        "attacks": [
+         {
+          "damage": "example",
+          "id": "example",
+          "name": "example"
+         }
+        ],
+        "attunementLimit": 2,
+        "bonuses": {
+         "example": 2
+        },
+        "castingAbility": {},
+        "choiceOverrides": [
+         {
+          "choiceId": "example"
+         }
+        ],
+        "choicePackages": [
+         {
+          "choiceId": "example",
+          "options": {}
+         }
+        ],
+        "choices": [
+         {
+          "id": "example"
+         }
+        ],
+        "conditionImmunities": [
+         "example"
+        ],
+        "conditions": [
+         {
+          "id": "example",
+          "name": "example"
+         }
+        ],
+        "criticalRange": 2,
+        "damageImmunities": [
+         "example"
+        ],
+        "expertise": [
+         "example"
+        ],
+        "hpBonus": 2,
+        "hpPerClassLevel": 2,
+        "hpPerLevel": 2,
+        "initiativeBonuses": [
+         {}
+        ],
+        "languages": [
+         "example"
+        ],
+        "prepareSpellListOf": "example",
+        "proficiencies": {},
+        "resistances": [
+         "example"
+        ],
+        "resources": [
+         {
+          "key": "example"
+         }
+        ],
+        "saveBonuses": [
+         {}
+        ],
+        "saveDCs": [
+         {
+          "abilities": []
+         }
+        ],
+        "savingThrows": [
+         "example"
+        ],
+        "senseBonuses": {
+         "example": 2
+        },
+        "senses": {
+         "example": 2
+        },
+        "skillBonuses": [
+         {}
+        ],
+        "skills": [
+         "example"
+        ],
+        "speedBonus": 2,
+        "speedBonuses": [
+         {}
+        ],
+        "speeds": {
+         "example": 1.5
+        },
+        "spellList": [
+         "example"
+        ],
+        "spellLists": [
+         "example"
+        ],
+        "spellSlot": {
+         "level": {}
+        },
+        "spellbookBonus": [
+         {
+          "count": 2,
+          "level": 2
+         }
+        ],
+        "spells": [
+         {}
+        ],
+        "tools": [
+         "example"
+        ],
+        "unquantifiable_modifiers": [
+         "example"
+        ],
+        "weaponMasterySlots": 2,
+        "weapons": [
+         "example"
+        ]
+       }
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "ChoicePackage without options",
+   "grants": {
+    "choicePackages": [
+     {
+      "choiceId": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "GrantChoice without id",
+   "grants": {
+    "choices": [
+     {
+      "category": "example",
+      "changeOn": "example",
+      "count": 2,
+      "countByLevel": {
+       "example": 2
+      },
+      "default": "example",
+      "filter": {
+       "creatureType": "example",
+       "fly": true,
+       "itemTypes": [
+        "example"
+       ],
+       "maxCr": 1.5,
+       "notItemTypes": [
+        "example"
+       ],
+       "rarity": [
+        "example"
+       ]
+      },
+      "filterByLevel": {
+       "example": {
+        "creatureType": "example",
+        "fly": true,
+        "itemTypes": [
+         "example"
+        ],
+        "maxCr": 1.5,
+        "notItemTypes": [
+         "example"
+        ],
+        "rarity": [
+         "example"
+        ]
+       }
+      },
+      "from": [
+       "example"
+      ],
+      "fromByLevel": {
+       "example": [
+        "example"
+       ]
+      },
+      "fromCategory": "example",
+      "levelReplacements": 2,
+      "optionKind": "example",
+      "prompt": "example",
+      "source": "example",
+      "swappableOn": "example",
+      "type": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "GrantedCondition without id",
+   "grants": {
+    "conditions": [
+     {
+      "name": "example",
+      "summary": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "GrantedCondition without name",
+   "grants": {
+    "conditions": [
+     {
+      "id": "example",
+      "summary": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "ResourceGrant without key",
+   "grants": {
+    "resources": [
+     {
+      "abilityMod": "example",
+      "add": 2,
+      "fixed": 2,
+      "min": 2,
+      "minLevel": 2,
+      "multiplier": 2,
+      "name": "example",
+      "perLevel": 1.5,
+      "proficiencyBonus": true,
+      "progression": [
+       {
+        "level": 2,
+        "max": 2
+       }
+      ],
+      "recharge": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "SaveDCGrant without abilities",
+   "grants": {
+    "saveDCs": [
+     {
+      "name": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "SpellbookStep without level",
+   "grants": {
+    "spellbookBonus": [
+     {
+      "count": 2,
+      "school": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "SpellbookStep without count",
+   "grants": {
+    "spellbookBonus": [
+     {
+      "level": 2,
+      "school": "example"
+     }
+    ]
+   }
+  },
+  {
+   "name": "an unknown grant",
+   "grants": {
+    "teleport": 30
+   }
+  },
+  {
+   "name": "an unknown field inside a resource",
+   "grants": {
+    "resources": [
+     {
+      "key": "dice",
+      "fixed": 2,
+      "colour": "red"
+     }
+    ]
+   }
+  },
+  {
+   "name": "a number written as text",
+   "grants": {
+    "resources": [
+     {
+      "key": "dice",
+      "fixed": "2"
+     }
+    ]
+   }
+  }
+ ]
+}
