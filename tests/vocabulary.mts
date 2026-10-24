@@ -10,10 +10,14 @@ const fixture = JSON.parse(
   await readFile(new URL("./fixtures/subclasses.json", import.meta.url), "utf8"),
 ) as { valid: Subclass[] };
 
-void test("the editor's groups list every grant of the vocabulary once", () => {
-  const grouped = grantGroups.flatMap((group) => group.fields);
-  assert.deepEqual([...grouped].sort(), Object.keys(grantsSchema.properties ?? {}).sort());
-  assert.equal(new Set(grouped).size, grouped.length);
+void test("the editor's groups list every grant of the vocabulary once, for each subject", () => {
+  for (const subject of ["subclass", "feat"] as const) {
+    const grouped = grantGroups(subject).flatMap((group) => group.fields);
+    assert.deepEqual([...grouped].sort(), Object.keys(grantsSchema.properties ?? {}).sort());
+    assert.equal(new Set(grouped).size, grouped.length, subject);
+  }
+  // A feat's ability score increase is its own benefit, not set aside.
+  assert.equal(grantGroups("feat")[0]?.fields.includes("abilityScoreIncrease"), true);
 });
 
 void test("every field has words, named or made from its name", () => {

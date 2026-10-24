@@ -15,6 +15,7 @@ const state: PublishedState = {
     [...records.slice(0, 3), withdrawn].map((value) => [value.id, { value, revision: 1 }]),
   ),
   subclasses: new Map(),
+  feats: new Map(),
   meta: undefined,
   unreadable: [],
 };

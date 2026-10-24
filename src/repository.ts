@@ -2,16 +2,20 @@ import {
   collections,
   HomebrewError,
   metaKey,
+  parseFeat,
   parseSet,
   parseItem,
   parseMeta,
   parsePublished,
+  parsePublishedFeat,
   parsePublishedSubclass,
   parseSubclass,
   type CollectionMutation,
+  type Feat,
   type Item,
   type ItemSet,
   type Published,
+  type PublishedFeat,
   type PublishedSubclass,
   type PublishMeta,
   type Stored,
@@ -39,6 +43,13 @@ export interface RepositoryContext {
   };
 }
 
+/** A collection the DM edits drafts in. */
+export type DraftCollection =
+  | typeof collections.sets
+  | typeof collections.items
+  | typeof collections.subclasses
+  | typeof collections.feats;
+
 /** A stored value that failed its checks; it is shown, never silently dropped. */
 export interface Unreadable {
   readonly collection: string;
@@ -49,12 +60,14 @@ export interface Drafts {
   readonly sets: readonly Stored<ItemSet>[];
   readonly items: readonly Stored<Item>[];
   readonly subclasses: readonly Stored<Subclass>[];
+  readonly feats: readonly Stored<Feat>[];
   readonly unreadable: readonly Unreadable[];
   readonly dataRevisions: readonly DataSetRevision[];
 }
 export interface PublishedState {
   readonly records: ReadonlyMap<string, Stored<Published>>;
   readonly subclasses: ReadonlyMap<string, Stored<PublishedSubclass>>;
+  readonly feats: ReadonlyMap<string, Stored<PublishedFeat>>;
   readonly meta: Stored<PublishMeta> | undefined;
   readonly unreadable: readonly Unreadable[];
   /** Present only for a guarded (DM) read; players cannot read set revisions. */
@@ -81,29 +94,37 @@ export class HomebrewRepository {
       ) ?? (() => undefined)
     );
   }
-  /** Reads every set, item and subclass draft; DM only. */
+  /** Reads every set, item, subclass and feat draft; DM only. */
   async drafts(signal: AbortSignal): Promise<Drafts> {
     signal = AbortSignal.any([this.#context.signal, signal]);
-    const [sets, items, subclasses] = await Promise.all([
+    const [sets, items, subclasses, feats] = await Promise.all([
       this.#all(collections.sets, signal, true),
       this.#all(collections.items, signal, true),
       this.#all(collections.subclasses, signal, true),
+      this.#all(collections.feats, signal, true),
     ]);
     const unreadable: Unreadable[] = [];
     return {
       sets: read(sets.documents, collections.sets, parseSet, unreadable),
       items: read(items.documents, collections.items, parseItem, unreadable),
       subclasses: read(subclasses.documents, collections.subclasses, parseSubclass, unreadable),
+      feats: read(feats.documents, collections.feats, parseFeat, unreadable),
       unreadable,
-      dataRevisions: [sets.dataRevision!, items.dataRevision!, subclasses.dataRevision!],
+      dataRevisions: [
+        sets.dataRevision!,
+        items.dataRevision!,
+        subclasses.dataRevision!,
+        feats.dataRevision!,
+      ],
     };
   }
   /** Reads the published records; `guarded` adds set revisions for a publish. */
   async published(signal: AbortSignal, guarded = false): Promise<PublishedState> {
     signal = AbortSignal.any([this.#context.signal, signal]);
-    const [records, subclassRecords, meta] = await Promise.all([
+    const [records, subclassRecords, featRecords, meta] = await Promise.all([
       this.#all(collections.published, signal, guarded),
       this.#all(collections.publishedSubclasses, signal, guarded),
+      this.#all(collections.publishedFeats, signal, guarded),
       this.#all(collections.meta, signal, guarded),
     ]);
     const unreadable: Unreadable[] = [];
@@ -112,6 +133,12 @@ export class HomebrewRepository {
       subclassRecords.documents,
       collections.publishedSubclasses,
       parsePublishedSubclass,
+      unreadable,
+    );
+    const feats = read(
+      featRecords.documents,
+      collections.publishedFeats,
+      parsePublishedFeat,
       unreadable,
     );
     const metas = read(
@@ -123,6 +150,7 @@ export class HomebrewRepository {
     return {
       records: new Map(published.map((entry) => [entry.value.id, entry])),
       subclasses: new Map(subclasses.map((entry) => [entry.value.id, entry])),
+      feats: new Map(feats.map((entry) => [entry.value.id, entry])),
       meta: metas[0],
       unreadable,
       ...(guarded
@@ -130,6 +158,7 @@ export class HomebrewRepository {
             dataRevisions: [
               records.dataRevision!,
               subclassRecords.dataRevision!,
+              featRecords.dataRevision!,
               meta.dataRevision!,
             ],
           }
@@ -137,8 +166,8 @@ export class HomebrewRepository {
     };
   }
   async save(
-    collection: typeof collections.sets | typeof collections.items | typeof collections.subclasses,
-    value: ItemSet | Item | Subclass,
+    collection: DraftCollection,
+    value: ItemSet | Item | Subclass | Feat,
     expectedRevision: number,
     signal: AbortSignal,
   ): Promise<number> {
@@ -158,7 +187,7 @@ export class HomebrewRepository {
     return revisionOf(receipt, collection, value.id);
   }
   async remove(
-    collection: typeof collections.sets | typeof collections.items | typeof collections.subclasses,
+    collection: DraftCollection,
     key: string,
     expectedRevision: number,
     signal: AbortSignal,

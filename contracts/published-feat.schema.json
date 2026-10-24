@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["id", "schemaVersion", "featId", "withdrawn", "record"],
+  "properties": {
+    "id": { "$ref": "#/$defs/recordId" },
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "featId": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+    "withdrawn": { "type": "boolean" },
+    "record": { "$ref": "#/$defs/featRecord" }
+  },
+  "$defs": {
+    "recordId": { "type": "string", "maxLength": 67, "pattern": "^hb\\.[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "featRecord": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "name", "edition", "book", "category", "prerequisites", "repeatable", "text"],
+      "properties": {
+        "kind": { "const": "feat" },
+        "id": { "$ref": "#/$defs/recordId" },
+        "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+        "edition": { "const": "2024" },
+        "book": { "const": "homebrew" },
+        "category": { "$ref": "homebrew-feat.schema.json#/$defs/category" },
+        "prerequisites": { "$ref": "homebrew-feat.schema.json#/$defs/prerequisite" },
+        "repeatable": { "$ref": "homebrew-feat.schema.json#/$defs/repeatable" },
+        "grants": { "$ref": "engine-grants.schema.json#/$defs/grants" },
+        "excerpt": { "$ref": "homebrew-common.schema.json#/$defs/excerpt" },
+        "text": { "type": "string", "maxLength": 21000 }
+      }
+    }
+  }
+}

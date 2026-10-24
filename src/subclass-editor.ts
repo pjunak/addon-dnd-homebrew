@@ -266,6 +266,7 @@ export function mechanicsEditor(
       refresh();
     },
     restructured: hooks.restructured,
+    subject: "subclass",
   };
   const root = element(document, "div", "hb-mechanics");
 

@@ -1,10 +1,10 @@
 # D&D Homebrew add-on
 
 A TTRPG Codex add-on (TypeScript UI plus a native Go worker) for DM-authored
-item sets, items and subclasses, served to the D&D Engine as
-`dnd5e.rules-data`. Its add-on ID, six collection IDs and the record ids
-(`hb.<item id>`, `hb.<subclass id>`, `hb.<subclass id>.<feature id>`) are
-permanent: saved characters refer to them.
+item sets, items, subclasses and feats, served to the D&D Engine as
+`dnd5e.rules-data`. Its add-on ID, eight collection IDs and the record ids
+(`hb.<item id>`, `hb.<subclass id>`, `hb.<subclass id>.<feature id>`,
+`hb.<feat id>`) are permanent: saved characters refer to them.
 
 This is a personal project: preserve campaign data first, then keep the UI
 friendly and the code clear. Old formats and extra hardening are low priority.
@@ -17,7 +17,7 @@ friendly and the code clear. Old formats and extra hardening are low priority.
 | Import format, flattening and effects | [docs/FORMAT.md](docs/FORMAT.md) |
 | Writing or checking an import file | [Write many items at once](docs/FORMAT.md#write-many-items-at-once) (`cmd/check-homebrew`) |
 | Publish revision, withdrawal, visibility and limits | [docs/DESIGN.md](docs/DESIGN.md) |
-| Subclass editor and the schema-driven grants form | [A form built from the grants schema](docs/DESIGN.md#a-form-built-from-the-grants-schema) |
+| Subclass and feat editors and the schema-driven grants form | [A form built from the grants schema](docs/DESIGN.md#a-form-built-from-the-grants-schema) |
 | Host integration, manifests and lifecycle | The host's [add-on guide](https://github.com/pjunak/ttrpg-codex/blob/main/examples/addons/AUTHORING.md) and [API reference](https://github.com/pjunak/ttrpg-codex/blob/main/examples/addons/API_V3.md) |
 | What the Engine accepts | `addon-dnd-engine/internal/provider/client.go` (provider contract), `internal/rules/character_items.go` (effects and the item grants allowlist), `internal/rules/grants_vocabulary.go` (the full grants vocabulary) and `internal/rules/magic_gear.go` (a magic weapon or armor's `baseItem`) |
 
@@ -28,9 +28,9 @@ Tasks for all repositories live in the host's `docs/BACKLOG.md`.
 - `src/model.ts` and `internal/homebrew` hold the same rules in two languages.
   The fixtures in `tests/fixtures/` (effects, flattening, import plans) are
   read by both test suites; change a rule in both and in the fixture.
-- Flattening (`flatten` and `flattenSubclass` in `src/model.ts`) is the only
-  place set defaults and item overrides combine and a subclass becomes its
-  records. The worker serves what was published and never recomputes it.
+- Flattening (`flatten`, `flattenSubclass` and `flattenFeat` in
+  `src/model.ts`) is the only place set defaults and item overrides combine and
+  a subclass or feat becomes its records. The worker serves what was published and never recomputes it.
 - Effects mirror the Engine's `validCharacterEffect` and proficiency rule,
   grants its item grants allowlist (`characterItemGrants`), and `baseItem` its
   magic weapons and armor (`magicBaseItem`); Homebrew may be
@@ -44,8 +44,9 @@ Tasks for all repositories live in the host's `docs/BACKLOG.md`.
   `npm run sync:grants-schema` copy them after a version change. Served
   records follow Homebrew's own `published-record.schema.json` and
   `published-subclass.schema.json`.
-- Subclass grants are the Engine's full vocabulary, checked against that
-  schema in both languages. The editor renders forms from the schema;
+- Subclass and feat grants are the Engine's full vocabulary, checked against
+  that schema in both languages; feat prerequisites are the Engine's
+  predicates (`prerequisiteMatches`), never words. The editor renders forms from the schema;
   `src/vocabulary.ts` only words them, and each of its English words needs a
   Czech translation (`tests/localization.mts`).
 - Published records are never deleted, only withdrawn: a browser cannot learn
@@ -56,8 +57,12 @@ Tasks for all repositories live in the host's `docs/BACKLOG.md`.
 - The rules-data methods run with the caller's authority (often a player), so
   they read only public collections. Import methods require the DM.
 - The worker never serves a `ruleset` and only serves `hb.`-prefixed
-  `magic-item`, `subclass` and `feature` records; a duplicate id across
+  `magic-item`, `subclass`, `feature` and `feat` records; a duplicate id across
   providers disables every sheet.
+- The host fingerprints each collection's schema with every file it
+  references; a changed fingerprint on a collection with data makes the DM
+  review a data migration on update. Keep `homebrew-common.schema.json` and
+  the stored collections' schemas stable, and give a new kind its own file.
 - Imports write drafts only. Preview retains the exact guarded mutations behind
   a single-use token; commit submits that plan and nothing else.
 - UI code validates every response, uses the host's shared controls and design

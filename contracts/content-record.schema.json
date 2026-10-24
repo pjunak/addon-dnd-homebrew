@@ -10,7 +10,8 @@
       "anyOf": [
         { "$ref": "published-record.schema.json#/properties/record" },
         { "$ref": "published-subclass.schema.json#/$defs/subclassRecord" },
-        { "$ref": "published-subclass.schema.json#/$defs/featureRecord" }
+        { "$ref": "published-subclass.schema.json#/$defs/featureRecord" },
+        { "$ref": "published-feat.schema.json#/$defs/featRecord" }
       ]
     }
   }

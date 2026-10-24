@@ -66,8 +66,10 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 		engineGrants = homebrew.GrantsContract
 		recordGrants = "homebrew-common.schema.json#/$defs/recordGrants"
 		itemGrants   = "homebrew-common.schema.json#/$defs/itemGrants"
+		featSchema   = "homebrew-feat.schema.json"
+		featRecord   = "published-feat.schema.json"
 	)
-	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, engineGrants, recordGrants, itemGrants)
+	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, engineGrants, recordGrants, itemGrants, featSchema, featRecord)
 	accept := func(name, label string, body []byte) {
 		t.Helper()
 		if err := validate(t, schemas[name], label, body); err != nil {
@@ -100,8 +102,11 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 				continue
 			}
 			name := itemSchema
-			if mutation.Reference.DataID == homebrew.SetsCollection {
+			switch mutation.Reference.DataID {
+			case homebrew.SetsCollection:
 				name = setSchema
+			case homebrew.FeatsCollection:
+				name = featSchema
 			}
 			accept(name, mutation.Reference.DataID+"/"+mutation.Key, mutation.Value.(json.RawMessage))
 		}
@@ -155,6 +160,26 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	for index, record := range subclasses.Published.Records {
 		accept(servedSchema, fmt.Sprintf("published subclass record %d (served)", index+1), record)
 	}
+
+	// Feats: every valid draft, the published document and its served record.
+	var feats struct {
+		Valid     []json.RawMessage `json:"valid"`
+		Published json.RawMessage   `json:"published"`
+	}
+	if body, err := os.ReadFile("../../tests/fixtures/feats.json"); err != nil || json.Unmarshal(body, &feats) != nil {
+		t.Fatalf("feat fixture: %v", err)
+	}
+	for index, feat := range feats.Valid {
+		accept(featSchema, fmt.Sprintf("feat %d", index+1), feat)
+	}
+	accept(featRecord, "published feat", feats.Published)
+	var servedFeat struct {
+		Record json.RawMessage `json:"record"`
+	}
+	if json.Unmarshal(feats.Published, &servedFeat) != nil {
+		t.Fatal("published feat")
+	}
+	accept(servedSchema, "published feat (served)", servedFeat.Record)
 
 	var effects struct {
 		Grants struct {

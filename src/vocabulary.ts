@@ -503,11 +503,13 @@ const templates: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
   TableColumn: { key: "", name: "", progression: [{ level: 3, value: "1d6" }] },
 };
 
-/** Top-level grants in the order and groups the editor offers them. */
-export const grantGroups: readonly {
+/** Whose grants a form edits: some fields apply only to feats, species or items. */
+export type GrantSubject = "subclass" | "feat";
+interface GrantGroup {
   readonly label: string;
   readonly fields: readonly string[];
-}[] = [
+}
+const sharedGroups: readonly GrantGroup[] = [
   {
     label: "Proficiencies",
     fields: [
@@ -544,21 +546,32 @@ export const grantGroups: readonly {
     ],
   },
   { label: "Abilities and attunement", fields: ["abilityScoreBonus", "attunementLimit"] },
-  {
-    label: "Not applied on subclasses",
-    fields: [
-      "abilityScoreIncrease",
-      "weaponMasterySlots",
-      "spellSlot",
-      "spellList",
-      "prepareSpellListOf",
-      "acBonus",
-      "conditions",
-      "bonuses",
-      "unquantifiable_modifiers",
-    ],
-  },
 ];
+/** Fields the Engine reads only from feats (internal/rules hydrate, spell_grants). */
+const featOnly = [
+  "abilityScoreIncrease",
+  "weaponMasterySlots",
+  "spellSlot",
+  "spellList",
+  "prepareSpellListOf",
+] as const;
+/** Fields the Engine reads only from species or items. */
+const elsewhere = ["acBonus", "conditions", "bonuses", "unquantifiable_modifiers"] as const;
+const subjectGroups: Readonly<Record<GrantSubject, readonly GrantGroup[]>> = {
+  subclass: [
+    ...sharedGroups,
+    { label: "Not applied on subclasses", fields: [...featOnly, ...elsewhere] },
+  ],
+  feat: [
+    { label: "Feat benefits", fields: featOnly },
+    ...sharedGroups,
+    { label: "Not applied on feats", fields: elsewhere },
+  ],
+};
+/** Top-level grants in the order and groups the editor offers them. */
+export function grantGroups(subject: GrantSubject): readonly GrantGroup[] {
+  return subjectGroups[subject];
+}
 
 // --- Offered values ------------------------------------------------------------
 
@@ -929,7 +942,7 @@ export function vocabularyWords(): string[] {
     ...Object.values(entryLabels),
     ...Object.values(addLabels),
     ...Object.values(branchLabels).flat(),
-    ...grantGroups.map((group) => group.label),
+    ...Object.values(subjectGroups).flatMap((groups) => groups.map((group) => group.label)),
     ...Object.values(offers).flatMap(optionWords),
     ...Object.values(keyOffers).flatMap(optionWords),
     ...Object.values(targetLabels),

@@ -4,6 +4,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { cs } from "#web/catalogs";
 import { bodyPlacements, rarities, skills } from "#web/model";
 import { skillName } from "#web/effects";
+import { featTemplates } from "#web/feat-editor";
 import { itemTemplates } from "#web/templates";
 import { vocabularyWords } from "#web/vocabulary";
 
@@ -29,7 +30,7 @@ void test("every English message shown in the UI has a Czech translation", async
         const text = unescape(match[1]!);
         if (text !== "" && !(text in cs)) missing.add(`${file}: ${text}`);
       }
-    if (file === "effects.ts" || file === "grants.ts" || file === "magic-gear.ts")
+    if (["effects.ts", "grants.ts", "magic-gear.ts", "feat-editor.ts"].includes(file))
       for (const block of source.matchAll(/Readonly<Record<\w+, string>> = \{([^}]*)\}/gu))
         for (const match of block[1]!.matchAll(/:\s*"((?:[^"\\]|\\.)*)"/gu))
           if (!(unescape(match[1]!) in cs)) missing.add(`${file}: ${match[1]}`);
@@ -40,6 +41,7 @@ void test("every English message shown in the UI has a Czech translation", async
     ...skills.map(skillName),
     ...vocabularyWords(),
     ...itemTemplates.flatMap((template) => [template.label, template.hint]),
+    ...featTemplates.flatMap((template) => [template.label, template.hint]),
   ])
     if (!(text in cs)) missing.add(`vocabulary: ${text}`);
   assert.deepEqual([...missing], []);

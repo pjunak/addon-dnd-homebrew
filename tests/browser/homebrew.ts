@@ -1,7 +1,7 @@
 import { defineCatalogElement } from "#web/catalog-element";
 import { defineGalleryElement } from "#web/gallery-element";
 import { grantsSchema } from "#web/grants-schema";
-import { canonical, flattenSubclass, type Subclass } from "#web/model";
+import { canonical, flattenFeat, flattenSubclass, type Feat, type Subclass } from "#web/model";
 import { deref, typesOf, type SchemaNode } from "#web/schema";
 import { grantsNode, schemaEditor, type FormContext } from "#web/schema-form";
 import { mechanicsEditor } from "#web/subclass-editor";
@@ -38,6 +38,7 @@ const fixture = (await (await fetch("../fixtures/publish.json")).json()) as Publ
 const subclasses = (
   (await (await fetch("../fixtures/subclasses.json")).json()) as { valid: Subclass[] }
 ).valid;
+const feats = ((await (await fetch("../fixtures/feats.json")).json()) as { valid: Feat[] }).valid;
 const documents = (values: readonly { id: string }[], key = (value: { id: string }) => value.id) =>
   values.map((value): AddonDocument<unknown> => ({ key: key(value), revision: 1, value }));
 const stored: Record<string, readonly AddonDocument<unknown>[]> = {
@@ -46,6 +47,8 @@ const stored: Record<string, readonly AddonDocument<unknown>[]> = {
   homebrew_published: documents(fixture.cases.slice(0, 3).map((testCase) => testCase.published)),
   homebrew_subclasses: documents(subclasses),
   homebrew_published_subclasses: documents(subclasses.map(flattenSubclass)),
+  homebrew_feats: documents(feats),
+  homebrew_published_feats: documents(feats.slice(0, 1).map(flattenFeat)),
   homebrew_meta: [
     {
       key: "publish",
@@ -161,6 +164,8 @@ const catalog = mount(catalogTag),
   ringCatalog = mount(catalogTag),
   lanternCatalog = mount(catalogTag),
   subclassCatalog = mount(catalogTag),
+  featCatalog = mount(catalogTag),
+  importedFeatCatalog = mount(catalogTag),
   edgeCatalog = mount(catalogTag),
   newCatalog = mount(catalogTag),
   gallery = mount(galleryTag),
@@ -231,14 +236,37 @@ for (
   ?.click();
 for (let attempt = 0; attempt < 60 && !subclassCatalog.querySelector(".hb-feature"); attempt++)
   await frame();
+const openFeat = async (root: HTMLElement, name: string): Promise<void> => {
+  for (
+    let attempt = 0;
+    attempt < 60 && root.querySelectorAll(".hb-tree-item").length < 6;
+    attempt++
+  )
+    await frame();
+  [...root.querySelectorAll<HTMLButtonElement>(".hb-tree-item")]
+    .find((button) => button.textContent?.startsWith(name))
+    ?.click();
+  for (
+    let attempt = 0;
+    attempt < 60 && root.querySelector(".hb-preview-name")?.textContent !== name;
+    attempt++
+  )
+    await frame();
+};
+await openFeat(featCatalog, "Storm Touched");
+await openFeat(importedFeatCatalog, "Elemental Scholar");
 for (
   let attempt = 0;
   attempt < 60 && newCatalog.querySelectorAll(".hb-tree-item").length < 6;
   attempt++
 )
   await frame();
+const startPanel = [
+  newCatalog.querySelectorAll(".hb-start button").length,
+  newCatalog.querySelectorAll(".hb-kinds dt").length,
+];
 // A new item started from the magic weapon template.
-[...newCatalog.querySelectorAll<HTMLButtonElement>(".hb-start button")]
+[...newCatalog.querySelectorAll<HTMLButtonElement>(".hb-header button")]
   .find((button) => button.textContent === "New item")
   ?.click();
 for (let attempt = 0; attempt < 60 && !newCatalog.querySelector(".hb-templates"); attempt++)
@@ -298,6 +326,7 @@ const formContext: FormContext = {
   keys: () => [],
   changed() {},
   restructured() {},
+  subject: "subclass",
 };
 const sandbox = document.createElement("form");
 sandbox.hidden = true;
@@ -363,6 +392,10 @@ globalThis.runRenderingContract = () => {
         "Trinket",
         "Path of the Storm Drum",
         "Rune Scribe",
+        "Elemental Scholar",
+        "Lantern Bearer",
+        "Storm Archer",
+        "Storm Touched",
       ]),
     names,
     [
@@ -376,6 +409,10 @@ globalThis.runRenderingContract = () => {
       "Trinket",
       "Path of the Storm Drum",
       "Rune Scribe",
+      "Elemental Scholar",
+      "Lantern Bearer",
+      "Storm Archer",
+      "Storm Touched",
     ],
   );
   const trinket = [...catalog.querySelectorAll(".hb-tree-item")].find((node) =>
@@ -390,9 +427,9 @@ globalThis.runRenderingContract = () => {
   const status = catalog.querySelector(".hb-status")?.textContent ?? "";
   check(
     "status counts pending changes",
-    status.includes("Unpublished changes: 3."),
+    status.includes("Unpublished changes: 6."),
     status,
-    "…Unpublished changes: 3.",
+    "…Unpublished changes: 6.",
   );
   const preview = catalog.querySelector(".hb-preview-name")?.textContent;
   check(
@@ -526,6 +563,12 @@ globalThis.runRenderingContract = () => {
     [true, false],
   );
   check(
+    "the empty editor explains each kind and leaves the buttons to the header",
+    JSON.stringify(startPanel) === JSON.stringify([0, 4]),
+    startPanel,
+    [0, 4],
+  );
+  check(
     "a new item offers every template",
     templateButtons.length === itemTemplates.length,
     templateButtons.length,
@@ -620,6 +663,56 @@ globalThis.runRenderingContract = () => {
     mechanicsBack.every((entry) => entry === "unchanged"),
     mechanicsBack,
     ["unchanged", "unchanged"],
+  );
+  const featForm = [
+    featCatalog.querySelector<HTMLInputElement>('input[name="prereqLevel"]')?.value,
+    [
+      ...(featCatalog.querySelector<HTMLSelectElement>('select[name="prereqAbilities"]')
+        ?.selectedOptions ?? []),
+    ].map((entry) => entry.value),
+    featCatalog.querySelector<HTMLSelectElement>('select[name="category"]')?.value,
+  ];
+  check(
+    "a feat shows its category and its printed prerequisite in the form",
+    JSON.stringify(featForm) === JSON.stringify(["4", ["INT", "WIS"], "general"]),
+    featForm,
+    ["4", ["INT", "WIS"], "general"],
+  );
+  const featHeader = featCatalog
+    .querySelector(".hb-preview codex-addon-markdown")
+    ?.textContent?.split("\n")[0];
+  check(
+    "a feat previews the header the sheet shows",
+    featHeader === "*General Feat (Prerequisite: Level 4+, Intelligence or Wisdom 13+)*",
+    featHeader,
+    "*General Feat (Prerequisite: Level 4+, Intelligence or Wisdom 13+)*",
+  );
+  const firstGroup = featCatalog
+    .querySelector<HTMLSelectElement>('select[name="grants#add"]')
+    ?.querySelector("optgroup")?.label;
+  check(
+    "a feat's grants offer feat benefits first",
+    firstGroup === "Feat benefits",
+    firstGroup,
+    "Feat benefits",
+  );
+  const kept =
+    importedFeatCatalog.querySelector(".hb-effects-fieldset .hb-hint")?.textContent ?? "";
+  check(
+    "a prerequisite the form cannot show is kept and described",
+    kept.startsWith("From a file, kept as it is: Level 8+") &&
+      !importedFeatCatalog.querySelector('input[name="prereqLevel"]'),
+    kept,
+    "From a file, kept as it is: Level 8+…",
+  );
+  const featProblems = [featCatalog, importedFeatCatalog].map(
+    (root) => root.querySelectorAll(".hb-preview .hb-message").length,
+  );
+  check(
+    "valid feats preview without a problem",
+    JSON.stringify(featProblems) === JSON.stringify([0, 0]),
+    featProblems,
+    [0, 0],
   );
   const features = subclassCatalog.querySelectorAll(".hb-feature").length;
   check("the subclass editor shows one panel per feature", features === 4, features, 4);

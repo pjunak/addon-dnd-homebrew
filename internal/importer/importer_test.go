@@ -90,14 +90,7 @@ func TestPlansMatchSharedFixture(t *testing.T) {
 				if mutation.Operation != "put" {
 					continue
 				}
-				body := mutation.Value.(json.RawMessage)
-				var err error
-				if mutation.Reference.DataID == homebrew.SetsCollection {
-					_, err = homebrew.DecodeSet(body)
-				} else {
-					_, err = homebrew.DecodeItem(body)
-				}
-				if err != nil {
+				if err := decodeDraft(mutation.Reference.DataID, mutation.Value.(json.RawMessage)); err != nil {
 					t.Fatalf("planned %s/%s is not a valid draft: %v", mutation.Reference.DataID, mutation.Key, err)
 				}
 				if mutation.ExpectedRevision != 0 && mutation.ExpectedRevision != 4 {
@@ -106,6 +99,22 @@ func TestPlansMatchSharedFixture(t *testing.T) {
 			}
 		})
 	}
+}
+
+// decodeDraft checks a planned draft as the collection it is written to.
+func decodeDraft(collection string, body json.RawMessage) error {
+	var err error
+	switch collection {
+	case homebrew.SetsCollection:
+		_, err = homebrew.DecodeSet(body)
+	case homebrew.SubclassesCollection:
+		_, err = homebrew.DecodeSubclass(body)
+	case homebrew.FeatsCollection:
+		_, err = homebrew.DecodeFeat(body)
+	default:
+		_, err = homebrew.DecodeItem(body)
+	}
+	return err
 }
 
 func mutationValue(t *testing.T, plan importPlan, collection, key string) map[string]any {

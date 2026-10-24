@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["id", "schemaVersion", "name", "category", "prerequisites", "repeatable", "text", "excerpt", "updatedAt"],
+  "properties": {
+    "id": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+    "category": { "$ref": "#/$defs/category" },
+    "prerequisites": { "$ref": "#/$defs/prerequisite" },
+    "repeatable": { "$ref": "#/$defs/repeatable" },
+    "text": { "$ref": "homebrew-common.schema.json#/$defs/markdown" },
+    "excerpt": { "$ref": "homebrew-common.schema.json#/$defs/excerpt" },
+    "grants": { "$ref": "engine-grants.schema.json#/$defs/grants" },
+    "updatedAt": { "$ref": "homebrew-common.schema.json#/$defs/updatedAt" }
+  },
+  "$defs": {
+    "category": { "enum": ["origin", "general", "fightingStyle", "epicBoon"] },
+    "prerequisite": {
+      "$comment": "The predicates the D&D Engine evaluates (prerequisiteMatches); {} is none. Homebrew also nests any and all at most three deep.",
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "level": { "$ref": "homebrew-common.schema.json#/$defs/level" },
+        "abilities": { "type": "object", "minProperties": 1, "propertyNames": { "$ref": "homebrew-common.schema.json#/$defs/ability" }, "additionalProperties": { "type": "integer", "minimum": 1, "maximum": 30 } },
+        "classes": { "type": "object", "minProperties": 1, "propertyNames": { "$ref": "homebrew-common.schema.json#/$defs/id" }, "additionalProperties": { "$ref": "homebrew-common.schema.json#/$defs/level" } },
+        "all": { "$ref": "#/$defs/prerequisiteList" },
+        "any": { "$ref": "#/$defs/prerequisiteList" },
+        "spellcaster": { "const": true },
+        "spellcastingFeature": { "const": true },
+        "feat": { "$ref": "#/$defs/recordRef" },
+        "feature": { "$ref": "#/$defs/recordRef" },
+        "featCategory": { "$ref": "#/$defs/categoryRef" },
+        "withoutFeatCategory": { "$ref": "#/$defs/categoryRef" },
+        "weaponTraining": { "enum": ["simple", "martial"] },
+        "armorTraining": { "enum": ["light", "medium", "heavy", "shield"] }
+      }
+    },
+    "prerequisiteList": { "type": "array", "minItems": 1, "maxItems": 20, "items": { "allOf": [{ "$ref": "#/$defs/prerequisite" }, { "minProperties": 1 }] } },
+    "recordRef": { "type": "string", "minLength": 1, "maxLength": 132, "pattern": "^[a-z0-9]+(?:[-.][a-z0-9]+)*$" },
+    "categoryRef": { "type": "string", "minLength": 1, "maxLength": 40, "pattern": "^[a-z][A-Za-z0-9]*$" },
+    "repeatable": {
+      "$comment": "Once, any number of times, or once per value of one of the feat's own enumerated choices.",
+      "anyOf": [
+        { "type": "boolean" },
+        { "type": "object", "additionalProperties": false, "required": ["by", "choice"], "properties": { "by": { "const": "choice" }, "choice": { "type": "string", "minLength": 1, "maxLength": 100 } } }
+      ]
+    }
+  }
+}

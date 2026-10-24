@@ -1,5 +1,5 @@
-// Package provider serves published homebrew records (magic items, and
-// subclasses with their features) as the dnd5e.rules-data v3 content
+// Package provider serves published homebrew records (magic items, subclasses
+// with their features, and feats) as the dnd5e.rules-data v3 content
 // contract. The D&D Engine merges every compatible provider, so the records
 // appear in character sheets next to the compendium's.
 //
@@ -275,7 +275,11 @@ func (handler *Handler) scan(ctx context.Context, meta *workerrpc.Meta) ([]serve
 		}
 		cursor = page.NextCursor
 	}
-	return handler.scanSubclasses(ctx, meta, records)
+	records, err := handler.scanSubclasses(ctx, meta, records)
+	if err != nil {
+		return nil, err
+	}
+	return handler.scanFeats(ctx, meta, records)
 }
 
 // scanSubclasses adds each published subclass's subclass and feature records.
@@ -314,6 +318,39 @@ func (handler *Handler) scanSubclasses(ctx context.Context, meta *workerrpc.Meta
 				}
 				records = append(records, servedRecord{kind: identity.Kind, id: identity.ID, value: compact.Bytes()})
 			}
+		}
+		if page.NextCursor == "" {
+			return records, nil
+		}
+		cursor = page.NextCursor
+	}
+}
+
+// scanFeats adds each published feat record.
+func (handler *Handler) scanFeats(ctx context.Context, meta *workerrpc.Meta, records []servedRecord) ([]servedRecord, error) {
+	cursor := ""
+	for {
+		page, err := handler.data.Query(ctx, meta, workerrpc.AddonDataQuery{Reference: reference(homebrew.PublishedFeatsCollection), Cursor: cursor, Limit: 200})
+		if err != nil {
+			return nil, dataFailure(ctx, err)
+		}
+		for _, document := range page.Documents {
+			published, err := homebrew.DecodePublishedFeat(document.Value)
+			if err == nil && document.Key != published.ID {
+				err = fmt.Errorf("key %q does not match record %q", document.Key, published.ID)
+			}
+			if err != nil {
+				fmt.Fprintf(handler.log, "dnd-homebrew: not serving published feat %q: %v\n", document.Key, err)
+				continue
+			}
+			if published.Withdrawn {
+				continue
+			}
+			var compact bytes.Buffer
+			if err := json.Compact(&compact, published.Record); err != nil {
+				return nil, unavailable("could not read a published homebrew feat")
+			}
+			records = append(records, servedRecord{kind: homebrew.FeatRecordKind, id: published.ID, value: compact.Bytes()})
 		}
 		if page.NextCursor == "" {
 			return records, nil

@@ -33,6 +33,7 @@ import {
   mapLabels,
   switchOf,
   template,
+  type GrantSubject,
   type Offer,
   type Source,
 } from "./vocabulary.js";
@@ -49,6 +50,8 @@ export interface FormContext {
   readonly changed: () => void;
   /** Controls were replaced; the host enhances the new ones. */
   readonly restructured: () => void;
+  /** Whose grants these are, which decides how the fields are grouped. */
+  readonly subject: GrantSubject;
 }
 export interface ValueEditor {
   readonly root: HTMLElement;
@@ -787,14 +790,15 @@ function addField(
   const sections =
     owner === "Grants"
       ? [
-          ...grantGroups.map((section) => ({
+          ...grantGroups(context.subject).map((section) => ({
             label: section.label,
             fields: section.fields.filter((field) => absent.includes(field)),
           })),
           {
             label: "Other",
             fields: absent.filter(
-              (field) => !grantGroups.some((section) => section.fields.includes(field)),
+              (field) =>
+                !grantGroups(context.subject).some((section) => section.fields.includes(field)),
             ),
           },
         ]
@@ -829,8 +833,11 @@ function initialValue(node: SchemaNode, owner: string, field: string): unknown {
   }
   return emptyValue(node);
 }
-function grantOrder(properties: Readonly<Record<string, SchemaNode>>): string[] {
-  const grouped = grantGroups
+function grantOrder(
+  properties: Readonly<Record<string, SchemaNode>>,
+  subject: GrantSubject,
+): string[] {
+  const grouped = grantGroups(subject)
     .flatMap((section) => section.fields)
     .filter((field) => field in properties);
   return [...grouped, ...Object.keys(properties).filter((field) => !grouped.includes(field))];
@@ -847,7 +854,9 @@ function group(
   const properties = schema.properties ?? {};
   const required = new Set(schema.required ?? []);
   const order =
-    owner === "Grants" ? grantOrder(properties) : fieldOrder(owner, Object.keys(properties));
+    owner === "Grants"
+      ? grantOrder(properties, context.subject)
+      : fieldOrder(owner, Object.keys(properties));
   const decider = switchOf(owner);
   let state: Json = isObject(value) ? { ...value } : {};
   const present = new Set([...required, ...Object.keys(state)]);

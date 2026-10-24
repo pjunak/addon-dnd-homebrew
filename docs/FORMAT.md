@@ -1,8 +1,8 @@
 # Homebrew format
 
-One JSON document holds item sets, items and subclasses. Import it from **Homebrew
-→ Import file** or from the DM Tools Import Center; **Export** writes the same
-shape. Files are limited to 2 MiB and 256 changes per import.
+One JSON document holds item sets, items, subclasses and feats. Import it from
+**Homebrew → Import file** or from the DM Tools Import Center; **Export**
+writes the same shape. Files are limited to 2 MiB and 256 changes per import.
 
 ```json
 {
@@ -40,10 +40,11 @@ AI assistant:
    already exist are reused rather than duplicated.
 2. Give the writer this page, the [sample](examples/sample-items.json), the
    export and the source text. Ask for a `merge` file with only the sets,
-   items and subclasses to add or change, effects and grants only where the
-   rule matches them exactly, and the rest of the rule in `text`. For a
-   subclass, also give the writer the Compendium's record schema
-   (`addon-dnd-2024-compendium/data/SCHEMA.md`), which explains the grants.
+   items, subclasses and feats to add or change, effects and grants only
+   where the rule matches them exactly, and the rest of the rule in `text`.
+   For a subclass or a feat, also give the writer the Compendium's record
+   schema (`addon-dnd-2024-compendium/data/SCHEMA.md`), which explains the
+   grants.
 3. Check the file offline from a clone of this repository, and fix every
    problem it names until it prints `VALID`:
 
@@ -66,6 +67,7 @@ AI assistant:
 | `generatedAt` | no | Informational timestamp written by Export |
 | `sets`, `items` | yes | Lists, possibly empty |
 | `subclasses` | no | A list of [subclasses](#subclass) |
+| `feats` | no | A list of [feats](#feat) |
 
 Unknown fields anywhere are refused. In `merge` mode an entry updates the draft
 with the same `id`; a field the entry leaves out keeps its stored value, so
@@ -346,3 +348,73 @@ Publishing writes one document per subclass to
 Every record also has `edition` `2024` and `book` `homebrew`. Ids hold no dot,
 so feature records of two subclasses never collide. Deleting a subclass
 withdraws its document at the next publish, as for items.
+
+## Feat
+
+```json
+{ "id": "storm-touched", "name": "Storm Touched", "category": "general",
+  "prerequisites": { "level": 4, "any": [{ "abilities": { "INT": 13 } }, { "abilities": { "WIS": 13 } }] },
+  "excerpt": "Int or Wis +1 (max 20). Thunderwave always prepared, once per Long Rest without a slot.",
+  "text": "Lightning answers you.",
+  "grants": {
+    "abilityScoreIncrease": { "choose": 1, "amount": 1, "from": ["INT", "WIS"] },
+    "castingAbility": { "fromAbilityScoreIncrease": true },
+    "spells": [{ "level": 1, "ids": ["thunderwave"], "alwaysPrepared": true, "free": "1/long" }] } }
+```
+
+[`examples/sample-feats.json`](examples/sample-feats.json) holds one feat of
+each category.
+
+| Field | Required | Default | Meaning |
+| --- | --- | --- | --- |
+| `id` | yes | | Lowercase words joined by hyphens, at most 64 characters; permanent |
+| `name` | yes | | One line, at most 120 characters |
+| `category` | yes | | `origin` (backgrounds), `general` (ability score levels), `fightingStyle` or `epicBoon`; where the Builder offers it |
+| `prerequisites` | no | `{}` | What a character needs, below; `{}` for none |
+| `repeatable` | no | `false` | `true` to take it more than once, or `{ "by": "choice", "choice": "<choice id>" }` for once per value of one of its own `enumerated` choices (count 1, a listed `from`) |
+| `text` | no | `""` | Markdown, at most 20,000 characters |
+| `excerpt` | no | `""` | A one-line summary the sheet shows, at most 300 characters |
+| `grants` | no | | The D&D Engine's grants vocabulary, as for [subclass](#subclass) features |
+
+A feat's grants may use the fields that apply only to feats:
+`abilityScoreIncrease` (`choose`, `amount`, `from` and an optional `cap`,
+such as 30 for an epic boon), `weaponMasterySlots`, `spellSlot`, `spellList`
+and `prepareSpellListOf`; `castingAbility` may be
+`{ "fromAbilityScoreIncrease": true }`. `acBonus` (species) and `conditions`
+(items) do nothing on a feat.
+
+`prerequisites` uses only the predicates the Engine checks; every key must
+hold:
+
+| Key | Value |
+| --- | --- |
+| `level` | Character level 1–20 |
+| `abilities` | `{ "STR": 13 }`: each listed score at least that (1–30) |
+| `classes` | `{ "wizard": 5 }`: each class at least that level |
+| `spellcaster` | `true`: can cast at least one spell |
+| `spellcastingFeature` | `true`: has a Spellcasting or Pact Magic feature |
+| `armorTraining` | `light`, `medium`, `heavy` or `shield` |
+| `weaponTraining` | `simple` or `martial` |
+| `feat`, `feature` | A feat or feature id, such as `hb.storm-touched` or `fighter-fighting-style` |
+| `featCategory`, `withoutFeatCategory` | Has, or has no, feat of that category |
+| `any`, `all` | 1–20 nested prerequisites, at most three deep: one of them, or every one |
+
+A requirement in words, such as a species, is refused: the Engine could not
+check it and every character would need the DM to waive it. Put it in `text`
+instead. The editor writes the printed patterns (a level, a score in one of
+several abilities, spellcasting, armor training, a Fighting Style feature)
+and keeps any other prerequisite from a file as it is. Fighting style feats
+require `{ "any": [{ "feature": "fighter-fighting-style" }, { "feature":
+"paladin-fighting-style" }, { "feature": "ranger-fighting-style" }] }`.
+
+In an import, `"grants": {}` removes the feat's grants.
+
+### Published feat
+
+Publishing writes one document per feat to `homebrew_published_feats`, holding
+the `feat` record the Engine reads: `id` `hb.<id>`, `name`, `edition` `2024`,
+`book` `homebrew`, `category`, `prerequisites`, `repeatable`, `grants` when
+set, `excerpt` when set, and `text` opening with the category and the
+prerequisite in words, such as
+`*General Feat (Prerequisite: Level 4+, Intelligence or Wisdom 13+)*`.
+Deleting a feat withdraws its document at the next publish, as for items.

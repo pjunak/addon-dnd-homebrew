@@ -444,3 +444,47 @@ func TestServesSubclassesWithTheirFeatures(t *testing.T) {
 		t.Fatalf("a subclass id is not an item: %v", failure)
 	}
 }
+
+func fixtureFeat(t *testing.T) json.RawMessage {
+	t.Helper()
+	body, err := os.ReadFile("../../tests/fixtures/feats.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		Published json.RawMessage `json:"published"`
+	}
+	if err := json.Unmarshal(body, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	return fixture.Published
+}
+
+func TestServesPublishedFeats(t *testing.T) {
+	data := newFakeData()
+	feat := fixtureFeat(t)
+	broken := json.RawMessage(strings.ReplaceAll(strings.Replace(string(feat), `"level": 4`, `"level": 40`, 1), "storm-touched", "broken-feat"))
+	withdrawn := json.RawMessage(strings.Replace(strings.ReplaceAll(string(feat), "storm-touched", "old-feat"), `"withdrawn": false`, `"withdrawn": true`, 1))
+	publish(t, data, fixtureRecords(t)[:1])
+	data.put(homebrew.PublishedFeatsCollection, "hb.storm-touched", feat)
+	data.put(homebrew.PublishedFeatsCollection, "hb.broken-feat", broken)
+	data.put(homebrew.PublishedFeatsCollection, "hb.old-feat", withdrawn)
+	var log bytes.Buffer
+	handler, _ := New(data, &log)
+	set := catalogSet(t, handler)
+	assertEngineCatalog(t, set)
+	if kinds := set["kinds"].(map[string]any); kinds["magic-item"].(float64) != 1 || kinds["feat"].(float64) != 1 {
+		t.Fatalf("kinds %v", kinds)
+	}
+	if !strings.Contains(log.String(), "hb.broken-feat") {
+		t.Fatalf("an invalid feat must be reported: %q", log.String())
+	}
+	got := call(t, handler, "get", `{"setId":"rules","kind":"feat","id":"hb.storm-touched"}`)["record"].(map[string]any)
+	value := got["value"].(map[string]any)
+	if value["category"] != "general" || value["prerequisites"].(map[string]any)["level"].(float64) != 4 {
+		t.Fatalf("feat %v", got)
+	}
+	if failure := callError(t, handler, "get", `{"setId":"rules","kind":"feat","id":"hb.old-feat"}`); failure.Data.Kind != workerrpc.KindNotFound {
+		t.Fatalf("a withdrawn feat must not be served: %v", failure)
+	}
+}

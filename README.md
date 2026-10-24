@@ -1,9 +1,8 @@
 # D&D Homebrew
 
 D&D Homebrew lets the DM create and import custom magic items, **item
-sets** and **subclasses** for TTRPG Codex, then use them on character sheets.
-A set
-holds what its items share: item type, rarity, attunement, body placements, a
+sets**, **subclasses** and **feats** for TTRPG Codex, then use them on
+character sheets. A set holds what its items share: item type, rarity, attunement, body placements, a
 shared description, a curse and optionally a condition every item gives. Each
 item adds its own description and, where the D&D Engine can apply them,
 effects such as +1 Armor Class and properties such as Advantage, limited uses
@@ -11,20 +10,22 @@ and spells cast from the item.
 
 A subclass has its features by level, and each feature can grant anything a
 printed subclass feature can: the editor covers the D&D Engine's whole grants
-vocabulary. More kinds of homebrew will join this add-on, published together
-and imported from the same file format.
+vocabulary. A feat has a category, a prerequisite and the same grants, such as
+an ability score increase or spells. More kinds of homebrew will join this
+add-on, published together and imported from the same file format.
 
 English and Czech controls follow the host language.
 
 ## How it fits together
 
 ```text
-Homebrew (DM)                    drafts: sets, items and subclasses, DM-only
+Homebrew (DM)                    drafts: sets, items, subclasses and feats, DM-only
         │ Publish
         ▼
 homebrew_published               one flattened magic-item record per item
 homebrew_published_subclasses    a subclass record and its feature records
-        │                        (both readable by players)
+homebrew_published_feats         one feat record per feat
+        │                        (all readable by players)
         │ dnd5e.rules-data (worker)
         ▼
 D&D Engine ── merges with the Compendium ──► Character Sheets
@@ -35,7 +36,8 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
   equipment picker next to Compendium items and their effects apply while they
   are equipped (and attuned, when they require attunement). Published
   subclasses appear in the Builder next to the class's own, and their features
-  apply from their levels. Neither the Engine nor Character Sheets changes.
+  apply from their levels. Published feats join the Builder's feat choices of
+  their category. Neither the Engine nor Character Sheets changes.
 - The add-on also provides a `magic-item` wiki provider: a sheet's rule details
   for a homebrew item show its text, and `[[Runestone: Ward]]` links in
   campaign articles resolve to the gallery.
@@ -44,8 +46,8 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 
 ## Use it
 
-1. **Homebrew** (DM sidebar): create an item, a set or a subclass, or import
-   a file. Drafts are private to the DM and never touch character sheets. A
+1. **Homebrew** (DM sidebar): create an item, a set, a subclass or a feat, or
+   import a file. Drafts are private to the DM and never touch character sheets. A
    new item can **start from** a common kind: a +1 weapon, armor or shield, a
    bonus to a statistic, an ability score item, a spell cast from the item, a
    resistance, a container or a potion. The preview beside the form shows the
@@ -73,6 +75,10 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
    levels, text and grants, and anything the subclass itself has: subclass
    spells, pools such as superiority dice, table columns such as a die that
    grows, and a third caster's spellcasting.
+7. **New feat** creates a feat. It can start as an origin feat, a general feat
+   with +1 to an ability score, a fighting style or an epic boon. Choose where
+   the Builder offers it (its category), what a character needs to take it,
+   whether it can be taken more than once, and what it grants.
 
 ### What the Engine can apply
 
@@ -126,6 +132,23 @@ editor lists them separately. The [sample subclass](docs/examples/sample-subclas
 shows a fighter subclass with a skill, extra Hit Points, a pool of uses, a
 toggle that spends them and a feature at level 7.
 
+### Feats
+
+A feat's **category** decides where the Builder offers it: origin feats with a
+background, general feats at the levels that grant an ability score
+improvement, fighting styles with a Fighting Style feature, and epic boons at
+level 19. Its **prerequisite** is checked by the Engine on the character: a
+level, a score in one of several abilities, spellcasting, armor training or a
+Fighting Style feature, as printed feats require; a file can also name classes,
+other feats or combinations ([format](docs/FORMAT.md#feat)). A requirement in
+words, such as a species, belongs in the text. **Grants** use the same form as
+subclass features, with the feat's own benefits first: an ability score
+increase (with a higher maximum for epic boons), weapon mastery and spell
+lists. The published text opens with the category and prerequisite as the
+books print them, such as *General Feat (Prerequisite: Level 4+, Strength or
+Dexterity 13+)*. The [sample feats](docs/examples/sample-feats.json) show one
+of each category.
+
 ### Change and remove published items
 
 - Editing an item changes its record at the next publish; characters keep the
@@ -135,9 +158,9 @@ toggle that spends them and a feature at level 7.
 - Deleting a published item **withdraws** it at the next publish. A character
   that still holds it shows a missing-source problem until it is removed.
 - The id of a set or item is permanent: saved characters refer to
-  `hb.<item id>`. The same holds for a subclass (`hb.<subclass id>`) and its
-  features (`hb.<subclass id>.<feature id>`). Deleting a published subclass
-  withdraws it like an item.
+  `hb.<item id>`. The same holds for a subclass (`hb.<subclass id>`), its
+  features (`hb.<subclass id>.<feature id>`) and a feat (`hb.<feat id>`).
+  Deleting a published subclass or feat withdraws it like an item.
 
 ## Import and export
 
@@ -155,7 +178,8 @@ Homebrew content is campaign data, not code. Drafts and published records live
 in the site's add-on collections, like planning notes and character sheets, so
 site backups include them and each campaign has its own. This repository holds
 only the sample files ([items](docs/examples/sample-items.json),
-[subclass](docs/examples/sample-subclass.json)); keep your own import files
+[subclass](docs/examples/sample-subclass.json),
+[feats](docs/examples/sample-feats.json)); keep your own import files
 outside it, and use **Export** to take a copy of a campaign's drafts.
 
 The permanent add-on namespace is `dnd-homebrew`.
@@ -168,6 +192,8 @@ The permanent add-on namespace is `dnd-homebrew`.
 | `homebrew_meta` | public | The publish revision the Engine sees |
 | `homebrew_subclasses` | DM | Subclass drafts with their features |
 | `homebrew_published_subclasses` | public | Each subclass's record and feature records the worker serves |
+| `homebrew_feats` | DM | Feat drafts |
+| `homebrew_published_feats` | public | Each feat's record the worker serves |
 
 Published records must be player-readable because each player's sheet evaluates
 them with that player's authority. *Visible to players* only controls the
@@ -183,7 +209,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.3.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.4.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are

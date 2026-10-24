@@ -155,6 +155,8 @@ export const collections = {
   meta: "homebrew_meta",
   subclasses: "homebrew_subclasses",
   publishedSubclasses: "homebrew_published_subclasses",
+  feats: "homebrew_feats",
+  publishedFeats: "homebrew_published_feats",
 } as const;
 export const metaKey = "publish";
 export const idPrefix = "hb.";
@@ -1718,6 +1720,378 @@ export function parsePublishedSubclass(value: unknown): PublishedSubclass {
   return published;
 }
 
+// --- Feats -------------------------------------------------------------------
+
+// internal/homebrew/feat.go enforces the same rules through the contracts; the
+// shared fixture tests/fixtures/feats.json keeps the two in step. Grants are
+// the Engine's vocabulary, as for subclasses.
+
+export const featCategories = ["origin", "general", "fightingStyle", "epicBoon"] as const;
+export type FeatCategory = (typeof featCategories)[number];
+/** The Engine's structured prerequisite (prerequisiteMatches); {} is none. */
+export type Prerequisite = Readonly<Record<string, unknown>>;
+/** Once, any number of times, or once per value of one of its own choices. */
+export type Repeatable = boolean | { readonly by: "choice"; readonly choice: string };
+export interface Feat {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly name: string;
+  readonly category: FeatCategory;
+  readonly prerequisites: Prerequisite;
+  readonly repeatable: Repeatable;
+  readonly text: string;
+  /** A one-line summary the sheet shows on the feat, or "". */
+  readonly excerpt: string;
+  readonly grants?: VocabularyValue;
+  readonly updatedAt: number;
+}
+/** One served feat; withdrawn like an item when its draft is deleted. */
+export interface PublishedFeat {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly featId: string;
+  readonly withdrawn: boolean;
+  readonly record: VocabularyValue;
+}
+const featFields = [
+  "id",
+  "schemaVersion",
+  "name",
+  "category",
+  "prerequisites",
+  "repeatable",
+  "text",
+  "excerpt",
+  "updatedAt",
+] as const;
+/** The Fighting Style features the printed fighting style feats require. */
+export const fightingStyleFeatures = [
+  "fighter-fighting-style",
+  "paladin-fighting-style",
+  "ranger-fighting-style",
+] as const;
+export const weaponTrainings = ["simple", "martial"] as const;
+export const armorTrainings = ["light", "medium", "heavy", "shield"] as const;
+/** How deep any and all may nest. */
+const maxPrerequisiteDepth = 3;
+/** A record id another prerequisite names: a feat or feature, possibly homebrew. */
+const validRecordRef = (value: unknown): value is string =>
+  typeof value === "string" && value.length <= 132 && /^[a-z0-9]+(?:[-.][a-z0-9]+)*$/u.test(value);
+/** A feat category, as records spell it: origin, fightingStyle. */
+const validCategory = (value: unknown): value is string =>
+  typeof value === "string" && value.length <= 40 && /^[a-z][A-Za-z0-9]*$/u.test(value);
+
+/**
+ * The predicates the Engine evaluates. Anything else needs the DM to waive it
+ * on each character there, so drafts may not declare it.
+ */
+export function prerequisiteProblem(
+  value: unknown,
+  path = "prerequisites",
+  depth = 0,
+): Problem | undefined {
+  if (!isRecord(value)) return problem("{path} must be a group of fields.", { path });
+  if (depth > 0 && Object.keys(value).length === 0)
+    return problem("{path} needs at least one requirement.", { path });
+  for (const [key, entry] of Object.entries(value)) {
+    const at = `${path}.${key}`;
+    let valid: boolean;
+    switch (key) {
+      case "level":
+        valid = isLevel(entry);
+        break;
+      case "abilities":
+        valid =
+          isRecord(entry) &&
+          Object.keys(entry).length > 0 &&
+          Object.entries(entry).every(
+            ([ability, score]) => oneOf(abilities, ability) && isInteger(score, 1, 30),
+          );
+        break;
+      case "classes":
+        valid =
+          isRecord(entry) &&
+          Object.keys(entry).length > 0 &&
+          Object.entries(entry).every(([classId, level]) => validId(classId) && isLevel(level));
+        break;
+      case "all":
+      case "any": {
+        if (depth >= maxPrerequisiteDepth || !Array.isArray(entry) || entry.length === 0)
+          return problem("{path} lists 1 to 20 requirements, nested at most {count} deep.", {
+            path: at,
+            count: maxPrerequisiteDepth,
+          });
+        valid = entry.length <= 20;
+        for (const [index, child] of entry.entries()) {
+          const failure = prerequisiteProblem(child, `${at}[${index}]`, depth + 1);
+          if (failure) return failure;
+        }
+        break;
+      }
+      case "spellcaster":
+      case "spellcastingFeature":
+        valid = entry === true;
+        break;
+      case "feat":
+      case "feature":
+        valid = validRecordRef(entry);
+        break;
+      case "featCategory":
+      case "withoutFeatCategory":
+        valid = validCategory(entry);
+        break;
+      case "weaponTraining":
+        valid = oneOf(weaponTrainings, entry);
+        break;
+      case "armorTraining":
+        valid = oneOf(armorTrainings, entry);
+        break;
+      default:
+        return problem("{path} does not take {field}.", { path, field: key });
+    }
+    if (!valid) return problem("{path} is not a requirement the Engine can check.", { path: at });
+  }
+  return undefined;
+}
+
+const abilityWords: Readonly<Record<string, string>> = {
+  STR: "Strength",
+  DEX: "Dexterity",
+  CON: "Constitution",
+  INT: "Intelligence",
+  WIS: "Wisdom",
+  CHA: "Charisma",
+};
+export const featCategoryNames: Readonly<Record<FeatCategory, string>> = {
+  origin: "Origin Feat",
+  general: "General Feat",
+  fightingStyle: "Fighting Style Feat",
+  epicBoon: "Epic Boon Feat",
+};
+const listWords = (parts: readonly string[], joiner: string): string =>
+  parts.length <= 2
+    ? parts.join(` ${joiner} `)
+    : `${parts.slice(0, -1).join(", ")}, ${joiner} ${parts.at(-1)}`;
+/** "Strength or Dexterity 13+" for branches that differ only in their ability. */
+function anyWords(branches: readonly Prerequisite[]): string {
+  const single = branches.map((branch) =>
+    isRecord(branch["abilities"]) && Object.keys(branch["abilities"]).length === 1
+      ? Object.entries(branch["abilities"])[0]!
+      : undefined,
+  );
+  const first = branches[0]?.["level"],
+    level = typeof first === "number" ? first : undefined;
+  if (
+    single.every((entry) => entry !== undefined) &&
+    single.every((entry) => entry[1] === single[0]![1]) &&
+    branches.every(
+      (branch) =>
+        branch["level"] === level && Object.keys(branch).length === (level === undefined ? 1 : 2),
+    )
+  ) {
+    const names = listWords(
+      single.map((entry) => abilityWords[entry![0]] ?? entry![0]),
+      "or",
+    );
+    const scores = `${names} ${String(single[0]![1])}+`;
+    return level === undefined ? scores : `Level ${level}+, ${scores}`;
+  }
+  if (
+    branches.every(
+      (branch) =>
+        Object.keys(branch).length === 1 &&
+        typeof branch["feature"] === "string" &&
+        branch["feature"].endsWith("-fighting-style"),
+    )
+  )
+    return "Fighting Style Feature";
+  return listWords(branches.map(prerequisiteWords), "or");
+}
+const recordName = (id: string): string => titleOf(id.replace(/^hb\./u, "").replaceAll(".", "-"));
+/** A prerequisite as printed after "Prerequisite:", such as "Level 4+, Strength 13+". */
+export function prerequisiteWords(value: Prerequisite): string {
+  const parts: string[] = [];
+  for (const [key, entry] of Object.entries(value)) {
+    switch (key) {
+      case "level":
+        parts.push(`Level ${String(entry)}+`);
+        break;
+      case "abilities":
+        if (isRecord(entry))
+          parts.push(
+            ...Object.entries(entry).map(
+              ([ability, score]) => `${abilityWords[ability] ?? ability} ${String(score)}+`,
+            ),
+          );
+        break;
+      case "classes":
+        if (isRecord(entry))
+          parts.push(
+            ...Object.entries(entry).map(
+              ([classId, level]) => `${titleOf(classId)} Level ${String(level)}+`,
+            ),
+          );
+        break;
+      case "any":
+        if (Array.isArray(entry)) parts.push(anyWords(entry.filter(isRecord)));
+        break;
+      case "all":
+        if (Array.isArray(entry)) parts.push(...entry.filter(isRecord).map(prerequisiteWords));
+        break;
+      case "spellcaster":
+        parts.push("The ability to cast at least one spell");
+        break;
+      case "spellcastingFeature":
+        parts.push("Spellcasting or Pact Magic Feature");
+        break;
+      case "feat":
+        parts.push(`${recordName(String(entry))} Feat`);
+        break;
+      case "feature":
+        parts.push(`${recordName(String(entry))} Feature`);
+        break;
+      case "featCategory":
+      case "withoutFeatCategory": {
+        const name = featCategoryNames[entry as FeatCategory] ?? `${titleOf(String(entry))} Feat`;
+        parts.push(key === "featCategory" ? `Any ${name}` : `No ${name}`);
+        break;
+      }
+      case "weaponTraining":
+        parts.push(`${titleOf(String(entry))} Weapon Training`);
+        break;
+      case "armorTraining":
+        parts.push(
+          entry === "shield" ? "Shield Training" : `${titleOf(String(entry))} Armor Training`,
+        );
+        break;
+    }
+  }
+  return parts.join(", ");
+}
+
+function repeatableProblem(value: unknown, grants: unknown): Problem | undefined {
+  if (typeof value === "boolean") return undefined;
+  const shape = exactFields(value, ["by", "choice"]);
+  if (shape || (value as Json)["by"] !== "choice")
+    return problem("A feat is taken once, any number of times, or once per choice.");
+  // The Engine needs one enumerated choice of the feat itself, picked once.
+  const choice = (value as Json)["choice"];
+  const declared =
+    isRecord(grants) && Array.isArray(grants["choices"])
+      ? grants["choices"].find((entry) => isRecord(entry) && entry["id"] === choice)
+      : undefined;
+  return isRecord(declared) &&
+    declared["type"] === "enumerated" &&
+    declared["count"] === 1 &&
+    Array.isArray(declared["from"]) &&
+    declared["from"].length > 0
+    ? undefined
+    : problem("Repeating once per choice needs one of the feat's choices, of one listed value.");
+}
+
+export function featProblem(value: Feat): Problem | undefined {
+  if (value.schemaVersion !== 1) return problem("Unsupported feat version.");
+  if (!validId(value.id)) return problem("The id must be lowercase words joined by hyphens.");
+  if (!validName(value.name))
+    return problem("Give the feat a one-line name of at most 120 characters.");
+  if (!oneOf(featCategories, value.category)) return problem("Choose the feat's category.");
+  if (!validMarkdown(value.text))
+    return problem("Descriptions are limited to {count} characters.", { count: maxMarkdown });
+  if (!Number.isSafeInteger(value.updatedAt) || value.updatedAt < 0)
+    return problem("The feat is malformed.");
+  return (
+    excerptProblem(value.excerpt) ??
+    prerequisiteProblem(value.prerequisites) ??
+    (value.grants === undefined
+      ? undefined
+      : vocabularyProblem(grantsSchema, value.grants, "grants")) ??
+    repeatableProblem(value.repeatable, value.grants)
+  );
+}
+
+/** Checks an untrusted value as a stored feat draft and returns it. */
+export function parseFeat(value: unknown): Feat {
+  const failure =
+    exactFields(value, featFields, ["grants"]) ?? featProblem(value as unknown as Feat);
+  if (failure) throw new HomebrewError(failure.text, failure.params);
+  return value as unknown as Feat;
+}
+
+export function newFeat(name: string, id: string, now: number): Feat {
+  return {
+    id,
+    schemaVersion: 1,
+    name,
+    category: "general",
+    prerequisites: { level: 4 },
+    repeatable: false,
+    text: "",
+    excerpt: "",
+    grants: { abilityScoreIncrease: { choose: 1, amount: 1, from: [...abilities] } },
+    updatedAt: now,
+  };
+}
+
+/** The feat record the Engine reads, its text opening with category and prerequisite. */
+export function flattenFeat(feat: Feat): PublishedFeat {
+  const id = idPrefix + feat.id;
+  const requirement = prerequisiteWords(feat.prerequisites);
+  const header = `*${featCategoryNames[feat.category]}${requirement ? ` (Prerequisite: ${requirement})` : ""}*`;
+  return {
+    id,
+    schemaVersion: 1,
+    featId: feat.id,
+    withdrawn: false,
+    record: {
+      kind: "feat",
+      id,
+      name: feat.name,
+      edition: "2024",
+      book: "homebrew",
+      category: feat.category,
+      prerequisites: copy(feat.prerequisites),
+      repeatable: copy(feat.repeatable),
+      ...(feat.grants ? { grants: copy(feat.grants) } : {}),
+      ...(feat.excerpt ? { excerpt: feat.excerpt } : {}),
+      text: [header, feat.text.trim()].filter((part) => part !== "").join("\n\n"),
+    },
+  };
+}
+
+/** Checks an untrusted value as a published feat and returns it. */
+export function parsePublishedFeat(value: unknown): PublishedFeat {
+  const shape = exactFields(value, ["id", "schemaVersion", "featId", "withdrawn", "record"]);
+  if (shape) throw new HomebrewError(shape.text, shape.params);
+  const published = value as PublishedFeat;
+  const record = published.record as unknown;
+  const recordShape = exactFields(
+    record,
+    ["kind", "id", "name", "edition", "book", "category", "prerequisites", "repeatable", "text"],
+    ["grants", "excerpt"],
+  );
+  const served = record as Json;
+  const valid =
+    recordShape === undefined &&
+    published.schemaVersion === 1 &&
+    validId(published.featId) &&
+    published.id === idPrefix + published.featId &&
+    typeof published.withdrawn === "boolean" &&
+    served["kind"] === "feat" &&
+    served["id"] === published.id &&
+    validName(served["name"]) &&
+    served["edition"] === "2024" &&
+    served["book"] === "homebrew" &&
+    oneOf(featCategories, served["category"]) &&
+    typeof served["text"] === "string" &&
+    prerequisiteProblem(served["prerequisites"]) === undefined &&
+    repeatableProblem(served["repeatable"], served["grants"]) === undefined &&
+    (served["excerpt"] === undefined || excerptProblem(served["excerpt"]) === undefined) &&
+    (served["grants"] === undefined ||
+      schemaProblem(grantsSchema, served["grants"], "grants") === undefined);
+  if (!valid) throw new HomebrewError("A published feat is invalid.");
+  return published;
+}
+
 // --- Publishing ------------------------------------------------------------
 
 /** Set defaults, per-item overrides and the item's own text, as one record. */
@@ -1874,7 +2248,7 @@ export function draftDeletes(
 }
 
 export interface PublishPlan {
-  /** `itemId` names the draft: an item, or a subclass. */
+  /** `itemId` names the draft: an item, a subclass or a feat. */
   readonly problems: readonly { readonly itemId: string; readonly problem: Problem }[];
   readonly changes: readonly PublishChange[];
   readonly mutations: readonly CollectionMutation[];
@@ -1894,6 +2268,8 @@ export function planPublish(
   now: number,
   subclasses: readonly Subclass[] = [],
   publishedSubclasses: ReadonlyMap<string, Stored<PublishedSubclass>> = new Map(),
+  feats: readonly Feat[] = [],
+  publishedFeats: ReadonlyMap<string, Stored<PublishedFeat>> = new Map(),
 ): PublishPlan {
   const bySet = new Map(sets.map((entry) => [entry.id, entry]));
   const problems: { itemId: string; problem: Problem }[] = [];
@@ -1985,9 +2361,41 @@ export function planPublish(
     putSubclass(id, { ...current.value, withdrawn: true }, current.revision);
     changes.push({ id, name: nameOf(current.value), operation: "withdraw" });
   }
+  const desiredFeats = new Map<string, PublishedFeat>();
+  for (const feat of feats) {
+    const failure = featProblem(feat);
+    if (failure) problems.push({ itemId: feat.id, problem: failure });
+    else desiredFeats.set(idPrefix + feat.id, flattenFeat(feat));
+  }
+  const putFeat = (key: string, value: unknown, expectedRevision: number): void => {
+    mutations.push({
+      operation: "put",
+      kind: "collection",
+      dataId: collections.publishedFeats,
+      key,
+      expectedRevision,
+      value,
+    });
+  };
+  for (const [id, value] of [...desiredFeats].sort(([left], [right]) => compare(left, right))) {
+    const current = publishedFeats.get(id);
+    if (current && canonical(current.value) === canonical(value)) continue;
+    putFeat(id, value, current?.revision ?? 0);
+    changes.push({
+      id,
+      name: String(value.record["name"]),
+      operation: current && !current.value.withdrawn ? "update" : "add",
+    });
+  }
+  for (const [id, current] of [...publishedFeats].sort(([left], [right]) => compare(left, right))) {
+    if (desiredFeats.has(id) || current.value.withdrawn) continue;
+    putFeat(id, { ...current.value, withdrawn: true }, current.revision);
+    changes.push({ id, name: String(current.value.record["name"]), operation: "withdraw" });
+  }
   const recordCount =
     desired.size +
-    [...desiredSubclasses.values()].reduce((total, value) => total + value.records.length, 0);
+    [...desiredSubclasses.values()].reduce((total, value) => total + value.records.length, 0) +
+    desiredFeats.size;
   if (mutations.length > 0)
     mutations.push({
       operation: "put",
@@ -2043,6 +2451,12 @@ const itemDefaults: Record<string, unknown> = {
   playerVisible: false,
   retired: false,
 };
+const featDefaults: Record<string, unknown> = {
+  prerequisites: {},
+  repeatable: false,
+  text: "",
+  excerpt: "",
+};
 const subclassDefaults: Record<string, unknown> = {
   text: "",
   excerpt: "",
@@ -2052,10 +2466,11 @@ const subclassDefaults: Record<string, unknown> = {
   features: [],
 };
 /** Optional objects `{}` clears in an import; a cleared field takes its partner. */
-const clearable: Readonly<Record<"set" | "item" | "subclass", readonly string[]>> = {
+const clearable: Readonly<Record<"set" | "item" | "subclass" | "feat", readonly string[]>> = {
   set: ["condition"],
   item: ["grants", "attunementPrerequisites", "container", "baseItem"],
   subclass: ["grants", "spellcasting"],
+  feat: ["grants"],
 };
 const partners: Readonly<Record<string, string>> = { spellcasting: "progression" };
 
@@ -2070,11 +2485,12 @@ export function planImport(
   storedItems: ReadonlyMap<string, Stored<unknown>>,
   now: number,
   storedSubclasses: ReadonlyMap<string, Stored<unknown>> = new Map(),
+  storedFeats: ReadonlyMap<string, Stored<unknown>> = new Map(),
 ): ImportPlan {
   const unknownField = exactFields(
     document,
     ["format", "schemaVersion", "sets", "items"],
-    ["generatedAt", "mode", "subclasses"],
+    ["generatedAt", "mode", "subclasses", "feats"],
   );
   if (unknownField)
     throw new HomebrewError("The document is invalid: {problem}", {
@@ -2090,15 +2506,20 @@ export function planImport(
     throw new HomebrewError("The mode must be merge or replace.");
   const incomingSets = source["sets"],
     incomingItems = source["items"],
-    incomingSubclasses = source["subclasses"] ?? [];
+    incomingSubclasses = source["subclasses"] ?? [],
+    incomingFeats = source["feats"] ?? [];
   if (
     !Array.isArray(incomingSets) ||
     !Array.isArray(incomingItems) ||
-    !Array.isArray(incomingSubclasses)
+    !Array.isArray(incomingSubclasses) ||
+    !Array.isArray(incomingFeats)
   )
     throw new HomebrewError("The document needs sets and items lists.");
-  if (incomingSets.length + incomingItems.length + incomingSubclasses.length > 2000)
-    throw new HomebrewError("An import holds at most 2000 sets, items and subclasses.");
+  if (
+    incomingSets.length + incomingItems.length + incomingSubclasses.length + incomingFeats.length >
+    2000
+  )
+    throw new HomebrewError("An import holds at most 2000 entries.");
   let creates = 0,
     updates = 0,
     skips = 0,
@@ -2176,11 +2597,21 @@ export function planImport(
     seen.add(`subclass:${value.id}`);
     add(collections.subclasses, value.id, value.name, value, existing);
   }
+  for (const [index, raw] of incomingFeats.entries()) {
+    const at = `feats[${index}]`;
+    const existing = storedFeats.get(entryId(raw));
+    const value = guarded(at, () => parseFeat(normalize(raw, existing, featDefaults, "feat", now)));
+    if (seen.has(`feat:${value.id}`))
+      throw new HomebrewError("{at}: feat {id} appears twice.", { at, id: value.id });
+    seen.add(`feat:${value.id}`);
+    add(collections.feats, value.id, value.name, value, existing);
+  }
   if (mode === "replace")
     for (const [collection, stored, prefix] of [
       [collections.sets, storedSets, "set:"],
       [collections.items, storedItems, "item:"],
       [collections.subclasses, storedSubclasses, "subclass:"],
+      [collections.feats, storedFeats, "feat:"],
     ] as const)
       for (const id of [...stored.keys()].sort(compare)) {
         if (seen.has(prefix + id)) continue;
@@ -2206,8 +2637,13 @@ export function planImport(
         count: mutations.length,
       },
     );
-  // Sets, their items, then subclasses; each collection by id.
-  const order: readonly string[] = [collections.sets, collections.items, collections.subclasses];
+  // Sets, their items, subclasses, then feats; each collection by id.
+  const order: readonly string[] = [
+    collections.sets,
+    collections.items,
+    collections.subclasses,
+    collections.feats,
+  ];
   const rank = (change: ImportChange): number => order.indexOf(change.collection);
   changes.sort((left, right) => rank(left) - rank(right) || compare(left.id, right.id));
   return { mode, summary: { creates, updates, skips, deletes }, changes, mutations };
@@ -2229,7 +2665,7 @@ function normalize(
   raw: unknown,
   existing: Stored<unknown> | undefined,
   defaults: Record<string, unknown>,
-  kind: "set" | "item" | "subclass",
+  kind: "set" | "item" | "subclass" | "feat",
   now: number,
 ): Record<string, unknown> {
   if (!isRecord(raw)) throw new HomebrewError("The entry must be an object.");
@@ -2264,6 +2700,7 @@ export function exportDocument(
   items: readonly Item[],
   now: number,
   subclasses: readonly Subclass[] = [],
+  feats: readonly Feat[] = [],
 ): unknown {
   return {
     format: importFormat,
@@ -2273,6 +2710,7 @@ export function exportDocument(
     sets: [...sets].sort((left, right) => compare(left.id, right.id)),
     items: [...items].sort((left, right) => compare(left.id, right.id)),
     subclasses: [...subclasses].sort((left, right) => compare(left.id, right.id)),
+    feats: [...feats].sort((left, right) => compare(left.id, right.id)),
   };
 }
 

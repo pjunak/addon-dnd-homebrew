@@ -19,6 +19,7 @@ import {
 } from "./fields.js";
 import { fold } from "./gallery-model.js";
 import { parseImportCommit, parseImportPreview, type ImportPreview } from "./import-review.js";
+import { featCategoryLabels, featEditor, type FeatEditor } from "./feat-editor.js";
 import { itemEditor, itemTypes, type ItemEditor } from "./item-editor.js";
 import { LiveRefresh } from "./live-refresh.js";
 import {
@@ -30,7 +31,9 @@ import {
   draftDeletes,
   draftPuts,
   exportDocument,
+  featProblem,
   flatten,
+  flattenFeat,
   flattenSubclass,
   freeId,
   HomebrewError,
@@ -42,6 +45,7 @@ import {
   moveOverrides,
   newSet,
   newItem,
+  newFeat,
   newSubclass,
   planImport,
   planPublish,
@@ -51,6 +55,7 @@ import {
   titleOf,
   type BodyPlacement,
   type CollectionMutation,
+  type Feat,
   type Item,
   type ItemSet,
   type Problem,
@@ -59,7 +64,7 @@ import {
   type Subclass,
 } from "./model.js";
 import type { References } from "./references.js";
-import type { Drafts, PublishedState } from "./repository.js";
+import type { DraftCollection, Drafts, PublishedState } from "./repository.js";
 import { runtimeFor, type HomebrewRuntime } from "./runtime.js";
 import { mechanicsEditor, type MechanicsEditor } from "./subclass-editor.js";
 import { fieldLabel } from "./vocabulary.js";
@@ -74,7 +79,9 @@ type Selection =
   /** `template` prefills the editor, as Duplicate does. */
   | { readonly kind: "new-item"; readonly setId: string; readonly template?: Item }
   | { readonly kind: "subclass"; readonly id: string }
-  | { readonly kind: "new-subclass"; readonly template?: Subclass };
+  | { readonly kind: "new-subclass"; readonly template?: Subclass }
+  | { readonly kind: "feat"; readonly id: string }
+  | { readonly kind: "new-feat"; readonly template?: Feat };
 
 export function defineCatalogElement(generation?: string): string {
   const tag = generation ? `${catalogElementTag}-${generation}` : catalogElementTag;
@@ -236,7 +243,7 @@ export function defineCatalogElement(generation?: string): string {
           "p",
           "",
           t(
-            "Create item sets, items and subclasses, then publish them to use them on character sheets.",
+            "Create items, item sets, subclasses and feats, then publish them to use them on character sheets.",
           ),
         ),
       );
@@ -256,6 +263,7 @@ export function defineCatalogElement(generation?: string): string {
           t("New subclass"),
           () => void this.#select({ kind: "new-subclass" }),
         ),
+        actionButton(document, t("New feat"), () => void this.#select({ kind: "new-feat" })),
         actionButton(document, t("Import file"), () => this.#fileInput.click()),
         actionButton(document, t("Export"), () => this.#export()),
       ];
@@ -345,13 +353,23 @@ export function defineCatalogElement(generation?: string): string {
         !query ||
         fold(item.name).includes(query) ||
         (itemSet !== undefined && fold(itemSet.name).includes(query));
-      if (sets.length === 0 && items.length === 0 && subclasses.length === 0) {
+      const feats = [...this.#drafts.feats].sort((a, b) =>
+        compare(fold(a.value.name), fold(b.value.name)),
+      );
+      if (
+        sets.length === 0 &&
+        items.length === 0 &&
+        subclasses.length === 0 &&
+        feats.length === 0
+      ) {
         groups.append(
           element(
             document,
             "p",
             "hb-hint",
-            t("Nothing yet. Create a set, an item or a subclass, or import a file to begin."),
+            t(
+              "Nothing yet. Create an item, a set, a subclass or a feat, or import a file to begin.",
+            ),
           ),
         );
         return;
@@ -424,24 +442,52 @@ export function defineCatalogElement(generation?: string): string {
           fold(entry.value.name).includes(query) ||
           fold(this.#className(entry.value.classId)).includes(query),
       );
-      if (visible.length === 0) return;
-      const section = element(document, "section", "hb-group");
-      section.append(element(document, "h2", "hb-group-head", t("Subclasses")));
-      const list = element(document, "ul");
-      for (const entry of visible) {
-        const button = this.#treeButton(entry.value.name, { kind: "subclass", id: entry.value.id });
-        button.append(badge(document, this.#className(entry.value.classId), "muted"));
-        const published = this.#published?.subclasses.get(`hb.${entry.value.id}`);
+      if (visible.length > 0) {
+        const section = element(document, "section", "hb-group");
+        section.append(element(document, "h2", "hb-group-head", t("Subclasses")));
+        const list = element(document, "ul");
+        for (const entry of visible) {
+          const button = this.#treeButton(entry.value.name, {
+            kind: "subclass",
+            id: entry.value.id,
+          });
+          button.append(badge(document, this.#className(entry.value.classId), "muted"));
+          const published = this.#published?.subclasses.get(`hb.${entry.value.id}`);
+          if (!published || published.value.withdrawn)
+            button.append(badge(document, t("Unpublished"), "warn"));
+          else if (canonical(published.value) !== canonical(flattenSubclass(entry.value)))
+            button.append(badge(document, t("Changed"), "warn"));
+          const row = element(document, "li");
+          row.append(button);
+          list.append(row);
+        }
+        section.append(list);
+        groups.append(section);
+      }
+      const shownFeats = feats.filter(
+        (entry) =>
+          !query ||
+          fold(entry.value.name).includes(query) ||
+          fold(t(featCategoryLabels[entry.value.category])).includes(query),
+      );
+      if (shownFeats.length === 0) return;
+      const featSection = element(document, "section", "hb-group");
+      featSection.append(element(document, "h2", "hb-group-head", t("Feats")));
+      const featList = element(document, "ul");
+      for (const entry of shownFeats) {
+        const button = this.#treeButton(entry.value.name, { kind: "feat", id: entry.value.id });
+        button.append(badge(document, t(featCategoryLabels[entry.value.category]), "muted"));
+        const published = this.#published?.feats.get(`hb.${entry.value.id}`);
         if (!published || published.value.withdrawn)
           button.append(badge(document, t("Unpublished"), "warn"));
-        else if (canonical(published.value) !== canonical(flattenSubclass(entry.value)))
+        else if (canonical(published.value) !== canonical(flattenFeat(entry.value)))
           button.append(badge(document, t("Changed"), "warn"));
         const row = element(document, "li");
         row.append(button);
-        list.append(row);
+        featList.append(row);
       }
-      section.append(list);
-      groups.append(section);
+      featSection.append(featList);
+      groups.append(featSection);
     }
     /** A class's name from the rules data, or its id in words. */
     #className(classId: string): string {
@@ -492,6 +538,8 @@ export function defineCatalogElement(generation?: string): string {
         0,
         this.#drafts.subclasses.map((entry) => entry.value),
         this.#published.subclasses,
+        this.#drafts.feats.map((entry) => entry.value),
+        this.#published.feats,
       );
       // A published draft with a problem would also be withdrawn; count it once.
       return new Set([
@@ -500,7 +548,7 @@ export function defineCatalogElement(generation?: string): string {
       ]).size;
     }
 
-    #selected(): Stored<ItemSet> | Stored<Item> | Stored<Subclass> | undefined {
+    #selected(): Stored<ItemSet> | Stored<Item> | Stored<Subclass> | Stored<Feat> | undefined {
       const selection = this.#selection;
       if (!selection || !this.#drafts) return undefined;
       if (selection.kind === "set")
@@ -509,6 +557,8 @@ export function defineCatalogElement(generation?: string): string {
         return this.#drafts.items.find((entry) => entry.value.id === selection.id);
       if (selection.kind === "subclass")
         return this.#drafts.subclasses.find((entry) => entry.value.id === selection.id);
+      if (selection.kind === "feat")
+        return this.#drafts.feats.find((entry) => entry.value.id === selection.id);
       return undefined;
     }
     #currentSetId(): string {
@@ -574,47 +624,45 @@ export function defineCatalogElement(generation?: string): string {
       this.#mechanics = undefined;
       const selection = this.#selection;
       if (!selection || !this.#drafts) {
+        // The header holds the buttons; this explains what each kind is for.
         const start = element(document, "div", "hb-start");
-        const actions = element(document, "div", "hb-row-actions");
-        actions.dataset["uiActions"] = "";
-        actions.append(
-          actionButton(
-            document,
-            t("New item"),
-            () => void this.#select({ kind: "new-item", setId: "" }),
-            "primary",
-          ),
-          actionButton(document, t("New set"), () => void this.#select({ kind: "new-set" })),
-          actionButton(
-            document,
-            t("New subclass"),
-            () => void this.#select({ kind: "new-subclass" }),
-          ),
-          actionButton(document, t("Import file"), () => this.#fileInput.click()),
-        );
+        const kinds = element(document, "dl", "hb-kinds");
+        for (const [name, about] of [
+          [
+            "Item",
+            "A magic item, such as a +1 weapon, a ring of resistance or a wand with a spell. Start from a common kind and change what you need.",
+          ],
+          [
+            "Set",
+            "Items that share their type, rarity, attunement, description or curse, such as a deck of cards.",
+          ],
+          ["Subclass", "A class's subclass, with its features by level."],
+          ["Feat", "An origin feat, a general feat, a fighting style or an epic boon."],
+        ] as const)
+          kinds.append(element(document, "dt", "", t(name)), element(document, "dd", "", t(about)));
         start.append(
           element(
             document,
             "p",
             "hb-hint",
-            t("Choose a set, an item or a subclass to edit it, or start something new."),
-          ),
-          actions,
-          element(
-            document,
-            "p",
-            "hb-hint",
             t(
-              "A new item can start from a common kind, such as a +1 weapon or a wand with a spell. Put items that share their type, rarity, description or curse into a set.",
+              "Choose something on the left to edit it, or start something new with the buttons above.",
             ),
           ),
+          kinds,
         );
-        if (this.#drafts === undefined)
-          for (const button of actions.querySelectorAll("button")) button.disabled = true;
         this.#editor.replaceChildren(start);
         return;
       }
-      if (selection.kind === "subclass" || selection.kind === "new-subclass") {
+      if (selection.kind === "feat" || selection.kind === "new-feat") {
+        const stored =
+          selection.kind === "feat"
+            ? this.#drafts.feats.find((entry) => entry.value.id === selection.id)
+            : undefined;
+        this.#editor.replaceChildren(
+          this.#featForm(stored, selection.kind === "new-feat" ? selection.template : undefined),
+        );
+      } else if (selection.kind === "subclass" || selection.kind === "new-subclass") {
         const stored =
           selection.kind === "subclass"
             ? this.#drafts.subclasses.find((entry) => entry.value.id === selection.id)
@@ -680,6 +728,13 @@ export function defineCatalogElement(generation?: string): string {
       return new Set([
         ...(this.#drafts?.items.map((entry) => entry.value.id) ?? []),
         ...[...(this.#published?.records.values() ?? [])].map((entry) => entry.value.itemId),
+      ]);
+    }
+    /** Feat ids in use, including published feats whose draft was deleted. */
+    #featIds(): ReadonlySet<string> {
+      return new Set([
+        ...(this.#drafts?.feats.map((entry) => entry.value.id) ?? []),
+        ...[...(this.#published?.feats.values() ?? [])].map((entry) => entry.value.featId),
       ]);
     }
     /** Subclass ids in use, including published subclasses whose draft was deleted. */
@@ -872,6 +927,8 @@ export function defineCatalogElement(generation?: string): string {
         const list = element(document, "ul");
         for (const entry of members) {
           const button = this.#treeButton(entry.value.name, { kind: "item", id: entry.value.id });
+          // "Open" keeps the link's name apart from the tree's button for the item.
+          button.setAttribute("aria-label", t("Open {name}", { name: entry.value.name }));
           if (!entry.value.playerVisible) button.append(badge(document, t("Hidden"), "muted"));
           const item = element(document, "li");
           item.append(button);
@@ -1284,6 +1341,100 @@ export function defineCatalogElement(generation?: string): string {
           : undefined,
       );
     }
+    #featForm(stored: Stored<Feat> | undefined, template?: Feat): HTMLFormElement {
+      const t = this.#t;
+      const value = stored?.value ?? template ?? newFeat("", "", Date.now());
+      const { form, main } = this.#form(stored ? value.name : t("New feat"));
+      const editor = featEditor(
+        {
+          document,
+          t,
+          references: this.#references,
+          takenIds: () => this.#featIds(),
+          changed: () => this.#setDirty(true),
+          restructured: () => this.#controls?.refresh(),
+          ...(stored ? {} : { restart: (feat: Feat) => this.#restartFeat(feat) }),
+        },
+        form,
+        main,
+        value,
+        stored !== undefined,
+      );
+      const actions = element(document, "div", "hb-editor-actions");
+      actions.dataset["uiActions"] = "";
+      const save = actionButton(
+        document,
+        t("Save"),
+        () => void this.#saveFeat(editor, stored),
+        "primary",
+      );
+      save.type = "submit";
+      actions.append(save);
+      if (stored)
+        actions.append(
+          actionButton(
+            document,
+            t("Duplicate"),
+            () =>
+              void this.#select({
+                kind: "new-feat",
+                template: {
+                  ...stored.value,
+                  id: "",
+                  name: t("{name} (copy)", { name: stored.value.name }),
+                },
+              }),
+          ),
+          actionButton(document, t("Delete"), () => void this.#deleteFeat(stored), "danger"),
+        );
+      main.append(actions);
+      form.addEventListener("submit", (event) => event.preventDefault());
+      return form;
+    }
+    /** Opens the new feat again as `feat`, keeping the changes it carries. */
+    #restartFeat(feat: Feat): void {
+      this.#selection = { kind: "new-feat", template: feat };
+      this.#renderEditor();
+      this.#controls?.refresh();
+      this.#setDirty(true);
+      this.#editor
+        .querySelector<HTMLInputElement>('input[name="name"]')
+        ?.focus({ preventScroll: true });
+    }
+    async #saveFeat(editor: FeatEditor, stored: Stored<Feat> | undefined): Promise<void> {
+      const value = editor.read();
+      const named =
+        !stored && formText(new FormData(this.#editor.querySelector("form")!), "id").trim() === "";
+      if (!stored && this.#featIds().has(value.id))
+        return this.#editorProblem({ text: "This id is already in use. Choose another id." });
+      const failure = featProblem(value);
+      if (failure) return this.#editorProblem(failure);
+      await this.#save(
+        collections.feats,
+        value,
+        stored,
+        (saved) => ({ kind: "feat", id: saved.id }),
+        named
+          ? (failed) => ({
+              ...value,
+              id: freeId(value.name, new Set([...this.#featIds(), ...failed])),
+            })
+          : undefined,
+      );
+    }
+    async #deleteFeat(stored: Stored<Feat>): Promise<void> {
+      const t = this.#t;
+      const published = this.#published?.feats.get(`hb.${stored.value.id}`);
+      const question =
+        published && !published.value.withdrawn
+          ? t(
+              "Deleting a published feat withdraws it at the next publish; characters with it then show a missing-source problem. Delete {name}?",
+              { name: stored.value.name },
+            )
+          : t("Delete {name}?", { name: stored.value.name });
+      if (!(await confirmDialog(this, t, question, t("Delete")))) return;
+      await this.#remove(collections.feats, stored);
+    }
     async #deleteSubclass(stored: Stored<Subclass>): Promise<void> {
       const t = this.#t;
       const published = this.#published?.subclasses.get(`hb.${stored.value.id}`);
@@ -1310,9 +1461,8 @@ export function defineCatalogElement(generation?: string): string {
      * came from its name can still meet a deleted draft's key, which the
      * browser cannot reuse; `rename` then gives the next free id.
      */
-    async #save<T extends ItemSet | Item | Subclass>(
-      collection:
-        typeof collections.sets | typeof collections.items | typeof collections.subclasses,
+    async #save<T extends ItemSet | Item | Subclass | Feat>(
+      collection: DraftCollection,
       value: T,
       stored: Stored<T> | undefined,
       select: (saved: T) => Selection,
@@ -1474,9 +1624,8 @@ export function defineCatalogElement(generation?: string): string {
       await this.#remove(collections.items, stored);
     }
     async #remove(
-      collection:
-        typeof collections.sets | typeof collections.items | typeof collections.subclasses,
-      stored: Stored<ItemSet> | Stored<Item> | Stored<Subclass>,
+      collection: DraftCollection,
+      stored: Stored<ItemSet> | Stored<Item> | Stored<Subclass> | Stored<Feat>,
     ): Promise<void> {
       const runtime = this.#runtime;
       if (!runtime || this.#busy) return;
@@ -1528,6 +1677,8 @@ export function defineCatalogElement(generation?: string): string {
           Date.now(),
           drafts.subclasses.map((entry) => entry.value),
           published.subclasses,
+          drafts.feats.map((entry) => entry.value),
+          published.feats,
         );
         const body = element(document, "div", "hb-dialog-body");
         let confirmable = plan.problems.length === 0 && plan.mutations.length > 0;
@@ -1539,6 +1690,7 @@ export function defineCatalogElement(generation?: string): string {
               drafts.items.find((item) => item.value.id === entry.itemId)?.value.name ??
               drafts.subclasses.find((subclass) => subclass.value.id === entry.itemId)?.value
                 .name ??
+              drafts.feats.find((feat) => feat.value.id === entry.itemId)?.value.name ??
               entry.itemId;
             list.append(element(document, "li", "", `${name}: ${problemText(t, entry.problem)}`));
           }
@@ -1583,7 +1735,7 @@ export function defineCatalogElement(generation?: string): string {
               messageBlock(
                 document,
                 t(
-                  "Characters with a withdrawn item or subclass show a missing-source problem until it is removed from them.",
+                  "Characters with a withdrawn item, subclass or feat show a missing-source problem until it is removed from them.",
                 ),
                 "alert",
               ),
@@ -1638,6 +1790,7 @@ export function defineCatalogElement(generation?: string): string {
           new Map(this.#drafts.items.map((entry) => [entry.value.id, entry])),
           Date.now(),
           new Map(this.#drafts.subclasses.map((entry) => [entry.value.id, entry])),
+          new Map(this.#drafts.feats.map((entry) => [entry.value.id, entry])),
         );
       } catch (error) {
         return error instanceof HomebrewError
@@ -1694,6 +1847,7 @@ export function defineCatalogElement(generation?: string): string {
           [collections.sets]: t("set"),
           [collections.items]: t("item"),
           [collections.subclasses]: t("subclass"),
+          [collections.feats]: t("feat"),
         };
         for (const [operation, label] of [
           ["create", "Created"],
@@ -1752,6 +1906,7 @@ export function defineCatalogElement(generation?: string): string {
         this.#drafts.items.map((entry) => entry.value),
         now.getTime(),
         this.#drafts.subclasses.map((entry) => entry.value),
+        this.#drafts.feats.map((entry) => entry.value),
       );
       downloadFile(
         document,

@@ -589,3 +589,17 @@
   flex: 1 1 auto;
   min-width: 0;
 }
+.hb-kinds {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.4rem 1rem;
+  margin: 0;
+}
+.hb-kinds dt {
+  font-weight: 700;
+  color: var(--text-parchment, #f5edd8);
+}
+.hb-kinds dd {
+  margin: 0;
+  color: var(--text-muted, #9a8660);
+}

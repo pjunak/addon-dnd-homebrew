@@ -73,6 +73,7 @@ void test("drafts are read with set revisions and broken documents are reported,
     { kind: "collection", dataId: "homebrew_sets", revision: 9 },
     { kind: "collection", dataId: "homebrew_items", revision: 9 },
     { kind: "collection", dataId: "homebrew_subclasses", revision: 9 },
+    { kind: "collection", dataId: "homebrew_feats", revision: 9 },
   ]);
   assert.ok(queries.every((query) => query.options["includeDataRevision"] === true));
 });

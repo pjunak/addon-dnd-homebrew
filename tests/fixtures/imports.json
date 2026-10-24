@@ -170,6 +170,32 @@
       "name": "missing items",
       "document": { "format": "dnd-homebrew", "schemaVersion": 1, "sets": [] },
       "errorIncludes": "items"
+    },
+    {
+      "name": "a new feat takes defaults",
+      "document": {
+        "format": "dnd-homebrew",
+        "schemaVersion": 1,
+        "sets": [],
+        "items": [],
+        "feats": [{ "id": "lantern-bearer", "name": "Lantern Bearer", "category": "origin" }]
+      },
+      "summary": { "creates": 1, "updates": 0, "skips": 0, "deletes": 0 },
+      "changes": [["homebrew_feats", "lantern-bearer", "create"]],
+      "values": {
+        "homebrew_feats/lantern-bearer": { "prerequisites": {}, "repeatable": false, "text": "", "excerpt": "", "updatedAt": 1000 }
+      }
+    },
+    {
+      "name": "a feat prerequisite in words",
+      "document": {
+        "format": "dnd-homebrew",
+        "schemaVersion": 1,
+        "sets": [],
+        "items": [],
+        "feats": [{ "id": "dwarf-kin", "name": "Dwarf Kin", "category": "general", "prerequisites": { "text": "a Dwarf" } }]
+      },
+      "errorIncludes": "feats[0]"
     }
   ]
 }

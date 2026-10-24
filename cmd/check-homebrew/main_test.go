@@ -89,3 +89,14 @@ func write(t *testing.T, name string, value any) string {
 	}
 	return path
 }
+
+func TestTheSampleFeatsAreValid(t *testing.T) {
+	var out bytes.Buffer
+	if err := run([]string{"../../docs/examples/sample-feats.json"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(out.String(), "VALID: 4 new, 0 changed, 0 unchanged, 0 removed (merge).") ||
+		!strings.Contains(out.String(), "create homebrew_feats/storm-touched") {
+		t.Fatalf("report:\n%s", out.String())
+	}
+}

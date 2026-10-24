@@ -1,0 +1,147 @@
+{
+  "valid": [
+    {
+      "id": "storm-touched",
+      "schemaVersion": 1,
+      "name": "Storm Touched",
+      "category": "general",
+      "prerequisites": { "level": 4, "any": [{ "abilities": { "INT": 13 } }, { "abilities": { "WIS": 13 } }] },
+      "repeatable": false,
+      "text": "Lightning answers you.\n\n**Thunder Step.** You always have Thunderwave prepared and can cast it once per Long Rest without a spell slot.",
+      "excerpt": "Int or Wis +1 (max 20); Thunderwave once per Long Rest without a slot.",
+      "grants": {
+        "abilityScoreIncrease": { "choose": 1, "amount": 1, "from": ["INT", "WIS"] },
+        "castingAbility": { "fromAbilityScoreIncrease": true },
+        "spells": [{ "level": 1, "ids": ["thunderwave"], "alwaysPrepared": true, "free": "1/long" }]
+      },
+      "updatedAt": 1
+    },
+    {
+      "id": "lantern-bearer",
+      "schemaVersion": 1,
+      "name": "Lantern Bearer",
+      "category": "origin",
+      "prerequisites": {},
+      "repeatable": false,
+      "text": "You always know where the nearest light is.",
+      "excerpt": "",
+      "updatedAt": 1
+    },
+    {
+      "id": "storm-archer",
+      "schemaVersion": 1,
+      "name": "Storm Archer",
+      "category": "fightingStyle",
+      "prerequisites": {
+        "any": [
+          { "feature": "fighter-fighting-style" },
+          { "feature": "paladin-fighting-style" },
+          { "feature": "ranger-fighting-style" }
+        ]
+      },
+      "repeatable": false,
+      "text": "You gain a +2 bonus to attack rolls you make with Ranged weapons.",
+      "excerpt": "+2 to ranged weapon attacks.",
+      "grants": { "attackModifiers": [{ "attackBonus": 2, "match": [{ "range": "ranged" }] }] },
+      "updatedAt": 1
+    },
+    {
+      "id": "elemental-scholar",
+      "schemaVersion": 1,
+      "name": "Elemental Scholar",
+      "category": "general",
+      "prerequisites": {
+        "level": 8,
+        "all": [
+          { "any": [{ "classes": { "wizard": 5 } }, { "spellcastingFeature": true }] },
+          { "any": [{ "feat": "hb.storm-touched" }, { "featCategory": "origin" }] }
+        ],
+        "armorTraining": "light"
+      },
+      "repeatable": { "by": "choice", "choice": "element" },
+      "text": "Choose an element each time you take this feat.",
+      "excerpt": "",
+      "grants": {
+        "choices": [{ "id": "element", "prompt": "Element", "type": "enumerated", "count": 1, "from": ["fire", "cold", "lightning"] }]
+      },
+      "updatedAt": 1
+    }
+  ],
+  "invalid": [
+    { "name": "an unknown field", "change": { "colour": "red" } },
+    { "name": "an unknown category", "change": { "category": "heroic" } },
+    { "name": "a prerequisite in words", "change": { "prerequisites": { "text": "a Dwarf" } } },
+    { "name": "an empty nested requirement", "change": { "prerequisites": { "any": [{}] } } },
+    { "name": "an empty requirement list", "change": { "prerequisites": { "any": [] } } },
+    {
+      "name": "requirements nested four deep",
+      "change": { "prerequisites": { "any": [{ "any": [{ "any": [{ "any": [{ "level": 1 }] }] }] }] } }
+    },
+    { "name": "an ability score above 30", "change": { "prerequisites": { "abilities": { "STR": 31 } } } },
+    { "name": "an unknown ability", "change": { "prerequisites": { "abilities": { "LCK": 13 } } } },
+    { "name": "level 0", "change": { "prerequisites": { "level": 0 } } },
+    { "name": "spellcaster switched off", "change": { "prerequisites": { "spellcaster": false } } },
+    { "name": "an unknown armor training", "change": { "prerequisites": { "armorTraining": "cloth" } } },
+    { "name": "a feat named in words", "change": { "prerequisites": { "feat": "Storm Touched" } } },
+    { "name": "a class at level 21", "change": { "prerequisites": { "classes": { "wizard": 21 } } } },
+    { "name": "repeating by a choice the feat lacks", "change": { "repeatable": { "by": "choice", "choice": "element" } } },
+    { "name": "repeating by an unknown rule", "change": { "repeatable": { "by": "level", "choice": "element" } } },
+    { "name": "an unknown grant", "change": { "grants": { "flying": true } } },
+    { "name": "a summary on two lines", "change": { "excerpt": "one\ntwo" } },
+    { "name": "an empty name", "change": { "name": "" } }
+  ],
+  "published": {
+    "id": "hb.storm-touched",
+    "schemaVersion": 1,
+    "featId": "storm-touched",
+    "withdrawn": false,
+    "record": {
+      "kind": "feat",
+      "id": "hb.storm-touched",
+      "name": "Storm Touched",
+      "edition": "2024",
+      "book": "homebrew",
+      "category": "general",
+      "prerequisites": { "level": 4, "any": [{ "abilities": { "INT": 13 } }, { "abilities": { "WIS": 13 } }] },
+      "repeatable": false,
+      "grants": {
+        "abilityScoreIncrease": { "choose": 1, "amount": 1, "from": ["INT", "WIS"] },
+        "castingAbility": { "fromAbilityScoreIncrease": true },
+        "spells": [{ "level": 1, "ids": ["thunderwave"], "alwaysPrepared": true, "free": "1/long" }]
+      },
+      "excerpt": "Int or Wis +1 (max 20); Thunderwave once per Long Rest without a slot.",
+      "text": "*General Feat (Prerequisite: Level 4+, Intelligence or Wisdom 13+)*\n\nLightning answers you.\n\n**Thunder Step.** You always have Thunderwave prepared and can cast it once per Long Rest without a spell slot."
+    }
+  },
+  "words": [
+    { "prerequisites": {}, "words": "" },
+    { "prerequisites": { "level": 19 }, "words": "Level 19+" },
+    { "prerequisites": { "level": 4, "abilities": { "CHA": 13 } }, "words": "Level 4+, Charisma 13+" },
+    {
+      "prerequisites": { "any": [{ "level": 4, "abilities": { "STR": 13 } }, { "level": 4, "abilities": { "DEX": 13 } }] },
+      "words": "Level 4+, Strength or Dexterity 13+"
+    },
+    {
+      "prerequisites": {
+        "any": [{ "abilities": { "INT": 13 } }, { "abilities": { "WIS": 13 } }, { "abilities": { "CHA": 13 } }]
+      },
+      "words": "Intelligence, Wisdom, or Charisma 13+"
+    },
+    { "prerequisites": { "level": 4, "spellcastingFeature": true }, "words": "Level 4+, Spellcasting or Pact Magic Feature" },
+    { "prerequisites": { "level": 4, "armorTraining": "shield" }, "words": "Level 4+, Shield Training" },
+    {
+      "prerequisites": {
+        "any": [
+          { "feature": "fighter-fighting-style" },
+          { "feature": "paladin-fighting-style" },
+          { "feature": "ranger-fighting-style" }
+        ]
+      },
+      "words": "Fighting Style Feature"
+    },
+    {
+      "prerequisites": { "any": [{ "classes": { "wizard": 5 } }, { "feat": "hb.storm-touched" }] },
+      "words": "Wizard Level 5+ or Storm Touched Feat"
+    }
+  ]
+}

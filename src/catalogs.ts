@@ -26,8 +26,6 @@ export const cs: Readonly<Record<string, string>> = {
   // Page
   Homebrew: "Vlastní obsah",
   "Item Gallery": "Galerie předmětů",
-  "Create item sets, items and subclasses, then publish them to use them on character sheets.":
-    "Vytvářejte sady předmětů, předměty a podpovolání a pak je zveřejněte, aby šly použít na denících postav.",
   "Items the DM has revealed to the party.": "Předměty, které Pán jeskyně odhalil družině.",
   "Loading homebrew items…": "Načítání vlastních předmětů…",
   "This page belongs to an add-on version that is no longer active. Reload the page.":
@@ -47,8 +45,6 @@ export const cs: Readonly<Record<string, string>> = {
   "Unpublished changes: {count}.": "Nezveřejněné změny: {count}.",
   "Search homebrew": "Hledat ve vlastním obsahu",
   "Items without a set": "Předměty bez sady",
-  "Nothing yet. Create a set, an item or a subclass, or import a file to begin.":
-    "Zatím nic. Začněte vytvořením sady, předmětu nebo podpovolání, nebo importem souboru.",
   "Items: {count}": "Předmětů: {count}",
   "Some stored drafts could not be read:": "Některé uložené koncepty nelze přečíst:",
   // Badges
@@ -373,8 +369,6 @@ export const cs: Readonly<Record<string, string>> = {
   "Publish to character sheets": "Zveřejnit na deníky postav",
   "Publishing changes the rules data every character uses. Each character sheet asks its owner to adopt the new rules on its next save.":
     "Zveřejnění změní data pravidel, která používají všechny postavy. Každý deník postavy při příštím uložení požádá svého vlastníka o přijetí nových pravidel.",
-  "Characters with a withdrawn item or subclass show a missing-source problem until it is removed from them.":
-    "Postavy se staženým předmětem nebo podpovoláním ukazují problém s chybějícím zdrojem, dokud jim ho neodeberete.",
   Added: "Přidáno",
   Updated: "Upraveno",
   Withdrawn: "Staženo",
@@ -904,8 +898,6 @@ export const cs: Readonly<Record<string, string>> = {
   "Spellcasting and its table go together.": "Sesílání kouzel a jeho tabulka patří k sobě.",
   "Each feature needs its own id.": "Každá schopnost potřebuje vlastní identifikátor.",
   "A published subclass is invalid.": "Zveřejněné podpovolání je neplatné.",
-  "An import holds at most 2000 sets, items and subclasses.":
-    "Import obsahuje nejvýše 2000 sad, předmětů a podpovolání.",
   "{at}: subclass {id} appears twice.": "{at}: podpovolání {id} se opakuje.",
   "{path} must be text.": "{path} musí být text.",
   "{path} must be a whole number.": "{path} musí být celé číslo.",
@@ -1133,10 +1125,6 @@ export const cs: Readonly<Record<string, string>> = {
   // Sets, the tree and bulk changes
   "Show the items of {name}": "Zobrazit předměty sady {name}",
   "Hide the items of {name}": "Skrýt předměty sady {name}",
-  "Choose a set, an item or a subclass to edit it, or start something new.":
-    "Vyberte sadu, předmět nebo podpovolání k úpravě, nebo začněte něco nového.",
-  "A new item can start from a common kind, such as a +1 weapon or a wand with a spell. Put items that share their type, rarity, description or curse into a set.":
-    "Nový předmět může vycházet z běžného druhu, například ze zbraně +1 nebo z hůlky s kouzlem. Předměty se společným typem, vzácností, popisem nebo kletbou dejte do sady.",
   "A set holds what its items share. Each item can still change any of these values.":
     "Sada drží to, co mají její předměty společné. Každý předmět může kteroukoli z těchto hodnot změnit.",
   "Items in this set ({count})": "Předměty v této sadě ({count})",
@@ -1164,6 +1152,90 @@ export const cs: Readonly<Record<string, string>> = {
   subclass: "podpovolání",
   Created: "Vytvořeno",
   Removed: "Odstraněno",
+  // Feats
+  "Create items, item sets, subclasses and feats, then publish them to use them on character sheets.":
+    "Vytvářejte předměty, sady předmětů, podpovolání a odbornosti a pak je zveřejněte, aby šly použít na denících postav.",
+  "Nothing yet. Create an item, a set, a subclass or a feat, or import a file to begin.":
+    "Zatím nic. Začněte vytvořením předmětu, sady, podpovolání nebo odbornosti, nebo importem souboru.",
+  "Characters with a withdrawn item, subclass or feat show a missing-source problem until it is removed from them.":
+    "Postavy se staženým předmětem, podpovoláním nebo odborností ukazují problém s chybějícím zdrojem, dokud jim ho neodeberete.",
+  "An import holds at most 2000 entries.": "Import obsahuje nejvýše 2000 položek.",
+  "New feat": "Nová odbornost",
+  Feats: "Odbornosti",
+  feat: "odbornost",
+  "Deleting a published feat withdraws it at the next publish; characters with it then show a missing-source problem. Delete {name}?":
+    "Smazání zveřejněné odbornosti ji při příštím zveřejnění stáhne; postavy, které ji mají, pak ukážou problém s chybějícím zdrojem. Smazat {name}?",
+  "Where the Builder offers it: backgrounds, ability score levels, fighting styles or level 19.":
+    "Kde ji Tvůrce nabídne: u zázemí, na úrovních se zvýšením vlastností, u bojových stylů nebo na 19. úrovni.",
+  Prerequisite: "Předpoklad",
+  "From a file, kept as it is: {words}": "Ze souboru, ponechán beze změny: {words}",
+  "Replace with a simple prerequisite": "Nahradit jednoduchým předpokladem",
+  "Level at least": "Úroveň alespoň",
+  "Ability score at least": "Hodnota vlastnosti alespoň",
+  "Not needed": "Není potřeba",
+  "Can cast at least one spell": "Umí seslat alespoň jedno kouzlo",
+  "A Spellcasting or Pact Magic feature": "Schopnost Sesílání kouzel nebo Paktová magie",
+  "Weapon training": "Výcvik se zbraněmi",
+  "Leave everything empty for a feat anyone can take. Sheets check it in the Builder.":
+    "Nechte vše prázdné pro odbornost, kterou si může vzít kdokoli. Deníky předpoklad kontrolují v Tvůrci.",
+  "In one of these abilities": "V jedné z těchto vlastností",
+  "With several, any one of them is enough.": "Při více vlastnostech stačí kterákoli z nich.",
+  "Requires a Fighting Style feature": "Vyžaduje schopnost Bojový styl",
+  "Can be taken": "Lze vzít",
+  Once: "Jednou",
+  "Any number of times": "Opakovaně",
+  "Once for each value of {choice}": "Jednou pro každou hodnotu volby {choice}",
+  "What it grants on the sheet": "Co dává na deníku",
+  "Anything a printed feat grants: an ability score increase, proficiencies, spells, uses, bonuses and more. Add fields from the list.":
+    "Cokoli, co dává tištěná odbornost: zvýšení vlastnosti, zdatnosti, kouzla, použití, bonusy a další. Pole přidávejte ze seznamu.",
+  "One line the sheet shows on the feat: numbers, dice and actions.":
+    "Jeden řádek, který deník ukáže u odbornosti: čísla, kostky a akce.",
+  "The feat as players read it.": "Odbornost tak, jak ji čtou hráči.",
+  Shields: "Štíty",
+  "Simple weapons": "Jednoduché zbraně",
+  "Martial weapons": "Válečné zbraně",
+  "{path} needs at least one requirement.": "{path} potřebuje alespoň jeden požadavek.",
+  "{path} lists 1 to 20 requirements, nested at most {count} deep.":
+    "{path} uvádí 1 až 20 požadavků, vnořených nejvýše do hloubky {count}.",
+  "{path} is not a requirement the Engine can check.":
+    "{path} není požadavek, který dokáže Engine ověřit.",
+  "A feat is taken once, any number of times, or once per choice.":
+    "Odbornost se bere jednou, opakovaně, nebo jednou pro každou volbu.",
+  "Repeating once per choice needs one of the feat's choices, of one listed value.":
+    "Opakování pro každou volbu potřebuje jednu z voleb odbornosti s jednou vybranou hodnotou ze seznamu.",
+  "Unsupported feat version.": "Nepodporovaná verze odbornosti.",
+  "Give the feat a one-line name of at most 120 characters.":
+    "Dejte odbornosti jednořádkový název o nejvýše 120 znacích.",
+  "Choose the feat's category.": "Zvolte kategorii odbornosti.",
+  "The feat is malformed.": "Odbornost je poškozená.",
+  "A published feat is invalid.": "Zveřejněná odbornost je neplatná.",
+  "{at}: feat {id} appears twice.": "{at}: odbornost {id} je uvedena dvakrát.",
+  "Feat benefits": "Výhody odbornosti",
+  "Not applied on feats": "Neplatí u odborností",
+  "Origin feat": "Odbornost původu",
+  "Taken at level 1 through a background; no prerequisite.":
+    "Bere se na 1. úrovni přes zázemí; bez předpokladu.",
+  "General feat": "Obecná odbornost",
+  "Level 4 or higher, with +1 to one ability score.":
+    "Od 4. úrovně, s +1 k jedné hodnotě vlastnosti.",
+  "Fighting style": "Bojový styl",
+  "Taken with a Fighting Style feature.": "Bere se se schopností Bojový styl.",
+  "Epic boon": "Epické dobrodiní",
+  "Level 19 or higher, with +1 to one ability score, up to 30.":
+    "Od 19. úrovně, s +1 k jedné hodnotě vlastnosti, nejvýše na 30.",
+  // The empty editor
+  "Choose something on the left to edit it, or start something new with the buttons above.":
+    "Vyberte něco vlevo k úpravě, nebo začněte něco nového tlačítky nahoře.",
+  Subclass: "Podpovolání",
+  "A magic item, such as a +1 weapon, a ring of resistance or a wand with a spell. Start from a common kind and change what you need.":
+    "Magický předmět, například zbraň +1, prsten odolnosti nebo hůlka s kouzlem. Začněte od běžného druhu a změňte, co potřebujete.",
+  "Items that share their type, rarity, attunement, description or curse, such as a deck of cards.":
+    "Předměty se společným typem, vzácností, sladěním, popisem nebo kletbou, například balíček karet.",
+  "A class's subclass, with its features by level.":
+    "Podpovolání povolání s jeho schopnostmi podle úrovně.",
+  "An origin feat, a general feat, a fighting style or an epic boon.":
+    "Odbornost původu, obecná odbornost, bojový styl nebo epické dobrodiní.",
+  "Open {name}": "Otevřít {name}",
   // Weapons and armor
   "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.":
     "Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá hráče vybrat na deníku.",
