@@ -107,10 +107,44 @@
   border-color: var(--accent-gold-dim, #8a6f2e);
   background: rgba(var(--accent-gold-rgb, 200, 160, 64), 0.12);
 }
+/* The name has its own line; badges follow on the next. */
 .hb-tree-name {
-  flex: 1 1 8rem;
+  flex: 1 1 100%;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.hb-group-row {
+  display: flex;
+  align-items: start;
+  gap: 0.1rem;
+}
+/* As tall as the set button's first line, so the arrow sits beside its name. */
+.hb-tree-toggle {
+  flex: none;
+  width: 1.75rem;
+  min-height: 2.4rem;
+  padding: 0;
+  font: inherit;
+  color: var(--text-muted, #9a8660);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius, 6px);
+  cursor: pointer;
+}
+.hb-tree-toggle:hover {
+  background: var(--bg-surface, #1a1409);
+}
+.hb-tree-toggle:focus-visible {
+  outline: 2px solid var(--accent-gold, #c8a040);
+  outline-offset: 1px;
+}
+.hb-start {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 40rem;
+}
+.hb-start .hb-hint {
+  margin: 0;
 }
 .hb-badge {
   display: inline-block;
@@ -133,13 +167,101 @@
   color: var(--color-danger, #d07a5a);
   border-color: var(--color-danger, #d07a5a);
 }
+/* Classes below set display, which would otherwise show hidden controls. */
+.hb-shell [hidden] {
+  display: none;
+}
 .hb-editor {
   min-width: 0;
+  container-type: inline-size;
 }
 .hb-form {
   display: grid;
-  gap: 0.85rem;
+  gap: 1rem;
   max-width: 52rem;
+}
+.hb-form-main {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+  align-content: start;
+}
+/* A form with a preview shows it beside the fields once the editor is wide enough. */
+.hb-form:has(> .hb-preview) {
+  max-width: 80rem;
+}
+@container (min-width: 42rem) {
+  .hb-form:has(> .hb-preview) {
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 20rem);
+    align-items: start;
+  }
+  .hb-form > .hb-preview {
+    position: sticky;
+    top: var(--space-4, 1rem);
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+  }
+}
+/* Fields that belong together share a line while there is room. */
+.hb-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  gap: 0.6rem 0.75rem;
+  min-width: 0;
+}
+.hb-row > * {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+.hb-identity > :first-child {
+  flex-grow: 2;
+}
+.hb-basics,
+.hb-gear,
+.hb-container,
+.hb-placements,
+.hb-passive,
+.hb-attunement {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+/* Who can attune reads as part of the attunement choice above it. */
+.hb-attunement {
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--border-subtle, #ffffff12);
+}
+.hb-templates,
+.hb-adders,
+.hb-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.hb-templates-label {
+  margin-right: 0.25rem;
+  color: var(--text-muted, #9a8660);
+  font-size: 0.85rem;
+}
+.hb-set-items {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-subtle, #ffffff12);
+  border-radius: var(--radius, 6px);
+}
+.hb-set-items h3 {
+  font-size: 1rem;
+}
+.hb-set-items ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+  gap: 0.15rem 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .hb-check {
   display: flex;
@@ -218,6 +340,13 @@
   margin: 0;
   font-size: 0.95rem;
   color: var(--text-parchment, #f5edd8);
+}
+/* A list shows its heading once it holds a row. */
+.hb-grants-section:not(:has(.hb-effect-list > li)) > .hb-grants-heading {
+  display: none;
+}
+.hb-grants-section:not(:has(.hb-effect-list > li)):not(:has(.hb-grants-casting:not([hidden]))) {
+  display: none;
 }
 .hb-grants-casting[hidden] {
   display: none;
@@ -364,9 +493,19 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+/* Saving stays in reach at the bottom of a long form. */
+.hb-editor-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: 0.6rem 0;
+  background: var(--bg-base, #120d05);
+  border-top: 1px solid var(--border-subtle, #ffffff12);
+}
 .hb-dialog {
   width: min(40rem, calc(100vw - 2rem));
   max-height: calc(100vh - 4rem);
+  overflow: auto;
   padding: var(--space-5, 1.25rem);
   color: var(--text-light, #d4c49a);
   background: var(--bg-base, #120d05);
@@ -445,4 +584,8 @@
     position: static;
     max-height: 40vh;
   }
+}
+.hb-group-row > .hb-tree-item {
+  flex: 1 1 auto;
+  min-width: 0;
 }

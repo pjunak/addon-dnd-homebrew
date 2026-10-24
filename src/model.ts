@@ -1279,6 +1279,55 @@ export function newSet(name: string, id: string, now: number): ItemSet {
     updatedAt: now,
   };
 }
+/** An item is automated exactly when it declares something to automate. */
+export function mechanicsOf(
+  effects: readonly unknown[],
+  grants: unknown,
+  baseItem: unknown,
+): Mechanics {
+  return effects.length > 0 ||
+    grants !== undefined ||
+    (isRecord(baseItem) && baseItem["bonus"] !== undefined)
+    ? "complete"
+    : "narrative";
+}
+
+/** What an item without a set is, unless its overrides say otherwise. */
+export const noSetDefaults = {
+  itemType: "Wondrous Item",
+  rarity: "Common",
+  attunement: false,
+} as const satisfies Pick<ItemSet, "itemType" | "rarity" | "attunement">;
+
+/**
+ * The overrides that keep an item looking the same when it moves from one set
+ * (or none) to another: values it set itself stay, values it took from its
+ * old set stay when it leaves for no set, and a value equal to what the new
+ * set or the no-set default gives is dropped so the item follows it.
+ */
+export function moveOverrides(
+  overrides: Overrides,
+  from: ItemSet | undefined,
+  to: ItemSet | undefined,
+): Overrides {
+  const basics = (itemSet: ItemSet | undefined): Readonly<Record<keyof Overrides, unknown>> => ({
+    itemType: itemSet?.itemType ?? noSetDefaults.itemType,
+    rarity: itemSet?.rarity ?? noSetDefaults.rarity,
+    attunement: itemSet?.attunement ?? noSetDefaults.attunement,
+    bodyPlacements: itemSet?.bodyPlacements ?? [],
+    weightLb: itemSet?.weightLb,
+  });
+  const before = basics(from),
+    after = basics(to);
+  const moved: Record<string, unknown> = {};
+  for (const field of overrideFields) {
+    const value = overrides[field] ?? (to === undefined ? before[field] : undefined);
+    if (value !== undefined && canonical(value) !== canonical(after[field]))
+      moved[field] = Array.isArray(value) ? [...(value as readonly unknown[])] : value;
+  }
+  return moved as Overrides;
+}
+
 export function newItem(name: string, id: string, setId: string, now: number): Item {
   return {
     id,
@@ -1674,9 +1723,9 @@ export function parsePublishedSubclass(value: unknown): PublishedSubclass {
 /** Set defaults, per-item overrides and the item's own text, as one record. */
 export function flatten(itemSet: ItemSet | undefined, item: Item): Published {
   const overrides = item.overrides;
-  const itemType = overrides.itemType ?? itemSet?.itemType ?? "Wondrous Item",
-    rarity = overrides.rarity ?? itemSet?.rarity ?? "Common",
-    attunement = overrides.attunement ?? itemSet?.attunement ?? false,
+  const itemType = overrides.itemType ?? itemSet?.itemType ?? noSetDefaults.itemType,
+    rarity = overrides.rarity ?? itemSet?.rarity ?? noSetDefaults.rarity,
+    attunement = overrides.attunement ?? itemSet?.attunement ?? noSetDefaults.attunement,
     placements = overrides.bodyPlacements ?? itemSet?.bodyPlacements ?? [],
     prefix = itemSet?.namePrefix ?? "";
   const requirement = item.attunementPrerequisites,
@@ -1785,6 +1834,45 @@ export type CollectionMutation =
       readonly key: string;
       readonly expectedRevision: number;
     };
+/**
+ * A guarded put for each draft `change` alters, stamped `now`; an unchanged
+ * draft writes nothing. Several drafts then change in one transaction.
+ */
+export function draftPuts<T extends { readonly id: string; readonly updatedAt: number }>(
+  collection: string,
+  drafts: readonly Stored<T>[],
+  change: (draft: T) => T,
+  now: number,
+): CollectionMutation[] {
+  return drafts.flatMap((stored): CollectionMutation[] => {
+    const next = change(stored.value);
+    if (canonical(next) === canonical(stored.value)) return [];
+    return [
+      {
+        operation: "put",
+        kind: "collection",
+        dataId: collection,
+        key: stored.value.id,
+        expectedRevision: stored.revision,
+        value: { ...next, updatedAt: now },
+      },
+    ];
+  });
+}
+/** A guarded delete for each draft. */
+export function draftDeletes(
+  collection: string,
+  drafts: readonly Stored<{ readonly id: string }>[],
+): CollectionMutation[] {
+  return drafts.map((stored) => ({
+    operation: "delete",
+    kind: "collection",
+    dataId: collection,
+    key: stored.value.id,
+    expectedRevision: stored.revision,
+  }));
+}
+
 export interface PublishPlan {
   /** `itemId` names the draft: an item, or a subclass. */
   readonly problems: readonly { readonly itemId: string; readonly problem: Problem }[];
@@ -2159,12 +2247,11 @@ function normalize(
     }
   }
   if (kind === "item" && raw["characterMechanics"] === undefined)
-    fields["characterMechanics"] =
-      (Array.isArray(fields["characterEffects"]) && fields["characterEffects"].length > 0) ||
-      fields["grants"] !== undefined ||
-      (isRecord(fields["baseItem"]) && fields["baseItem"]["bonus"] !== undefined)
-        ? "complete"
-        : "narrative";
+    fields["characterMechanics"] = mechanicsOf(
+      Array.isArray(fields["characterEffects"]) ? fields["characterEffects"] : [],
+      fields["grants"],
+      fields["baseItem"],
+    );
   fields["schemaVersion"] = 1;
   fields["updatedAt"] = now;
   return fields;

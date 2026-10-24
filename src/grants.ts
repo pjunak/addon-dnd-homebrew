@@ -290,7 +290,12 @@ export function describeGrants(grants: Grants | undefined, t: Translator): strin
 // --- Editor --------------------------------------------------------------------
 
 export interface GrantsEditor {
+  /** The rows: advantages, uses, spells and toggles. */
   readonly root: HTMLElement;
+  /** Resistances and immunities, picked rather than added. */
+  readonly passive: HTMLElement;
+  /** The buttons that add a row to each list, for the owner to place together. */
+  readonly adders: readonly HTMLButtonElement[];
   /** The rows as entered; validation happens where the item is checked. */
   read(): Grants | undefined;
 }
@@ -322,7 +327,10 @@ function checked(node: HTMLElement, name: string): boolean {
   return node.querySelector<HTMLInputElement>(`input[name="${name}"]`)?.checked ?? false;
 }
 
-/** One list of rows with an Add button; every row ends with its Remove button. */
+/**
+ * One list of rows under a heading, and the button that adds a row, which the
+ * owner places; every row ends with its Remove button.
+ */
 function section<T>(
   hooks: Hooks,
   title: string,
@@ -331,7 +339,12 @@ function section<T>(
   render: (node: HTMLElement, entry: T | undefined) => () => T,
   onRowsChanged: () => void = () => {},
   removeLabel: string = hooks.t("Remove"),
-): { readonly root: HTMLElement; readonly rows: Row<T>[]; add(entry?: T): void } {
+): {
+  readonly root: HTMLElement;
+  readonly rows: Row<T>[];
+  readonly button: HTMLButtonElement;
+  add(entry?: T): void;
+} {
   const { document } = hooks;
   const root = element(document, "div", "hb-grants-section");
   const heading = element(document, "h4", "hb-grants-heading", title);
@@ -357,17 +370,14 @@ function section<T>(
     items.append(node);
   };
   for (const entry of initial) add(entry);
-  root.append(
-    heading,
-    items,
-    actionButton(document, addLabel, () => {
-      add();
-      onRowsChanged();
-      hooks.changed();
-      hooks.restructured();
-    }),
-  );
-  return { root, rows, add };
+  root.append(heading, items);
+  const button = actionButton(document, addLabel, () => {
+    add();
+    onRowsChanged();
+    hooks.changed();
+    hooks.restructured();
+  });
+  return { root, rows, button, add };
 }
 
 /** Re-renders a row's controls in place, keeping the Remove button once it exists. */
@@ -540,7 +550,7 @@ function castOf(spell: SpellGrant): Pick<SpellGrant, "atWill" | "resource"> {
 /**
  * Rows for the grants the Engine reads from an item: advantages, uses,
  * spells with a spellcasting ability, toggles, resistances and immunities.
- * `useName` names a use added for a spell, normally after the item.
+ * `useName` names a new use, and a use left without a name, after the item.
  */
 export function grantsEditor(
   document: Document,
@@ -588,12 +598,15 @@ export function grantsEditor(
   const uses = section<GrantResource>(
     hooks,
     t("Limited uses"),
-    t("Add use"),
+    t("Add limited use"),
     source.resources ?? [],
     (node, entry) => {
       const key = entry?.key ?? freeId("uses", new Set(usesKeys()));
       node.append(
-        textField(document, t("Name"), "use-name", entry?.name ?? useName(), { maxLength: 120 }),
+        textField(document, t("Name"), "use-name", entry?.name ?? useName(), {
+          maxLength: 120,
+          placeholder: t("The item's name"),
+        }),
         numberField(document, t("Uses"), "use-count", entry?.fixed ?? 1, { min: 1, max: 100 }),
         selectField(
           document,
@@ -604,9 +617,10 @@ export function grantsEditor(
         ),
       );
       node.querySelector('[name="use-name"]')!.addEventListener("input", refreshUses);
+      // A use without its own name takes the item's.
       return () => ({
         key,
-        name: value(node, "use-name"),
+        name: value(node, "use-name") || useName(),
         fixed: count(node, "use-count"),
         recharge: value(node, "use-recharge") === "short" ? "short" : "long",
       });
@@ -823,7 +837,7 @@ export function grantsEditor(
     ]),
   );
   casting.hidden = spells.rows.length === 0;
-  spells.root.insertBefore(casting, spells.root.lastElementChild);
+  spells.root.append(casting);
 
   const toggles = section<Activation>(
     hooks,
@@ -906,9 +920,8 @@ export function grantsEditor(
     t("Remove toggle"),
   );
 
-  const passive = element(document, "div", "hb-grants-section");
+  const passive = element(document, "div", "hb-row hb-grants-passive");
   passive.append(
-    element(document, "h4", "hb-grants-heading", t("Resistances and immunities")),
     chipsField(
       document,
       t("Resistances"),
@@ -932,9 +945,11 @@ export function grantsEditor(
     ),
   );
 
-  root.append(advantages.root, uses.root, spells.root, toggles.root, passive);
+  root.append(advantages.root, uses.root, spells.root, toggles.root);
   return {
     root,
+    passive,
+    adders: [advantages.button, uses.button, spells.button, toggles.button],
     read(): Grants | undefined {
       const spellRows = withChoiceIds(spells.rows.map((row) => row.read()));
       const choice = value(casting, "casting-ability");

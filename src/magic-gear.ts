@@ -46,18 +46,27 @@ export function gearFields(
   t: Translator,
   item: Item,
   references?: References,
-): HTMLFieldSetElement {
-  const fieldset = element(document, "fieldset", "hb-effects-fieldset");
+): HTMLElement {
+  const root = element(document, "div", "hb-gear");
   const base = item.baseItem,
     kind: Kind = base?.kind ?? "",
     mode: Mode = base && base.ids === undefined ? "filter" : "ids";
   const chips = (values: readonly string[]): (readonly [string, string])[] =>
     values.map((value) => [value, t(gearLabels[value] ?? value)] as const);
-  const kindField = selectField(document, t("The item is"), "baseKind", kind, [
-    ["", t("Not a weapon or armor")],
-    ["weapon", t("A weapon")],
-    ["armor", t("Armor or a shield")],
-  ]);
+  const kindField = selectField(
+    document,
+    t("The item is"),
+    "baseKind",
+    kind,
+    [
+      ["", t("Not a weapon or armor")],
+      ["weapon", t("A weapon")],
+      ["armor", t("Armor or a shield")],
+    ],
+    t(
+      "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.",
+    ),
+  );
   const modeField = selectField(document, t("Base"), "baseMode", mode, [
     ["ids", t("These records")],
     ["filter", t("Any that match")],
@@ -133,6 +142,10 @@ export function gearFields(
     bonusesOf(base).map(String),
     Array.from({ length: maxBonus }, (_, index) => [String(index + 1), `+${index + 1}`] as const),
   );
+  const choice = element(document, "div", "hb-row"),
+    filters = element(document, "div", "hb-row");
+  choice.append(modeField, bonus);
+  filters.append(categories, ranges, properties);
   const show = (): void => {
     const chosen = kindField.querySelector("select")!.value as Kind,
       filter = modeField.querySelector("select")!.value === "filter";
@@ -145,34 +158,15 @@ export function gearFields(
       weaponExcept.hidden =
         chosen !== "weapon" || !filter;
     types.hidden = armorExcept.hidden = chosen !== "armor" || !filter;
+    choice.hidden = chosen === "";
+    filters.hidden = chosen !== "weapon" || !filter;
   };
   // The form's own change listener marks the draft dirty and redraws the preview.
   kindField.querySelector("select")!.addEventListener("change", show);
   modeField.querySelector("select")!.addEventListener("change", show);
-  fieldset.append(
-    element(document, "legend", "", t("Weapon or armor")),
-    element(
-      document,
-      "p",
-      "hb-hint",
-      t(
-        "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.",
-      ),
-    ),
-    kindField,
-    modeField,
-    weapons,
-    armor,
-    categories,
-    ranges,
-    properties,
-    types,
-    weaponExcept,
-    armorExcept,
-    bonus,
-  );
+  root.append(kindField, choice, weapons, armor, filters, types, weaponExcept, armorExcept);
   show();
-  return fieldset;
+  return root;
 }
 
 /** The ids a picker sends, one value each, or a typed comma-separated list. */

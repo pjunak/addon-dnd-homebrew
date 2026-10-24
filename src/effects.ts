@@ -83,6 +83,8 @@ export function describeEffect(effect: Effect, t: Translator): string {
 
 export interface EffectsEditor {
   readonly root: HTMLElement;
+  /** The button that adds a row, for the owner to place. */
+  readonly button: HTMLButtonElement;
   /** The rows as entered; validation happens where the item is checked. */
   read(): Effect[];
 }
@@ -199,15 +201,13 @@ export function effectsEditor(
     list.append(node);
   };
   for (const effect of initial) addRow(effect);
-  root.append(
-    list,
-    actionButton(document, t("Add effect"), () => {
-      addRow({ target: "armorClass", mode: "add", value: 1 });
-      changed();
-      restructured();
-    }),
-  );
-  return { root, read: () => rows.map((row) => row.read()) };
+  root.append(list);
+  const button = actionButton(document, t("Add bonus or proficiency"), () => {
+    addRow({ target: "armorClass", mode: "add", value: 1 });
+    changed();
+    restructured();
+  });
+  return { root, button, read: () => rows.map((row) => row.read()) };
 }
 
 function defaultEffect(target: EffectTarget, previous: Effect): Effect {

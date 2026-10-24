@@ -4,6 +4,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { cs } from "#web/catalogs";
 import { bodyPlacements, rarities, skills } from "#web/model";
 import { skillName } from "#web/effects";
+import { itemTemplates } from "#web/templates";
 import { vocabularyWords } from "#web/vocabulary";
 
 const unescape = (text: string): string => JSON.parse(`"${text}"`) as string;
@@ -38,6 +39,7 @@ void test("every English message shown in the UI has a Czech translation", async
     ...bodyPlacements,
     ...skills.map(skillName),
     ...vocabularyWords(),
+    ...itemTemplates.flatMap((template) => [template.label, template.hint]),
   ])
     if (!(text in cs)) missing.add(`vocabulary: ${text}`);
   assert.deepEqual([...missing], []);

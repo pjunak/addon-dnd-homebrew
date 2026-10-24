@@ -237,7 +237,7 @@ export function actionButton(
   document: Document,
   label: string,
   action: () => void,
-  variant: "" | "primary" | "danger" = "",
+  variant: "" | "primary" | "danger" | "quiet" = "",
 ): HTMLButtonElement {
   const button = element(document, "button", "", label);
   button.type = "button";
@@ -258,6 +258,17 @@ export function formText(data: FormData, name: string): string {
 }
 export function formValues(data: FormData, name: string): string[] {
   return data.getAll(name).filter((value): value is string => typeof value === "string");
+}
+/** Comma-separated tags, lowercased and without repeats. */
+export function splitTags(text: string): string[] {
+  return [
+    ...new Set(
+      text
+        .split(",")
+        .map((tag) => tag.trim().toLowerCase())
+        .filter((tag) => tag !== ""),
+    ),
+  ];
 }
 /** Prose goes to the host component; this package never parses HTML. */
 export function markdown(document: Document, source: string): HTMLElement {

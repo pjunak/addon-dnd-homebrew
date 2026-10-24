@@ -44,20 +44,32 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 
 ## Use it
 
-1. **Homebrew** (DM sidebar): create a set, add items to it, or import a
-   file. Drafts are private to the DM and never touch character sheets.
-   **Save and add another** keeps the set for the next item, and
-   **Duplicate** starts a new item from an existing one.
-2. Add the item's effects and properties where the Engine supports them. An
-   item with neither is **Text only** and the sheet shows its description; the
-   editor decides this from what the item declares.
-3. **Publish** reviews the changes and writes them for character sheets. Every
+1. **Homebrew** (DM sidebar): create an item, a set or a subclass, or import
+   a file. Drafts are private to the DM and never touch character sheets. A
+   new item can **start from** a common kind: a +1 weapon, armor or shield, a
+   bonus to a statistic, an ability score item, a spell cast from the item, a
+   resistance, a container or a potion. The preview beside the form shows the
+   item as it will be published. **Save and add another** keeps the set for
+   the next item, **Duplicate** starts a new item from an existing one, and
+   Ctrl+S saves.
+2. Put items that share their type, rarity, attunement, placements,
+   description or curse into a **set**. An item in a set shows the set's
+   values as *From set* and can change any of them; moving an item into
+   another set or out of one keeps what it changed. A set lists its items and
+   shows all of them to players, or hides them, at once. Deleting a set
+   deletes its items too, or keeps them without a set.
+3. Add what the item does on the sheet where the Engine supports it: effects
+   such as +1 Armor Class or a proficiency, advantages, limited uses, spells,
+   toggles, resistances and a weapon or armor base. An item with none of them
+   is **Text only** and the sheet shows its description; the editor decides
+   this from what the item declares.
+4. **Publish** reviews the changes and writes them for character sheets. Every
    character sheet then asks its owner to adopt the new rules on its next save,
    so publish batches of edits rather than every keystroke.
-4. **Item Gallery** (DM and players) lists items whose set and item are both
+5. **Item Gallery** (DM and players) lists items whose set and item are both
    marked *Visible to players*. A sheet link still opens a held item that is not
    listed.
-5. **New subclass** creates a subclass for a class. Add its features with their
+6. **New subclass** creates a subclass for a class. Add its features with their
    levels, text and grants, and anything the subclass itself has: subclass
    spells, pools such as superiority dice, table columns such as a die that
    grows, and a third caster's spellcasting.
@@ -171,7 +183,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.2.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.3.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are

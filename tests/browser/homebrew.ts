@@ -8,6 +8,7 @@ import { mechanicsEditor } from "#web/subclass-editor";
 import { ReferenceLoader } from "#web/references";
 import { HomebrewRepository } from "#web/repository";
 import { registerRuntime } from "#web/runtime";
+import { itemTemplates } from "#web/templates";
 import type {
   AddonContext,
   AddonDocument,
@@ -161,6 +162,7 @@ const catalog = mount(catalogTag),
   lanternCatalog = mount(catalogTag),
   subclassCatalog = mount(catalogTag),
   edgeCatalog = mount(catalogTag),
+  newCatalog = mount(catalogTag),
   gallery = mount(galleryTag),
   linked = mount(galleryTag, [["id", "hb.ring-of-wit"]]);
 
@@ -228,6 +230,27 @@ for (
   .find((button) => button.textContent?.startsWith("Path of the Storm Drum"))
   ?.click();
 for (let attempt = 0; attempt < 60 && !subclassCatalog.querySelector(".hb-feature"); attempt++)
+  await frame();
+for (
+  let attempt = 0;
+  attempt < 60 && newCatalog.querySelectorAll(".hb-tree-item").length < 6;
+  attempt++
+)
+  await frame();
+// A new item started from the magic weapon template.
+[...newCatalog.querySelectorAll<HTMLButtonElement>(".hb-start button")]
+  .find((button) => button.textContent === "New item")
+  ?.click();
+for (let attempt = 0; attempt < 60 && !newCatalog.querySelector(".hb-templates"); attempt++)
+  await frame();
+const templateButtons = [...newCatalog.querySelectorAll<HTMLButtonElement>(".hb-templates button")];
+templateButtons.find((button) => button.textContent === "Magic weapon")?.click();
+for (
+  let attempt = 0;
+  attempt < 60 &&
+  newCatalog.querySelector<HTMLSelectElement>('select[name="baseKind"]')?.value !== "weapon";
+  attempt++
+)
   await frame();
 
 /** A value for every field the vocabulary allows, nested a few levels deep. */
@@ -387,20 +410,20 @@ globalThis.runRenderingContract = () => {
     summary,
     ["Armor Class +1", fateTouched],
   );
-  const sections = [...ringCatalog.querySelectorAll(".hb-grants-section")].map(
+  const sections = [...ringCatalog.querySelectorAll(".hb-grants > .hb-grants-section")].map(
     (node) => node.querySelectorAll(".hb-grant-row").length,
   );
   check(
     "editor shows one row per grant: advantage, use, two spells, toggle",
-    JSON.stringify(sections) === JSON.stringify([1, 1, 2, 1, 0]),
+    JSON.stringify(sections) === JSON.stringify([1, 1, 2, 1]),
     sections,
-    [1, 1, 2, 1, 0],
+    [1, 1, 2, 1],
   );
   const shown = (name: string): string | undefined => {
     const control = lanternCatalog.querySelector<HTMLInputElement | HTMLSelectElement>(
       `[name="${name}"]`,
     );
-    if (!control || control.closest<HTMLElement>("[data-ui-field]")?.hidden) return undefined;
+    if (!control || control.closest<HTMLElement>("[hidden]")) return undefined;
     return control instanceof HTMLSelectElement && control.multiple
       ? [...control.selectedOptions].map((entry) => entry.value).join(", ")
       : control.value;
@@ -423,7 +446,7 @@ globalThis.runRenderingContract = () => {
     const control = edgeCatalog.querySelector<HTMLInputElement | HTMLSelectElement>(
       `[name="${name}"]`,
     );
-    if (!control || control.closest<HTMLElement>("[data-ui-field]")?.hidden) return undefined;
+    if (!control || control.closest<HTMLElement>("[hidden]")) return undefined;
     return control instanceof HTMLSelectElement && control.multiple
       ? [...control.selectedOptions].map((entry) => entry.value).join(", ")
       : control.value;
@@ -466,6 +489,59 @@ globalThis.runRenderingContract = () => {
     JSON.stringify(picked) === JSON.stringify([["Detect Magic"]]),
     picked,
     [["Detect Magic"]],
+  );
+  const itemForm = catalog.querySelector<HTMLElement>(".hb-editor form")!;
+  const formColumns = getComputedStyle(itemForm).gridTemplateColumns.split(" ").length;
+  check("a wide editor shows the preview beside the fields", formColumns === 2, formColumns, 2);
+  const inherited = [
+    catalog.querySelector<HTMLSelectElement>('select[name="overrideRarity"]')?.selectedOptions[0]
+      ?.textContent,
+    catalog.querySelector<HTMLSelectElement>('select[name="overrideAttunement"]')?.value,
+    catalog.querySelector<HTMLInputElement>('input[name="inheritPlacements"]')?.checked,
+  ];
+  check(
+    "an item in a set shows the set's values as its defaults",
+    JSON.stringify(inherited) === JSON.stringify(["From set (Rare)", "", true]),
+    inherited,
+    ["From set (Rare)", "", true],
+  );
+  const own = [
+    ringCatalog.querySelector<HTMLSelectElement>('select[name="overrideRarity"]')?.value,
+    ringCatalog.querySelector<HTMLInputElement>('input[name="overrideAttunement"]')?.checked,
+    ringCatalog.querySelector('[name="inheritPlacements"]') === null,
+  ];
+  check(
+    "an item without a set shows its own values",
+    JSON.stringify(own) === JSON.stringify(["Uncommon", true, true]),
+    own,
+    ["Uncommon", true, true],
+  );
+  const whoHidden = [catalog, lanternCatalog].map(
+    (root) => root.querySelector('select[name="requirement"]')?.closest("[hidden]") !== null,
+  );
+  check(
+    "who can attune shows only for an item that requires attunement",
+    JSON.stringify(whoHidden) === JSON.stringify([true, false]),
+    whoHidden,
+    [true, false],
+  );
+  check(
+    "a new item offers every template",
+    templateButtons.length === itemTemplates.length,
+    templateButtons.length,
+    itemTemplates.length,
+  );
+  const started = [
+    newCatalog.querySelector<HTMLInputElement>('input[name="overrideItemType"]')?.value,
+    newCatalog.querySelector<HTMLSelectElement>('select[name="overrideRarity"]')?.value,
+    lines(newCatalog, ".hb-effect-summary")[0],
+  ];
+  const expectedStart = ["Weapon", "Uncommon", "Weapon (any), +1 to attack and damage rolls"];
+  check(
+    "a template fills the item and its preview",
+    JSON.stringify(started) === JSON.stringify(expectedStart),
+    started,
+    expectedStart,
   );
   const changes = ringCatalog.querySelectorAll(".hb-toggle-row .hb-toggle-change").length;
   check("the toggle lists each of its changes", changes === 2, changes, 2);

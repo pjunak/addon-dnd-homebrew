@@ -49,12 +49,9 @@ export const cs: Readonly<Record<string, string>> = {
   "Items without a set": "Předměty bez sady",
   "Nothing yet. Create a set, an item or a subclass, or import a file to begin.":
     "Zatím nic. Začněte vytvořením sady, předmětu nebo podpovolání, nebo importem souboru.",
-  "Choose a set, an item or a subclass to edit it.":
-    "Vyberte sadu, předmět nebo podpovolání k úpravě.",
   "Items: {count}": "Předmětů: {count}",
   "Some stored drafts could not be read:": "Některé uložené koncepty nelze přečíst:",
   // Badges
-  Automated: "Automatizovaný",
   "Text only": "Pouze text",
   Hidden: "Skrytý",
   Retired: "Vyřazený",
@@ -92,7 +89,6 @@ export const cs: Readonly<Record<string, string>> = {
   Delete: "Smazat",
   "Add item to this set": "Přidat předmět do této sady",
   "Saved.": "Uloženo.",
-  "Move or delete this set's items first.": "Nejprve přesuňte nebo smažte předměty této sady.",
   Condition: "Stav",
   "Every item of the set gives this condition. Its level on the sheet is the number of the set's items in effect. Leave the name empty for none.":
     "Každý předmět sady dává tento stav. Jeho úroveň na deníku odpovídá počtu účinných předmětů sady. Bez názvu sada žádný stav nedává.",
@@ -109,15 +105,8 @@ export const cs: Readonly<Record<string, string>> = {
   "The effect as players read it on their character sheet.":
     "Účinek tak, jak ho hráči uvidí na deníku postavy.",
   Effects: "Účinky",
-  "Add effect": "Přidat účinek",
   "Remove effect": "Odebrat účinek",
-  "Effects and properties apply while the item is equipped, and attuned when it requires attunement. An item with neither is text only: the sheet shows its description.":
-    "Účinky a schopnosti platí, dokud je předmět vybavený, a sladěný, pokud sladění vyžaduje. Předmět bez nich je pouze textový: deník zobrazí jeho popis.",
   Properties: "Schopnosti předmětu",
-  "Advantages, limited uses, spells, toggles and resistances, on the same terms. Item spells never use spell slots.":
-    "Výhody, omezená použití, kouzla, přepínače a odolnosti, za stejných podmínek. Kouzla předmětů nikdy nespotřebují pozice kouzel.",
-  "Set defaults": "Výchozí hodnoty sady",
-  "Leave a field empty to use the set's value.": "Prázdné pole použije hodnotu sady.",
   "From set ({value})": "Podle sady ({value})",
   Yes: "Ano",
   No: "Ne",
@@ -126,9 +115,6 @@ export const cs: Readonly<Record<string, string>> = {
   "Each item's weight, for carrying. Leave it empty when unknown.":
     "Hmotnost každého předmětu pro výpočet nákladu. Když ji neznáte, nechte pole prázdné.",
   Unknown: "Neznámá",
-  "Attunement and storage": "Sladění a úložný prostor",
-  "Who can attune applies when the item requires attunement. A container's contents count toward its holder's load unless they weigh nothing.":
-    "Kdo se může sladit, platí jen pro předmět vyžadující sladění. Obsah úložného předmětu se počítá do nákladu nositele, ledaže nic neváží.",
   "Who can attune": "Kdo se může sladit",
   Anyone: "Kdokoli",
   "A spellcaster": "Sesilatel kouzel",
@@ -228,7 +214,6 @@ export const cs: Readonly<Record<string, string>> = {
   "Only when": "Jen když",
   Always: "Vždy",
   "Limited uses": "Omezená použití",
-  "Add use": "Přidat použití",
   Uses: "Počet použití",
   "Comes back after": "Obnoví se po",
   Spells: "Kouzla",
@@ -404,8 +389,6 @@ export const cs: Readonly<Record<string, string>> = {
   "Publishing failed. Nothing was changed.": "Zveřejnění selhalo. Nic se nezměnilo.",
   // Import
   "Import homebrew": "Import vlastního obsahu",
-  "Imported items are drafts; publish them afterwards.":
-    "Importované předměty jsou koncepty; poté je zveřejněte.",
   "Import files are limited to 2 MiB.": "Soubory pro import mají limit 2 MiB.",
   "The selected file is not valid JSON.": "Vybraný soubor není platný JSON.",
   "The homebrew worker is not running, so imports are unavailable. Check the add-on in Settings.":
@@ -427,7 +410,6 @@ export const cs: Readonly<Record<string, string>> = {
   "All sets": "Všechny sady",
   "No items have been revealed yet.": "Zatím nebyly odhaleny žádné předměty.",
   "No items match the search.": "Hledání neodpovídá žádný předmět.",
-  "Requires attunement.": "Vyžaduje sladění.",
   "Applied on the character sheet:": "Uplatní se na deníku postavy:",
   "The linked item is not published.": "Odkazovaný předmět není zveřejněn.",
   // Subclasses and the grants vocabulary
@@ -1077,7 +1059,6 @@ export const cs: Readonly<Record<string, string>> = {
   "The document is invalid: {problem}": "Dokument je neplatný: {problem}",
   "The mode must be merge or replace.": "Režim musí být merge nebo replace.",
   "The document needs sets and items lists.": "Dokument potřebuje seznamy sets a items.",
-  "An import holds at most 2000 sets and items.": "Import obsahuje nejvýše 2000 sad a předmětů.",
   "{at}: set {id} appears twice.": "{at}: sada {id} se opakuje.",
   "{at}: item {id} appears twice.": "{at}: předmět {id} se opakuje.",
   "Item {id} belongs to set {setId}, which the import neither contains nor keeps.":
@@ -1091,8 +1072,99 @@ export const cs: Readonly<Record<string, string>> = {
     "Hostitel vrátil neplatnou stránku dat vlastních předmětů.",
   "Homebrew data changed while loading. Reload to try again.":
     "Data vlastních předmětů se během načítání změnila. Načtěte stránku znovu.",
+  // Item editor
+  "Start from": "Začít od",
+  "What it does on the sheet": "Co dělá na deníku",
+  "Applies while the item is equipped, and attuned when it requires attunement. An item without any of these is text only: the sheet shows its description.":
+    "Platí, dokud je předmět vybavený, a sladěný, pokud sladění vyžaduje. Předmět bez čehokoli z toho je pouze textový: deník zobrazí jeho popis.",
+  "Bonuses and proficiencies": "Bonusy a zdatnosti",
+  "Add bonus or proficiency": "Přidat bonus nebo zdatnost",
+  "Add limited use": "Přidat omezené použití",
+  "Add use": "Přidat použití",
+  "The item's name": "Název předmětu",
+  Carrying: "Nošení",
+  "Where the item is worn, for the sheet's equipment slots.":
+    "Kde se předmět nosí, pro pozice vybavení na deníku.",
+  "Use the set's placements ({list})": "Použít umístění sady ({list})",
+  none: "žádné",
+  "A container's contents count toward its holder's load unless they weigh nothing.":
+    "Obsah kontejneru se započítává do zátěže nositele, pokud nic neváží.",
+  "Id and tags": "Identifikátor a štítky",
+  // Item templates
+  "Magic weapon": "Magická zbraň",
+  "A +1 weapon; the player picks which weapon on the sheet.":
+    "Zbraň +1; hráč vybere zbraň na deníku.",
+  "You have a +1 bonus to attack and damage rolls made with this magic weapon.":
+    "Máte bonus +1 k hodům na útok a zranění touto magickou zbraní.",
+  "Magic armor": "Magická zbroj",
+  "+1 armor; the player picks which armor on the sheet.": "Zbroj +1; hráč vybere zbroj na deníku.",
+  "You have a +1 bonus to Armor Class while wearing this armor.":
+    "Dokud máte tuto zbroj na sobě, máte bonus +1 k obrannému číslu.",
+  "Magic shield": "Magický štít",
+  "A +1 shield.": "Štít +1.",
+  "While holding this Shield, you have a +1 bonus to Armor Class in addition to the Shield's normal bonus.":
+    "Dokud držíte tento štít, máte kromě jeho běžného bonusu bonus +1 k obrannému číslu.",
+  "Bonus to a statistic": "Bonus k hodnotě",
+  "+1 Armor Class while attuned; change the effect for another statistic.":
+    "+1 k obrannému číslu při sladění; pro jinou hodnotu změňte účinek.",
+  "You have a +1 bonus to Armor Class while wearing this ring.":
+    "Dokud nosíte tento prsten, máte bonus +1 k obrannému číslu.",
+  "Ability score item": "Předmět s hodnotou vlastnosti",
+  "Intelligence becomes 19 while attuned, unless it is higher.":
+    "Inteligence je při sladění 19, pokud není vyšší.",
+  "Your Intelligence is 19 while you wear this item. It has no effect on you if your Intelligence is already 19 or higher.":
+    "Dokud nosíte tento předmět, vaše Inteligence je 19. Pokud už je vaše Inteligence 19 nebo vyšší, nemá na vás žádný účinek.",
+  "Spell from the item": "Kouzlo z předmětu",
+  "Cast a spell once per Long Rest without a spell slot.":
+    "Jednou za dlouhý odpočinek seslat kouzlo bez pozice kouzla.",
+  "Once per Long Rest, you can cast a spell from this item without expending a spell slot.":
+    "Jednou za dlouhý odpočinek můžete z tohoto předmětu seslat kouzlo, aniž byste použili pozici kouzla.",
+  "Resistance to one damage type while attuned.": "Odolnost vůči jednomu typu zranění při sladění.",
+  "You have Resistance to Fire damage while wearing this ring.":
+    "Dokud nosíte tento prsten, máte odolnost vůči ohnivému zranění.",
+  Container: "Úložný předmět",
+  "A bag whose contents weigh nothing.": "Vak, jehož obsah nic neváží.",
+  "This bag holds up to 500 pounds of items, and its contents never add to what you carry.":
+    "Tento vak pojme až 500 liber předmětů a jeho obsah se nikdy nezapočítává do toho, co nesete.",
+  Potion: "Lektvar",
+  "A consumable described in words.": "Spotřební předmět popsaný slovy.",
+  "This potion's magic takes effect when you drink it as a Bonus Action.":
+    "Magie tohoto lektvaru se projeví, když ho vypijete jako bonusovou akci.",
+  // Sets, the tree and bulk changes
+  "Show the items of {name}": "Zobrazit předměty sady {name}",
+  "Hide the items of {name}": "Skrýt předměty sady {name}",
+  "Choose a set, an item or a subclass to edit it, or start something new.":
+    "Vyberte sadu, předmět nebo podpovolání k úpravě, nebo začněte něco nového.",
+  "A new item can start from a common kind, such as a +1 weapon or a wand with a spell. Put items that share their type, rarity, description or curse into a set.":
+    "Nový předmět může vycházet z běžného druhu, například ze zbraně +1 nebo z hůlky s kouzlem. Předměty se společným typem, vzácností, popisem nebo kletbou dejte do sady.",
+  "A set holds what its items share. Each item can still change any of these values.":
+    "Sada drží to, co mají její předměty společné. Každý předmět může kteroukoli z těchto hodnot změnit.",
+  "Items in this set ({count})": "Předměty v této sadě ({count})",
+  "No items yet.": "Zatím žádné předměty.",
+  "Show all its items to players": "Ukázat hráčům všechny její předměty",
+  "Hide all its items from players": "Skrýt před hráči všechny její předměty",
+  "Its items are visible to players.": "Její předměty jsou viditelné pro hráče.",
+  "Its items are hidden from players.": "Její předměty jsou před hráči skryté.",
+  "{name} has {count} items. Delete them too, or keep them without a set?":
+    "Sada {name} má předmětů: {count}. Smazat je také, nebo je ponechat bez sady?",
+  "Kept items keep their type, rarity, attunement, weight and placements, but lose the set's name prefix, description, curse and condition.":
+    "Ponechané předměty si zachovají typ, vzácnost, sladění, hmotnost a umístění, ale přijdou o předponu názvu, popis, kletbu a stav sady.",
+  "Deleting published items with the set withdraws them at the next publish; characters holding them then show a missing-source problem.":
+    "Smazání zveřejněných předmětů spolu se sadou je při příštím zveřejnění stáhne; postavy, které je mají, pak ukážou problém s chybějícím zdrojem.",
+  "Keep the items without a set": "Ponechat předměty bez sady",
+  "Delete the set and its items": "Smazat sadu i její předměty",
+  "Deleted {name}.": "Smazáno: {name}.",
+  "This changes {count} drafts; change at most 256 at a time.":
+    "Tím by se změnilo konceptů: {count}; měňte nejvýše 256 najednou.",
+  "The drafts could not be saved.": "Koncepty se nepodařilo uložit.",
+  "Something changed since the page loaded. Try again.":
+    "Od načtení stránky se něco změnilo. Zkuste to znovu.",
+  set: "sada",
+  item: "předmět",
+  subclass: "podpovolání",
+  Created: "Vytvořeno",
+  Removed: "Odstraněno",
   // Weapons and armor
-  "Weapon or armor": "Zbraň nebo zbroj",
   "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.":
     "Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá hráče vybrat na deníku.",
   "The item is": "Předmět je",

@@ -26,17 +26,23 @@ function classLevels(requirement: AttunementRequirement | undefined): Map<string
   return new Map(entries.flatMap((entry) => Object.entries(entry)));
 }
 
+export interface AttunementFields {
+  readonly root: HTMLElement;
+  /** Shows the requirement only while the item requires attunement. */
+  show(attuned: boolean): void;
+}
+
 /**
- * Who may attune and what the item holds. The controls for one choice are
- * shown only while it applies; reading takes the form's current values.
+ * Who may attune. The controls for one choice are shown only while it
+ * applies; reading takes the form's current values.
  */
-export function carryingFields(
+export function attunementFields(
   document: Document,
   t: Translator,
   item: Item,
   references?: References,
-): HTMLFieldSetElement {
-  const fieldset = element(document, "fieldset", "hb-effects-fieldset");
+): AttunementFields {
+  const root = element(document, "div", "hb-attunement");
   const requirement = item.attunementPrerequisites;
   const who: Who =
     requirement === undefined
@@ -71,8 +77,34 @@ export function carryingFields(
       hint: t('Read after "Requires Attunement by".'),
     },
   );
+  const showChoice = (): void => {
+    const chosen = whoField.querySelector("select")!.value as Who;
+    classes.hidden = chosen !== "classes";
+    words.hidden = chosen !== "text";
+  };
+  // The form's own change listener marks the draft dirty and redraws the preview.
+  whoField.querySelector("select")!.addEventListener("change", showChoice);
+  root.append(whoField, classes, words);
+  showChoice();
+  return {
+    root,
+    show(attuned) {
+      root.hidden = !attuned;
+    },
+  };
+}
+
+/** What the item holds; the capacity shows only for a container. */
+export function containerFields(document: Document, t: Translator, item: Item): HTMLElement {
+  const root = element(document, "div", "hb-container");
   const container = item.container;
-  const holds = checkField(document, t("Holds other items"), "container", container !== undefined);
+  const holds = checkField(
+    document,
+    t("Holds other items"),
+    "container",
+    container !== undefined,
+    t("A container's contents count toward its holder's load unless they weigh nothing."),
+  );
   const capacity = numberField(
     document,
     t("Capacity (lb)"),
@@ -90,34 +122,15 @@ export function carryingFields(
     "containerWeightless",
     container?.weightless === true,
   );
+  const details = element(document, "div", "hb-row");
+  details.append(capacity, weightless);
   const show = (): void => {
-    const chosen = whoField.querySelector("select")!.value as Who;
-    classes.hidden = chosen !== "classes";
-    words.hidden = chosen !== "text";
-    capacity.hidden = weightless.hidden = !holds.querySelector("input")!.checked;
+    details.hidden = !holds.querySelector("input")!.checked;
   };
-  // The form's own change listener marks the draft dirty and redraws the preview.
-  whoField.querySelector("select")!.addEventListener("change", show);
   holds.querySelector("input")!.addEventListener("change", show);
-  fieldset.append(
-    element(document, "legend", "", t("Attunement and storage")),
-    element(
-      document,
-      "p",
-      "hb-hint",
-      t(
-        "Who can attune applies when the item requires attunement. A container's contents count toward its holder's load unless they weigh nothing.",
-      ),
-    ),
-    whoField,
-    classes,
-    words,
-    holds,
-    capacity,
-    weightless,
-  );
+  root.append(holds, details);
   show();
-  return fieldset;
+  return root;
 }
 
 /** The requirement and container as entered; validation happens where the item is checked. */

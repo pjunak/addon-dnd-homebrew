@@ -1,10 +1,6 @@
-import { carryingFields, readCarrying } from "./carrying.js";
 import { hostLocale, problemText, translator, type Translator } from "./catalogs.js";
-import { confirmDialog, openDialog } from "./dialogs.js";
+import { choiceDialog, confirmDialog, openDialog } from "./dialogs.js";
 import { downloadFile } from "./download.js";
-import { describeEffect, effectsEditor, type EffectsEditor } from "./effects.js";
-import { describeGrants, grantsEditor, type GrantsEditor } from "./grants.js";
-import { describeGear, gearFields, readGear } from "./magic-gear.js";
 import {
   actionButton,
   badge,
@@ -14,15 +10,16 @@ import {
   formNumber,
   formText,
   formValues,
-  markdown,
   messageBlock,
   numberField,
   selectField,
+  splitTags,
   textArea,
   textField,
 } from "./fields.js";
 import { fold } from "./gallery-model.js";
 import { parseImportCommit, parseImportPreview, type ImportPreview } from "./import-review.js";
+import { itemEditor, itemTypes, type ItemEditor } from "./item-editor.js";
 import { LiveRefresh } from "./live-refresh.js";
 import {
   bodyPlacements,
@@ -30,6 +27,8 @@ import {
   setProblem,
   collections,
   compare,
+  draftDeletes,
+  draftPuts,
   exportDocument,
   flatten,
   flattenSubclass,
@@ -40,21 +39,20 @@ import {
   maxConditionSummary,
   maxMarkdown,
   maxWeight,
+  moveOverrides,
   newSet,
   newItem,
   newSubclass,
   planImport,
   planPublish,
   rarities,
-  recordProblem,
   slug,
   subclassProblem,
   titleOf,
   type BodyPlacement,
+  type CollectionMutation,
   type Item,
   type ItemSet,
-  type Mechanics,
-  type Overrides,
   type Problem,
   type Rarity,
   type Stored,
@@ -78,20 +76,6 @@ type Selection =
   | { readonly kind: "subclass"; readonly id: string }
   | { readonly kind: "new-subclass"; readonly template?: Subclass };
 
-/** Common item types, offered as suggestions; any one-line type is allowed. */
-const itemTypes = [
-  "Wondrous Item",
-  "Armor",
-  "Weapon",
-  "Ring",
-  "Rod",
-  "Staff",
-  "Wand",
-  "Potion",
-  "Scroll",
-  "Ammunition",
-] as const;
-
 export function defineCatalogElement(generation?: string): string {
   const tag = generation ? `${catalogElementTag}-${generation}` : catalogElementTag;
   if (customElements.get(tag)) return tag;
@@ -105,16 +89,14 @@ export function defineCatalogElement(generation?: string): string {
     #published: PublishedState | undefined;
     #selection: Selection | undefined;
     #query = "";
+    /** Sets whose items the tree hides. */
+    readonly #collapsed = new Set<string>();
     #dirty = false;
     #busy = false;
     #message: { text: string; kind: "status" | "alert" } | undefined;
     #editorMessage: { text: string; kind: "status" | "alert" } | undefined;
-    #effects: EffectsEditor | undefined;
-    /** The item each open form started from, for values its controls do not show. */
-    readonly #formItems = new WeakMap<HTMLFormElement, Item>();
     /** Pickers' records; undefined until loaded, or when no Compendium answers. */
     #references: References | undefined;
-    #grants: GrantsEditor | undefined;
     #mechanics: MechanicsEditor | undefined;
     readonly #header = document.createElement("div");
     readonly #tree = document.createElement("nav");
@@ -301,8 +283,12 @@ export function defineCatalogElement(generation?: string): string {
             : t("Never published."),
           pending > 0
             ? t("Unpublished changes: {count}.", { count: pending })
-            : t("Everything is published."),
-        ].join(" ");
+            : meta
+              ? t("Everything is published.")
+              : "",
+        ]
+          .filter((part) => part !== "")
+          .join(" ");
         this.#header.append(element(document, "p", "hb-status", status));
       }
       if (this.#message)
@@ -384,7 +370,30 @@ export function defineCatalogElement(generation?: string): string {
           head.classList.add("hb-group-head");
           head.append(badge(document, t("Items: {count}", { count: members.length }), "muted"));
           if (!itemSet.playerVisible) head.append(badge(document, t("Hidden"), "muted"));
-          section.append(head);
+          // A search shows every match, collapsed or not.
+          const collapsed = !query && this.#collapsed.has(itemSet.id);
+          const toggle = element(document, "button", "hb-tree-toggle", collapsed ? "▸" : "▾");
+          toggle.type = "button";
+          toggle.setAttribute("aria-expanded", String(!collapsed));
+          toggle.setAttribute(
+            "aria-label",
+            collapsed
+              ? t("Show the items of {name}", { name: label })
+              : t("Hide the items of {name}", { name: label }),
+          );
+          toggle.addEventListener("click", () => {
+            if (!this.#collapsed.delete(itemSet.id)) this.#collapsed.add(itemSet.id);
+            this.#renderTreeGroups();
+            this.#tree.querySelector<HTMLElement>(`[data-set-toggle="${itemSet.id}"]`)?.focus();
+          });
+          toggle.dataset["setToggle"] = itemSet.id;
+          const row = element(document, "div", "hb-group-row");
+          row.append(toggle, head);
+          section.append(row);
+          if (collapsed) {
+            groups.append(section);
+            return;
+          }
         } else section.append(element(document, "h2", "hb-group-head", label));
         const list = element(document, "ul");
         for (const entry of visible) {
@@ -461,9 +470,9 @@ export function defineCatalogElement(generation?: string): string {
       item: Item,
       itemSet: ItemSet | undefined,
     ): [string, "" | "muted" | "warn" | "accent"][] {
-      const badges: [string, "" | "muted" | "warn" | "accent"][] = [
-        item.characterMechanics === "complete" ? ["Automated", "accent"] : ["Text only", "muted"],
-      ];
+      // Only what needs attention or differs from a usual item gets a badge.
+      const badges: [string, "" | "muted" | "warn" | "accent"][] =
+        item.characterMechanics === "complete" ? [] : [["Text only", "muted"]];
       if (!(item.playerVisible && (itemSet?.playerVisible ?? true)))
         badges.push(["Hidden", "muted"]);
       if (item.retired) badges.push(["Retired", "warn"]);
@@ -484,7 +493,11 @@ export function defineCatalogElement(generation?: string): string {
         this.#drafts.subclasses.map((entry) => entry.value),
         this.#published.subclasses,
       );
-      return plan.changes.length + plan.problems.length;
+      // A published draft with a problem would also be withdrawn; count it once.
+      return new Set([
+        ...plan.changes.map((change) => change.id),
+        ...plan.problems.map((entry) => `hb.${entry.itemId}`),
+      ]).size;
     }
 
     #selected(): Stored<ItemSet> | Stored<Item> | Stored<Subclass> | undefined {
@@ -522,6 +535,16 @@ export function defineCatalogElement(generation?: string): string {
       this.#selection = selection;
       this.#setDirty(false);
       this.#editorMessage = undefined;
+      // A report of the last action ends when the DM moves on; problems stay.
+      if (this.#message?.kind === "status") {
+        this.#message = undefined;
+        this.#renderHeader();
+      }
+      if (selection.kind === "item") {
+        const setId = this.#drafts?.items.find((entry) => entry.value.id === selection.id)?.value
+          .setId;
+        if (setId) this.#collapsed.delete(setId);
+      }
       this.#renderTree();
       this.#renderEditor();
       this.#controls?.refresh();
@@ -548,14 +571,47 @@ export function defineCatalogElement(generation?: string): string {
 
     #renderEditor(): void {
       const t = this.#t;
-      this.#effects = undefined;
-      this.#grants = undefined;
       this.#mechanics = undefined;
       const selection = this.#selection;
       if (!selection || !this.#drafts) {
-        this.#editor.replaceChildren(
-          element(document, "p", "hb-hint", t("Choose a set, an item or a subclass to edit it.")),
+        const start = element(document, "div", "hb-start");
+        const actions = element(document, "div", "hb-row-actions");
+        actions.dataset["uiActions"] = "";
+        actions.append(
+          actionButton(
+            document,
+            t("New item"),
+            () => void this.#select({ kind: "new-item", setId: "" }),
+            "primary",
+          ),
+          actionButton(document, t("New set"), () => void this.#select({ kind: "new-set" })),
+          actionButton(
+            document,
+            t("New subclass"),
+            () => void this.#select({ kind: "new-subclass" }),
+          ),
+          actionButton(document, t("Import file"), () => this.#fileInput.click()),
         );
+        start.append(
+          element(
+            document,
+            "p",
+            "hb-hint",
+            t("Choose a set, an item or a subclass to edit it, or start something new."),
+          ),
+          actions,
+          element(
+            document,
+            "p",
+            "hb-hint",
+            t(
+              "A new item can start from a common kind, such as a +1 weapon or a wand with a spell. Put items that share their type, rarity, description or curse into a set.",
+            ),
+          ),
+        );
+        if (this.#drafts === undefined)
+          for (const button of actions.querySelectorAll("button")) button.disabled = true;
+        this.#editor.replaceChildren(start);
         return;
       }
       if (selection.kind === "subclass" || selection.kind === "new-subclass") {
@@ -633,45 +689,72 @@ export function defineCatalogElement(generation?: string): string {
         ...[...(this.#published?.subclasses.values() ?? [])].map((entry) => entry.value.subclassId),
       ]);
     }
-    #form(title: string): HTMLFormElement {
+    /**
+     * A draft form: its fields go into `main`, and an editor with a preview
+     * appends it after `main`. Ctrl+S (Cmd+S) saves.
+     */
+    #form(title: string): { form: HTMLFormElement; main: HTMLElement } {
       const form = element(document, "form", "hb-form");
       form.noValidate = true;
-      form.append(element(document, "h2", "", title));
+      const main = element(document, "div", "hb-form-main");
+      main.append(element(document, "h2", "", title));
+      form.append(main);
       form.addEventListener("input", () => this.#setDirty(true));
       form.addEventListener("change", () => this.#setDirty(true));
+      form.addEventListener("keydown", (event) => {
+        if (event.key.toLowerCase() !== "s" || !(event.ctrlKey || event.metaKey)) return;
+        event.preventDefault();
+        form.querySelector<HTMLButtonElement>('.hb-editor-actions button[type="submit"]')?.click();
+      });
       if (this.#editorMessage)
-        form.append(messageBlock(document, this.#editorMessage.text, this.#editorMessage.kind));
-      return form;
+        main.append(messageBlock(document, this.#editorMessage.text, this.#editorMessage.kind));
+      return { form, main };
     }
     #setForm(stored: Stored<ItemSet> | undefined): HTMLFormElement {
       const t = this.#t;
       const value = stored?.value ?? newSet("", "", Date.now());
-      const form = this.#form(stored ? value.name : t("New set"));
-      form.append(
-        textField(document, t("Name"), "name", value.name, { maxLength: 120 }),
-        this.#idField(stored !== undefined, value.id, "elemental-rings"),
-        textField(document, t("Name prefix"), "namePrefix", value.namePrefix, {
-          maxLength: 60,
-          hint: t("Shown before each item's name, for example Elemental Ring: Fire."),
-        }),
-        textField(document, t("Item type"), "itemType", value.itemType, {
-          maxLength: 120,
-          suggestions: itemTypes,
-        }),
-        selectField(
+      const { form, main } = this.#form(stored ? value.name : t("New set"));
+      const row = (...fields: HTMLElement[]): HTMLElement => {
+        const node = element(document, "div", "hb-row");
+        node.append(...fields);
+        return node;
+      };
+      main.append(
+        element(
           document,
-          t("Rarity"),
-          "rarity",
-          value.rarity,
-          rarities.map((rarity) => [rarity, t(rarity)] as const),
+          "p",
+          "hb-hint",
+          t("A set holds what its items share. Each item can still change any of these values."),
         ),
-        checkField(document, t("Requires attunement"), "attunement", value.attunement),
-        numberField(document, t("Weight (lb)"), "weightLb", value.weightLb, {
-          min: 0,
-          max: maxWeight,
-          step: "any",
-          hint: t("Each item's weight, for carrying. Leave it empty when unknown."),
-        }),
+        row(
+          textField(document, t("Name"), "name", value.name, { maxLength: 120 }),
+          textField(document, t("Name prefix"), "namePrefix", value.namePrefix, {
+            maxLength: 60,
+            hint: t("Shown before each item's name, for example Elemental Ring: Fire."),
+          }),
+        ),
+        row(
+          textField(document, t("Item type"), "itemType", value.itemType, {
+            maxLength: 120,
+            suggestions: itemTypes,
+          }),
+          selectField(
+            document,
+            t("Rarity"),
+            "rarity",
+            value.rarity,
+            rarities.map((rarity) => [rarity, t(rarity)] as const),
+          ),
+        ),
+        row(
+          checkField(document, t("Requires attunement"), "attunement", value.attunement),
+          numberField(document, t("Weight (lb)"), "weightLb", value.weightLb, {
+            min: 0,
+            max: maxWeight,
+            step: "any",
+            hint: t("Each item's weight, for carrying. Leave it empty when unknown."),
+          }),
+        ),
         chipsField(
           document,
           t("Body placements"),
@@ -679,9 +762,6 @@ export function defineCatalogElement(generation?: string): string {
           value.bodyPlacements,
           bodyPlacements.map((placement) => [placement, t(placement)] as const),
         ),
-        textField(document, t("Tags"), "tags", value.tags.join(", "), {
-          hint: t("Lowercase words joined by hyphens, separated by commas."),
-        }),
         textArea(
           document,
           t("Shared description"),
@@ -712,15 +792,17 @@ export function defineCatalogElement(generation?: string): string {
             "Every item of the set gives this condition. Its level on the sheet is the number of the set's items in effect. Leave the name empty for none.",
           ),
         ),
-        textField(document, t("Condition name"), "conditionName", value.condition?.name ?? "", {
-          maxLength: 120,
-          placeholder: "Elemental Attunement",
-        }),
-        textField(document, t("Condition id"), "conditionId", value.condition?.id ?? "", {
-          maxLength: 64,
-          placeholder: "elemental-attunement",
-          hint: t("Filled from the name when empty."),
-        }),
+        row(
+          textField(document, t("Condition name"), "conditionName", value.condition?.name ?? "", {
+            maxLength: 120,
+            placeholder: "Elemental Attunement",
+          }),
+          textField(document, t("Condition id"), "conditionId", value.condition?.id ?? "", {
+            maxLength: 64,
+            placeholder: "elemental-attunement",
+            hint: t("Filled from the name when empty."),
+          }),
+        ),
         textArea(
           document,
           t("Condition summary"),
@@ -731,7 +813,15 @@ export function defineCatalogElement(generation?: string): string {
           t("What each level does, as players read it."),
         ),
       );
-      form.append(
+      const more = element(document, "details", "hb-defaults");
+      more.append(
+        element(document, "summary", "", t("Id and tags")),
+        this.#idField(stored !== undefined, value.id, "elemental-rings"),
+        textField(document, t("Tags"), "tags", value.tags.join(", "), {
+          hint: t("Lowercase words joined by hyphens, separated by commas."),
+        }),
+      );
+      main.append(
         condition,
         checkField(
           document,
@@ -741,6 +831,8 @@ export function defineCatalogElement(generation?: string): string {
           t("Lists the set in the player gallery. Each item also needs its own switch."),
         ),
       );
+      if (stored) main.append(this.#setMembers(stored));
+      main.append(more);
       this.#previewId(form, () => this.#setIds());
       const actions = element(document, "div", "hb-editor-actions");
       actions.dataset["uiActions"] = "";
@@ -752,19 +844,80 @@ export function defineCatalogElement(generation?: string): string {
       );
       save.type = "submit";
       actions.append(save);
-      if (stored) {
+      if (stored)
+        actions.append(
+          actionButton(document, t("Delete"), () => void this.#deleteSet(stored), "danger"),
+        );
+      main.append(actions);
+      form.addEventListener("submit", (event) => event.preventDefault());
+      return form;
+    }
+    /** The set's items as links, with the actions that change all of them. */
+    #setMembers(stored: Stored<ItemSet>): HTMLElement {
+      const t = this.#t;
+      const members = this.#members(stored.value.id);
+      const section = element(document, "section", "hb-set-items");
+      section.append(
+        element(document, "h3", "", t("Items in this set ({count})", { count: members.length })),
+      );
+      if (members.length === 0)
+        section.append(element(document, "p", "hb-hint", t("No items yet.")));
+      else {
+        const list = element(document, "ul");
+        for (const entry of members) {
+          const button = this.#treeButton(entry.value.name, { kind: "item", id: entry.value.id });
+          if (!entry.value.playerVisible) button.append(badge(document, t("Hidden"), "muted"));
+          const item = element(document, "li");
+          item.append(button);
+          list.append(item);
+        }
+        section.append(list);
+      }
+      const actions = element(document, "div", "hb-row-actions");
+      actions.dataset["uiActions"] = "";
+      actions.append(
+        actionButton(
+          document,
+          t("Add item to this set"),
+          () => void this.#select({ kind: "new-item", setId: stored.value.id }),
+        ),
+      );
+      const hidden = members.filter((entry) => !entry.value.playerVisible).length;
+      if (hidden > 0)
         actions.append(
           actionButton(
             document,
-            t("Add item to this set"),
-            () => void this.#select({ kind: "new-item", setId: value.id }),
+            t("Show all its items to players"),
+            () => void this.#showMembers(members, true),
           ),
-          actionButton(document, t("Delete"), () => void this.#deleteSet(stored), "danger"),
         );
-      }
-      form.append(actions);
-      form.addEventListener("submit", (event) => event.preventDefault());
-      return form;
+      if (hidden < members.length)
+        actions.append(
+          actionButton(
+            document,
+            t("Hide all its items from players"),
+            () => void this.#showMembers(members, false),
+          ),
+        );
+      section.append(actions);
+      return section;
+    }
+    #members(setId: string): Stored<Item>[] {
+      return (this.#drafts?.items ?? [])
+        .filter((entry) => entry.value.setId === setId)
+        .sort((a, b) => compare(fold(a.value.name), fold(b.value.name)));
+    }
+    async #showMembers(members: readonly Stored<Item>[], visible: boolean): Promise<void> {
+      const t = this.#t;
+      await this.#commitDrafts(
+        draftPuts(
+          collections.items,
+          members,
+          (item) => ({ ...item, playerVisible: visible }),
+          Date.now(),
+        ),
+        visible ? t("Its items are visible to players.") : t("Its items are hidden from players."),
+      );
     }
     #readSet(form: HTMLFormElement, stored: Stored<ItemSet> | undefined): ItemSet {
       const data = new FormData(form);
@@ -827,161 +980,32 @@ export function defineCatalogElement(generation?: string): string {
     ): HTMLFormElement {
       const t = this.#t;
       const value = stored?.value ?? template ?? newItem("", "", setId ?? "", Date.now());
-      const form = this.#form(stored ? value.name : t("New item"));
-      this.#formItems.set(form, value);
-      const sets = [...(this.#drafts?.sets ?? [])].sort((a, b) =>
-        compare(fold(a.value.name), fold(b.value.name)),
-      );
-      const setOf = (id: string): ItemSet | undefined =>
-        sets.find((entry) => entry.value.id === id)?.value;
-      form.append(
-        textField(document, t("Name"), "name", value.name, { maxLength: 120 }),
-        this.#idField(stored !== undefined, value.id, "ring-of-embers"),
-        selectField(document, t("Set"), "setId", value.setId, [
-          ["", t("No set")],
-          ...sets.map((entry) => [entry.value.id, entry.value.name] as const),
-        ]),
-        textArea(
+      const { form, main } = this.#form(stored ? value.name : t("New item"));
+      const sets = [...(this.#drafts?.sets ?? [])]
+        .sort((a, b) => compare(fold(a.value.name), fold(b.value.name)))
+        .map((entry) => entry.value);
+      const editor = itemEditor(
+        {
           document,
-          t("Description"),
-          "text",
-          value.text,
-          5,
-          maxMarkdown,
-          t("The effect as players read it on their character sheet."),
-        ),
-      );
-      const effects = element(document, "fieldset", "hb-effects-fieldset");
-      effects.append(
-        element(document, "legend", "", t("Effects")),
-        element(
-          document,
-          "p",
-          "hb-hint",
-          t(
-            "Effects and properties apply while the item is equipped, and attuned when it requires attunement. An item with neither is text only: the sheet shows its description.",
-          ),
-        ),
-      );
-      this.#effects = effectsEditor(
-        document,
-        value.characterEffects,
-        t,
-        () => {
-          this.#setDirty(true);
-          this.#updatePreview(form, stored);
+          t,
+          references: this.#references,
+          sets,
+          takenIds: () => this.#itemIds(),
+          changed: () => this.#setDirty(true),
+          restructured: () => this.#controls?.refresh(),
+          ...(stored ? {} : { restart: (item: Item) => this.#restart(item) }),
         },
-        () => this.#controls?.refresh(),
+        form,
+        main,
+        value,
+        stored !== undefined,
       );
-      effects.append(this.#effects.root);
-      const grants = element(document, "fieldset", "hb-effects-fieldset");
-      grants.append(
-        element(document, "legend", "", t("Properties")),
-        element(
-          document,
-          "p",
-          "hb-hint",
-          t(
-            "Advantages, limited uses, spells, toggles and resistances, on the same terms. Item spells never use spell slots.",
-          ),
-        ),
-      );
-      this.#grants = grantsEditor(
-        document,
-        value.grants,
-        t,
-        () => {
-          this.#setDirty(true);
-          this.#updatePreview(form, stored);
-        },
-        () => this.#controls?.refresh(),
-        () => form.querySelector<HTMLInputElement>('input[name="name"]')?.value.trim() ?? "",
-        this.#references,
-      );
-      grants.append(this.#grants.root);
-      form.append(gearFields(document, t, value, this.#references), effects, grants);
-
-      const defaults = element(document, "details", "hb-defaults");
-      const inherited = setOf(value.setId);
-      defaults.open = Object.keys(value.overrides).length > 0;
-      defaults.append(
-        element(document, "summary", "", t("Set defaults")),
-        element(document, "p", "hb-hint", t("Leave a field empty to use the set's value.")),
-      );
-      const fromSet = (text: string): string => t("From set ({value})", { value: text });
-      defaults.append(
-        textField(document, t("Item type"), "overrideItemType", value.overrides.itemType ?? "", {
-          maxLength: 120,
-          placeholder: inherited?.itemType ?? "Wondrous Item",
-          suggestions: itemTypes,
-        }),
-        selectField(document, t("Rarity"), "overrideRarity", value.overrides.rarity ?? "", [
-          ["", fromSet(t(inherited?.rarity ?? "Common"))],
-          ...rarities.map((rarity) => [rarity, t(rarity)] as const),
-        ]),
-        selectField(
-          document,
-          t("Requires attunement"),
-          "overrideAttunement",
-          value.overrides.attunement === undefined ? "" : value.overrides.attunement ? "yes" : "no",
-          [
-            ["", fromSet(t((inherited?.attunement ?? false) ? "Yes" : "No"))],
-            ["yes", t("Yes")],
-            ["no", t("No")],
-          ],
-        ),
-        checkField(
-          document,
-          t("Use the set's placements"),
-          "inheritPlacements",
-          value.overrides.bodyPlacements === undefined,
-        ),
-        chipsField(
-          document,
-          t("Body placements"),
-          "overridePlacements",
-          value.overrides.bodyPlacements ?? inherited?.bodyPlacements ?? [],
-          bodyPlacements.map((placement) => [placement, t(placement)] as const),
-        ),
-        numberField(document, t("Weight (lb)"), "overrideWeight", value.overrides.weightLb, {
-          min: 0,
-          max: maxWeight,
-          step: "any",
-          placeholder:
-            inherited?.weightLb === undefined ? t("Unknown") : fromSet(String(inherited.weightLb)),
-        }),
-      );
-      form.append(
-        defaults,
-        carryingFields(document, t, value, this.#references),
-        textField(document, t("Tags"), "tags", value.tags.join(", "), {
-          hint: t("Lowercase words joined by hyphens, separated by commas."),
-        }),
-        checkField(
-          document,
-          t("Visible to players"),
-          "playerVisible",
-          value.playerVisible,
-          t("Lists the item in the player gallery when its set is visible too."),
-        ),
-        checkField(
-          document,
-          t("Retired"),
-          "retired",
-          value.retired,
-          t("Retired items stay usable on character sheets but leave the player gallery."),
-        ),
-      );
-      const preview = element(document, "section", "hb-preview");
-      preview.setAttribute("aria-live", "polite");
-      form.append(preview);
-      this.#previewId(form, () => this.#itemIds());
       const actions = element(document, "div", "hb-editor-actions");
       actions.dataset["uiActions"] = "";
       const save = actionButton(
         document,
         t("Save"),
-        () => void this.#saveItem(form, stored, false),
+        () => void this.#saveItem(editor, stored, false),
         "primary",
       );
       save.type = "submit";
@@ -1010,92 +1034,31 @@ export function defineCatalogElement(generation?: string): string {
           actionButton(
             document,
             t("Save and add another"),
-            () => void this.#saveItem(form, stored, true),
+            () => void this.#saveItem(editor, stored, true),
           ),
         );
-      form.append(actions);
+      main.append(actions);
       form.addEventListener("submit", (event) => event.preventDefault());
-      form.addEventListener("input", () => this.#updatePreview(form, stored));
-      form.addEventListener("change", () => this.#updatePreview(form, stored));
-      this.#updatePreview(form, stored);
       return form;
     }
-    #readItem(form: HTMLFormElement, stored: Stored<Item> | undefined): Item {
-      const data = new FormData(form);
-      const name = formText(data, "name").trim();
-      const effects = this.#effects?.read() ?? [],
-        grants = this.#grants?.read(),
-        gear = readGear(data);
-      // An item is automated exactly when it declares something to automate.
-      const mechanics: Mechanics =
-        effects.length > 0 || grants !== undefined || gear.baseItem?.bonus !== undefined
-          ? "complete"
-          : "narrative";
-      const itemType = formText(data, "overrideItemType").trim(),
-        rarity = formText(data, "overrideRarity"),
-        attunement = formText(data, "overrideAttunement"),
-        weight = formNumber(data, "overrideWeight");
-      const overrides: Overrides = {
-        ...(itemType ? { itemType } : {}),
-        ...(rarity ? { rarity: rarity as Rarity } : {}),
-        ...(attunement ? { attunement: attunement === "yes" } : {}),
-        ...(data.get("inheritPlacements") === null
-          ? { bodyPlacements: formValues(data, "overridePlacements") as BodyPlacement[] }
-          : {}),
-        ...(weight === undefined ? {} : { weightLb: weight }),
-      };
-      return {
-        id: stored?.value.id ?? (formText(data, "id").trim() || freeId(name, this.#itemIds())),
-        schemaVersion: 1,
-        setId: formText(data, "setId"),
-        name,
-        text: formText(data, "text"),
-        overrides,
-        tags: splitTags(formText(data, "tags")),
-        characterMechanics: mechanics,
-        characterEffects: effects,
-        playerVisible: data.get("playerVisible") !== null,
-        retired: data.get("retired") !== null,
-        updatedAt: Date.now(),
-        ...(grants ? { grants } : {}),
-        ...readCarrying(data, this.#formItems.get(form) ?? stored?.value),
-        ...gear,
-      };
-    }
-    #updatePreview(form: HTMLFormElement, stored: Stored<Item> | undefined): void {
-      const t = this.#t;
-      const preview = form.querySelector(".hb-preview");
-      if (!preview) return;
-      const item = this.#readItem(form, stored);
-      const itemSet = this.#drafts?.sets.find((entry) => entry.value.id === item.setId)?.value;
-      const published = flatten(itemSet, { ...item, name: item.name || t("New item") });
-      const failure =
-        itemProblem({ ...item, id: item.id || "item", name: item.name || "item" }) ??
-        recordProblem(published.record);
-      preview.replaceChildren(
-        element(document, "h3", "", t("As published")),
-        element(document, "p", "hb-preview-name", published.record.name),
-      );
-      if (failure) preview.append(messageBlock(document, problemText(t, failure), "alert"));
-      const lines = [
-        ...describeGear(published.record.baseItem, t, this.#references),
-        ...published.record.characterEffects.map((effect) => describeEffect(effect, t)),
-        ...describeGrants(published.record.grants, t),
-      ];
-      if (lines.length > 0) {
-        const list = element(document, "ul", "hb-effect-summary");
-        for (const line of lines) list.append(element(document, "li", "", line));
-        preview.append(list);
-      }
-      preview.append(markdown(document, published.record.text));
+    /** Opens the new item again as `item`, keeping the changes it carries. */
+    #restart(item: Item): void {
+      this.#selection = { kind: "new-item", setId: item.setId, template: item };
+      this.#renderEditor();
+      this.#controls?.refresh();
+      this.#setDirty(true);
+      this.#editor
+        .querySelector<HTMLInputElement>('input[name="name"]')
+        ?.focus({ preventScroll: true });
     }
     async #saveItem(
-      form: HTMLFormElement,
+      editor: ItemEditor,
       stored: Stored<Item> | undefined,
       another: boolean,
     ): Promise<void> {
-      const value = this.#readItem(form, stored);
-      const named = !stored && formText(new FormData(form), "id").trim() === "";
+      const value = editor.read();
+      const named =
+        !stored && formText(new FormData(this.#editor.querySelector("form")!), "id").trim() === "";
       if (!stored && this.#itemIds().has(value.id))
         return this.#editorProblem({ text: "This id is already in use. Choose another id." });
       const failure = itemProblem(value);
@@ -1117,7 +1080,7 @@ export function defineCatalogElement(generation?: string): string {
     #subclassForm(stored: Stored<Subclass> | undefined, template?: Subclass): HTMLFormElement {
       const t = this.#t;
       const value = stored?.value ?? template ?? newSubclass("", "", "", Date.now());
-      const form = this.#form(stored ? value.name : t("New subclass"));
+      const { form, main } = this.#form(stored ? value.name : t("New subclass"));
       const classes = this.#references?.classes;
       const classField = classes
         ? selectField(document, t("Class"), "classId", value.classId, [
@@ -1134,7 +1097,7 @@ export function defineCatalogElement(generation?: string): string {
               "The class id, such as fighter. With the Compendium installed, pick it by name.",
             ),
           });
-      form.append(
+      main.append(
         textField(document, t("Name"), "name", value.name, { maxLength: 120 }),
         this.#idField(stored !== undefined, value.id, "path-of-the-storm-drum"),
         classField,
@@ -1172,8 +1135,8 @@ export function defineCatalogElement(generation?: string): string {
         value,
         new Set(stored?.value.features.map((feature) => feature.id) ?? []),
       );
-      form.append(this.#mechanics.root);
-      const preview = element(document, "section", "hb-preview");
+      main.append(this.#mechanics.root);
+      const preview = element(document, "aside", "hb-preview");
       preview.setAttribute("aria-live", "polite");
       form.append(preview);
       this.#previewId(form, () => this.#subclassIds());
@@ -1204,7 +1167,7 @@ export function defineCatalogElement(generation?: string): string {
           ),
           actionButton(document, t("Delete"), () => void this.#deleteSubclass(stored), "danger"),
         );
-      form.append(actions);
+      main.append(actions);
       form.addEventListener("submit", (event) => event.preventDefault());
       form.addEventListener("input", () => this.#updateSubclassPreview(form, stored));
       form.addEventListener("change", () => this.#updateSubclassPreview(form, stored));
@@ -1328,12 +1291,13 @@ export function defineCatalogElement(generation?: string): string {
       if (!(await confirmDialog(this, t, question, t("Delete")))) return;
       await this.#remove(collections.subclasses, stored);
     }
+    /** Shows a problem under the form's title and brings it into view. */
     #editorProblem(problem: Problem): void {
-      this.#editorMessage = { text: problemText(this.#t, problem), kind: "alert" };
-      const form = this.#editor.querySelector("form");
-      form?.querySelector(":scope > .hb-message")?.remove();
-      form?.querySelector("h2")?.after(messageBlock(document, this.#editorMessage.text, "alert"));
-      this.#editorMessage = undefined;
+      const main = this.#editor.querySelector(".hb-form-main");
+      main?.querySelector(":scope > .hb-message")?.remove();
+      const block = messageBlock(document, problemText(this.#t, problem), "alert");
+      main?.querySelector("h2")?.after(block);
+      block.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
     /**
      * Saves one draft and selects what `select` names. A new draft whose id
@@ -1381,20 +1345,114 @@ export function defineCatalogElement(generation?: string): string {
         else this.#editorProblem({ text: messageOf(error, "The draft could not be saved.") });
       }
     }
+    /**
+     * Deletes a set. Its items either go with it or stay without a set,
+     * looking as they did; either way in one transaction.
+     */
     async #deleteSet(stored: Stored<ItemSet>): Promise<void> {
-      const t = this.#t;
-      if (this.#drafts?.items.some((entry) => entry.value.setId === stored.value.id))
-        return this.#editorProblem({ text: "Move or delete this set's items first." });
-      if (
-        !(await confirmDialog(
-          this,
-          t,
-          t("Delete {name}?", { name: stored.value.name }),
-          t("Delete"),
-        ))
-      )
+      const t = this.#t,
+        name = stored.value.name;
+      const members = this.#members(stored.value.id);
+      if (members.length === 0) {
+        if (!(await confirmDialog(this, t, t("Delete {name}?", { name }), t("Delete")))) return;
+        await this.#remove(collections.sets, stored);
         return;
-      await this.#remove(collections.sets, stored);
+      }
+      const body = element(document, "div", "hb-dialog-body");
+      body.append(
+        element(
+          document,
+          "p",
+          "",
+          t("{name} has {count} items. Delete them too, or keep them without a set?", {
+            name,
+            count: members.length,
+          }),
+        ),
+        element(
+          document,
+          "p",
+          "hb-hint",
+          t(
+            "Kept items keep their type, rarity, attunement, weight and placements, but lose the set's name prefix, description, curse and condition.",
+          ),
+        ),
+      );
+      if (
+        members.some((entry) => {
+          const published = this.#published?.records.get(`hb.${entry.value.id}`);
+          return published !== undefined && !published.value.withdrawn;
+        })
+      )
+        body.append(
+          messageBlock(
+            document,
+            t(
+              "Deleting published items with the set withdraws them at the next publish; characters holding them then show a missing-source problem.",
+            ),
+            "alert",
+          ),
+        );
+      const choice = await choiceDialog(this, t, t("Delete {name}?", { name }), body, [
+        { value: "keep", label: t("Keep the items without a set"), variant: "primary" },
+        { value: "all", label: t("Delete the set and its items"), variant: "danger" },
+      ]);
+      if (choice === undefined) return;
+      const items =
+        choice === "all"
+          ? draftDeletes(collections.items, members)
+          : draftPuts(
+              collections.items,
+              members,
+              (item) => ({
+                ...item,
+                setId: "",
+                overrides: moveOverrides(item.overrides, stored.value, undefined),
+              }),
+              Date.now(),
+            );
+      await this.#commitDrafts(
+        [...items, ...draftDeletes(collections.sets, [stored])],
+        t("Deleted {name}.", { name }),
+        () => {
+          this.#selection = undefined;
+          this.#setDirty(false);
+        },
+      );
+    }
+    /**
+     * Commits several draft changes guarded by the revisions the page loaded,
+     * so nothing is overwritten that the page has not seen.
+     */
+    async #commitDrafts(
+      mutations: readonly CollectionMutation[],
+      done: string,
+      succeeded: () => void = () => {},
+    ): Promise<void> {
+      const runtime = this.#runtime,
+        drafts = this.#drafts;
+      if (!runtime || !drafts || this.#busy || mutations.length === 0) return;
+      if (mutations.length > 256)
+        return this.#editorProblem({
+          text: "This changes {count} drafts; change at most 256 at a time.",
+          params: { count: mutations.length },
+        });
+      this.#setBusy(true);
+      try {
+        await runtime.repository.commit(mutations, drafts.dataRevisions, this.#signal());
+        this.#message = { text: done, kind: "status" };
+        succeeded();
+      } catch (error) {
+        this.#message = {
+          text: isConflict(error)
+            ? "Something changed since the page loaded. Try again."
+            : messageOf(error, "The drafts could not be saved."),
+          kind: "alert",
+        };
+      } finally {
+        this.#setBusy(false);
+      }
+      await this.#load();
     }
     async #deleteItem(stored: Stored<Item>): Promise<void> {
       const t = this.#t;
@@ -1626,10 +1684,26 @@ export function defineCatalogElement(generation?: string): string {
               "status",
             ),
           );
-        if (preview.changes.length > 0) {
+        const kinds: Readonly<Record<string, string>> = {
+          [collections.sets]: t("set"),
+          [collections.items]: t("item"),
+          [collections.subclasses]: t("subclass"),
+        };
+        for (const [operation, label] of [
+          ["create", "Created"],
+          ["update", "Updated"],
+          ["delete", "Removed"],
+        ] as const) {
+          const changes = preview.changes.filter((change) => change.operation === operation);
+          if (changes.length === 0) continue;
+          body.append(element(document, "h3", "", `${t(label)} (${changes.length})`));
           const list = element(document, "ul", "hb-change-list");
-          for (const change of preview.changes)
-            list.append(element(document, "li", "", `${change.label} — ${t(change.operation)}`));
+          for (const change of changes) {
+            const kind = kinds[change.collection];
+            list.append(
+              element(document, "li", "", kind ? `${change.label} (${kind})` : change.label),
+            );
+          }
           body.append(list);
         }
         if (
@@ -1685,16 +1759,6 @@ export function defineCatalogElement(generation?: string): string {
   return tag;
 }
 
-function splitTags(text: string): string[] {
-  return [
-    ...new Set(
-      text
-        .split(",")
-        .map((tag) => tag.trim().toLowerCase())
-        .filter((tag) => tag !== ""),
-    ),
-  ];
-}
 function isConflict(error: unknown): boolean {
   return (
     typeof error === "object" && error !== null && (error as { status?: unknown }).status === 409
