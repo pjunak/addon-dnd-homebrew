@@ -603,3 +603,10 @@
   margin: 0;
   color: var(--text-muted, #9a8660);
 }
+/* On phones the host's bottom navigation covers the screen's bottom edge, so
+   the save bar stops above it (the host's breakpoint and token). */
+@media (max-width: 768px) {
+  .hb-editor-actions {
+    bottom: calc(var(--bottom-nav-h, 0px) + env(safe-area-inset-bottom));
+  }
+}
