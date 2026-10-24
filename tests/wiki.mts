@@ -16,6 +16,7 @@ const state: PublishedState = {
   ),
   subclasses: new Map(),
   feats: new Map(),
+  spells: new Map(),
   meta: undefined,
   unreadable: [],
 };

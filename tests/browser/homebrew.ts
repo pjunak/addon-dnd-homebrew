@@ -1,9 +1,18 @@
 import { defineCatalogElement } from "#web/catalog-element";
 import { defineGalleryElement } from "#web/gallery-element";
 import { grantsSchema } from "#web/grants-schema";
-import { canonical, flattenFeat, flattenSubclass, type Feat, type Subclass } from "#web/model";
+import {
+  canonical,
+  flattenFeat,
+  flattenSpell,
+  flattenSubclass,
+  type Feat,
+  type Spell,
+  type Subclass,
+} from "#web/model";
 import { deref, typesOf, type SchemaNode } from "#web/schema";
 import { grantsNode, schemaEditor, type FormContext } from "#web/schema-form";
+import { spellEditor } from "#web/spell-editor";
 import { mechanicsEditor } from "#web/subclass-editor";
 import { ReferenceLoader } from "#web/references";
 import { HomebrewRepository } from "#web/repository";
@@ -39,6 +48,8 @@ const subclasses = (
   (await (await fetch("../fixtures/subclasses.json")).json()) as { valid: Subclass[] }
 ).valid;
 const feats = ((await (await fetch("../fixtures/feats.json")).json()) as { valid: Feat[] }).valid;
+const spells = ((await (await fetch("../fixtures/spells.json")).json()) as { valid: Spell[] })
+  .valid;
 const documents = (values: readonly { id: string }[], key = (value: { id: string }) => value.id) =>
   values.map((value): AddonDocument<unknown> => ({ key: key(value), revision: 1, value }));
 const stored: Record<string, readonly AddonDocument<unknown>[]> = {
@@ -49,6 +60,8 @@ const stored: Record<string, readonly AddonDocument<unknown>[]> = {
   homebrew_published_subclasses: documents(subclasses.map(flattenSubclass)),
   homebrew_feats: documents(feats),
   homebrew_published_feats: documents(feats.slice(0, 1).map(flattenFeat)),
+  homebrew_spells: documents(spells),
+  homebrew_published_spells: documents(spells.slice(0, 1).map(flattenSpell)),
   homebrew_meta: [
     {
       key: "publish",
@@ -166,6 +179,7 @@ const catalog = mount(catalogTag),
   subclassCatalog = mount(catalogTag),
   featCatalog = mount(catalogTag),
   importedFeatCatalog = mount(catalogTag),
+  spellCatalog = mount(catalogTag),
   edgeCatalog = mount(catalogTag),
   newCatalog = mount(catalogTag),
   gallery = mount(galleryTag),
@@ -236,7 +250,7 @@ for (
   ?.click();
 for (let attempt = 0; attempt < 60 && !subclassCatalog.querySelector(".hb-feature"); attempt++)
   await frame();
-const openFeat = async (root: HTMLElement, name: string): Promise<void> => {
+const openDraft = async (root: HTMLElement, name: string): Promise<void> => {
   for (
     let attempt = 0;
     attempt < 60 && root.querySelectorAll(".hb-tree-item").length < 6;
@@ -253,8 +267,9 @@ const openFeat = async (root: HTMLElement, name: string): Promise<void> => {
   )
     await frame();
 };
-await openFeat(featCatalog, "Storm Touched");
-await openFeat(importedFeatCatalog, "Elemental Scholar");
+await openDraft(featCatalog, "Storm Touched");
+await openDraft(importedFeatCatalog, "Elemental Scholar");
+await openDraft(spellCatalog, "Hearth Ward");
 for (
   let attempt = 0;
   attempt < 60 && newCatalog.querySelectorAll(".hb-tree-item").length < 6;
@@ -355,6 +370,24 @@ const mechanics = subclasses.map((subclass) =>
   ),
 );
 sandbox.append(everythingEditor.root, emptyEditor.root, ...mechanics.map((editor) => editor.root));
+// Each fixture spell in its own form, read back as the editor would save it.
+const spellsBack = spells.map((spell) => {
+  const form = document.createElement("form"),
+    main = document.createElement("div");
+  form.hidden = true;
+  form.append(main);
+  document.body.append(form);
+  const editor = spellEditor(
+    { document, t: (english) => english, references: undefined, takenIds: () => new Set() },
+    form,
+    main,
+    spell,
+    true,
+  );
+  return canonical(flattenSpell(editor.read())) === canonical(flattenSpell(spell))
+    ? "unchanged"
+    : JSON.stringify(editor.read());
+});
 
 const lines = (root: Element, selector: string): string[] =>
   [...root.querySelectorAll(`${selector} li`)].map((node) => node.textContent ?? "");
@@ -396,6 +429,10 @@ globalThis.runRenderingContract = () => {
         "Lantern Bearer",
         "Storm Archer",
         "Storm Touched",
+        "Ember Lance",
+        "Hearth Ward",
+        "Storm Ward",
+        "Whispered Map",
       ]),
     names,
     [
@@ -413,6 +450,10 @@ globalThis.runRenderingContract = () => {
       "Lantern Bearer",
       "Storm Archer",
       "Storm Touched",
+      "Ember Lance",
+      "Hearth Ward",
+      "Storm Ward",
+      "Whispered Map",
     ],
   );
   const trinket = [...catalog.querySelectorAll(".hb-tree-item")].find((node) =>
@@ -427,9 +468,9 @@ globalThis.runRenderingContract = () => {
   const status = catalog.querySelector(".hb-status")?.textContent ?? "";
   check(
     "status counts pending changes",
-    status.includes("Unpublished changes: 6."),
+    status.includes("Unpublished changes: 9."),
     status,
-    "…Unpublished changes: 6.",
+    "…Unpublished changes: 9.",
   );
   const preview = catalog.querySelector(".hb-preview-name")?.textContent;
   check(
@@ -564,9 +605,9 @@ globalThis.runRenderingContract = () => {
   );
   check(
     "the empty editor explains each kind and leaves the buttons to the header",
-    JSON.stringify(startPanel) === JSON.stringify([0, 4]),
+    JSON.stringify(startPanel) === JSON.stringify([0, 5]),
     startPanel,
-    [0, 4],
+    [0, 5],
   );
   check(
     "a new item offers every template",
@@ -713,6 +754,66 @@ globalThis.runRenderingContract = () => {
     JSON.stringify(featProblems) === JSON.stringify([0, 0]),
     featProblems,
     [0, 0],
+  );
+  const spellForm = [
+    spellCatalog.querySelector<HTMLSelectElement>('select[name="level"]')?.value,
+    spellCatalog.querySelector<HTMLSelectElement>('select[name="school"]')?.value,
+    spellCatalog.querySelector<HTMLInputElement>('input[name="duration"]')?.value,
+    spellCatalog.querySelector<HTMLInputElement>('input[name="concentration"]')?.checked,
+    [
+      ...(spellCatalog.querySelector<HTMLSelectElement>('select[name="components"]')
+        ?.selectedOptions ?? []),
+    ].map((entry) => entry.value),
+  ];
+  check(
+    "a concentration cantrip shows its duration without the printed start",
+    JSON.stringify(spellForm) === JSON.stringify(["0", "Abjuration", "1 minute", true, ["V", "S"]]),
+    spellForm,
+    ["0", "Abjuration", "1 minute", true, ["V", "S"]],
+  );
+  const spellHeader = spellCatalog
+    .querySelector(".hb-preview codex-addon-markdown")
+    ?.textContent?.split("\n")
+    .slice(0, 5)
+    .join("|");
+  const expectedHeader =
+    "*Abjuration Cantrip (Cleric, Druid, Wizard)*  |**Casting Time:** Bonus Action  |**Range:** Touch  |**Components:** V, S  |**Duration:** Concentration, up to 1 minute";
+  check(
+    "a spell previews the stat block the sheet shows",
+    spellHeader === expectedHeader,
+    spellHeader,
+    expectedHeader,
+  );
+  check(
+    "a valid spell previews without a problem",
+    spellCatalog.querySelectorAll(".hb-preview .hb-message").length === 0,
+    spellCatalog.querySelectorAll(".hb-preview .hb-message").length,
+    0,
+  );
+  const spellBadges = [...catalog.querySelectorAll(".hb-tree-item")]
+    .filter((node) => /^(Ember Lance|Hearth Ward)/u.test(node.textContent ?? ""))
+    .map((node) => node.textContent);
+  check(
+    "spells in the tree show their level and whether they are published",
+    JSON.stringify(spellBadges) ===
+      JSON.stringify(["Ember LanceLevel 1", "Hearth WardCantripUnpublished"]),
+    spellBadges,
+    ["Ember LanceLevel 1", "Hearth WardCantripUnpublished"],
+  );
+  check(
+    "the spell editor publishes each fixture spell as it was",
+    spellsBack.every((entry) => entry === "unchanged"),
+    spellsBack,
+    spells.map(() => "unchanged"),
+  );
+  const homebrewSpellOffered = [featCatalog, ringCatalog].map(
+    (root) => root.querySelectorAll('option[value="hb.ember-lance"]').length > 0,
+  );
+  check(
+    "feat grants offer homebrew spells, which item spells cannot use",
+    JSON.stringify(homebrewSpellOffered) === JSON.stringify([true, false]),
+    homebrewSpellOffered,
+    [true, false],
   );
   const features = subclassCatalog.querySelectorAll(".hb-feature").length;
   check("the subclass editor shows one panel per feature", features === 4, features, 4);

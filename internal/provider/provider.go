@@ -1,5 +1,5 @@
 // Package provider serves published homebrew records (magic items, subclasses
-// with their features, and feats) as the dnd5e.rules-data v3 content
+// with their features, feats and spells) as the dnd5e.rules-data v3 content
 // contract. The D&D Engine merges every compatible provider, so the records
 // appear in character sheets next to the compendium's.
 //
@@ -279,7 +279,12 @@ func (handler *Handler) scan(ctx context.Context, meta *workerrpc.Meta) ([]serve
 	if err != nil {
 		return nil, err
 	}
-	return handler.scanFeats(ctx, meta, records)
+	for _, of := range singles {
+		if records, err = handler.scanSingle(ctx, meta, records, of); err != nil {
+			return nil, err
+		}
+	}
+	return records, nil
 }
 
 // scanSubclasses adds each published subclass's subclass and feature records.
@@ -326,31 +331,51 @@ func (handler *Handler) scanSubclasses(ctx context.Context, meta *workerrpc.Meta
 	}
 }
 
-// scanFeats adds each published feat record.
-func (handler *Handler) scanFeats(ctx context.Context, meta *workerrpc.Meta, records []servedRecord) ([]servedRecord, error) {
+// single is a kind that publishes one record per document: its collection,
+// record kind, the word diagnostics use and how a document decodes.
+type single struct {
+	collection string
+	kind       string
+	label      string
+	decode     func([]byte) (id string, withdrawn bool, record json.RawMessage, err error)
+}
+
+var singles = []single{
+	{homebrew.PublishedFeatsCollection, homebrew.FeatRecordKind, "feat", func(body []byte) (string, bool, json.RawMessage, error) {
+		published, err := homebrew.DecodePublishedFeat(body)
+		return published.ID, published.Withdrawn, published.Record, err
+	}},
+	{homebrew.PublishedSpellsCollection, homebrew.SpellRecordKind, "spell", func(body []byte) (string, bool, json.RawMessage, error) {
+		published, err := homebrew.DecodePublishedSpell(body)
+		return published.ID, published.Withdrawn, published.Record, err
+	}},
+}
+
+// scanSingle adds each published record of one such kind.
+func (handler *Handler) scanSingle(ctx context.Context, meta *workerrpc.Meta, records []servedRecord, of single) ([]servedRecord, error) {
 	cursor := ""
 	for {
-		page, err := handler.data.Query(ctx, meta, workerrpc.AddonDataQuery{Reference: reference(homebrew.PublishedFeatsCollection), Cursor: cursor, Limit: 200})
+		page, err := handler.data.Query(ctx, meta, workerrpc.AddonDataQuery{Reference: reference(of.collection), Cursor: cursor, Limit: 200})
 		if err != nil {
 			return nil, dataFailure(ctx, err)
 		}
 		for _, document := range page.Documents {
-			published, err := homebrew.DecodePublishedFeat(document.Value)
-			if err == nil && document.Key != published.ID {
-				err = fmt.Errorf("key %q does not match record %q", document.Key, published.ID)
+			id, withdrawn, record, err := of.decode(document.Value)
+			if err == nil && document.Key != id {
+				err = fmt.Errorf("key %q does not match record %q", document.Key, id)
 			}
 			if err != nil {
-				fmt.Fprintf(handler.log, "dnd-homebrew: not serving published feat %q: %v\n", document.Key, err)
+				fmt.Fprintf(handler.log, "dnd-homebrew: not serving published %s %q: %v\n", of.label, document.Key, err)
 				continue
 			}
-			if published.Withdrawn {
+			if withdrawn {
 				continue
 			}
 			var compact bytes.Buffer
-			if err := json.Compact(&compact, published.Record); err != nil {
-				return nil, unavailable("could not read a published homebrew feat")
+			if err := json.Compact(&compact, record); err != nil {
+				return nil, unavailable("could not read a published homebrew " + of.label)
 			}
-			records = append(records, servedRecord{kind: homebrew.FeatRecordKind, id: published.ID, value: compact.Bytes()})
+			records = append(records, servedRecord{kind: of.kind, id: id, value: compact.Bytes()})
 		}
 		if page.NextCursor == "" {
 			return records, nil

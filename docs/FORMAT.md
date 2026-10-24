@@ -1,6 +1,6 @@
 # Homebrew format
 
-One JSON document holds item sets, items, subclasses and feats. Import it from
+One JSON document holds item sets, items, subclasses, feats and spells. Import it from
 **Homebrew → Import file** or from the DM Tools Import Center; **Export**
 writes the same shape. Files are limited to 2 MiB and 256 changes per import.
 
@@ -40,8 +40,9 @@ AI assistant:
    already exist are reused rather than duplicated.
 2. Give the writer this page, the [sample](examples/sample-items.json), the
    export and the source text. Ask for a `merge` file with only the sets,
-   items, subclasses and feats to add or change, effects and grants only
-   where the rule matches them exactly, and the rest of the rule in `text`.
+   items, subclasses, feats and spells to add or change, effects and grants
+   only where the rule matches them exactly, and the rest of the rule in
+   `text`.
    For a subclass or a feat, also give the writer the Compendium's record
    schema (`addon-dnd-2024-compendium/data/SCHEMA.md`), which explains the
    grants.
@@ -68,6 +69,7 @@ AI assistant:
 | `sets`, `items` | yes | Lists, possibly empty |
 | `subclasses` | no | A list of [subclasses](#subclass) |
 | `feats` | no | A list of [feats](#feat) |
+| `spells` | no | A list of [spells](#spell) |
 
 Unknown fields anywhere are refused. In `merge` mode an entry updates the draft
 with the same `id`; a field the entry leaves out keeps its stored value, so
@@ -418,3 +420,65 @@ set, `excerpt` when set, and `text` opening with the category and the
 prerequisite in words, such as
 `*General Feat (Prerequisite: Level 4+, Intelligence or Wisdom 13+)*`.
 Deleting a feat withdraws its document at the next publish, as for items.
+
+## Spell
+
+```json
+{ "id": "ember-lance", "name": "Ember Lance", "level": 1, "school": "Evocation",
+  "classes": ["sorcerer", "wizard"], "castingTime": "Action", "range": "60 feet",
+  "components": ["V", "S", "M"], "material": "a shard of obsidian",
+  "duration": "Instantaneous",
+  "text": "A lance of embers streaks toward a creature within range. ..." }
+```
+
+[`examples/sample-spells.json`](examples/sample-spells.json) holds a leveled
+spell, a concentration cantrip and a ritual. The fields are the Compendium's
+`spell` record (`addon-dnd-2024-compendium/data/SCHEMA.md`):
+
+| Field | Required | Default | Meaning |
+| --- | --- | --- | --- |
+| `id` | yes | | Lowercase words joined by hyphens, at most 64 characters; permanent |
+| `name` | yes | | One line, at most 120 characters |
+| `level` | yes | | `0` for a cantrip, up to `9` |
+| `school` | yes | | `Abjuration`, `Conjuration`, `Divination`, `Enchantment`, `Evocation`, `Illusion`, `Necromancy` or `Transmutation` |
+| `classes` | no | `[]` | Class ids whose spell lists include it, such as `["sorcerer", "wizard"]`; at most 20 |
+| `ritual` | no | `false` | `true` when it can also be cast as a ritual |
+| `concentration` | no | `false` | `true` when it needs Concentration |
+| `castingTime` | yes | | As printed: `Action`, `Bonus Action`, `Reaction, which you take when …`, `1 minute` |
+| `range` | yes | | As printed: `Self`, `Touch`, `60 feet` |
+| `components` | yes | | One to three of `V`, `S` and `M`, each once |
+| `material` | no | `""` | The material, required with `M` and refused without it |
+| `duration` | yes | | As printed: `Instantaneous`, `1 hour`; a concentration spell's reads `Concentration, up to 1 minute` |
+| `text` | no | `""` | Markdown, at most 20,000 characters: what the spell does, including *Using a Higher-Level Spell Slot* |
+
+`castingTime`, `range`, `material` and `duration` are one line of at most 300
+characters. Write a ritual's casting time without "or Ritual"; publishing adds
+it. A spell has no grants or effects: what it does on the table stays in its
+text, and the Engine uses the level, school, classes, ritual, concentration
+and casting time.
+
+A homebrew spell joins a class's spell list through `classes`, so the
+Builder offers it to that class and grants that pick from a class list,
+school, casting time or rituals include it. Subclass and feat grants can name
+it by id, `hb.ember-lance`. An item's `spells` accept only rules-data spell ids
+without a dot, so an item cannot cast a homebrew spell yet.
+
+### Published spell
+
+Publishing writes one document per spell to `homebrew_published_spells`,
+holding the `spell` record the Engine reads: `id` `hb.<id>`, `name`, `edition`
+`2024`, `book` `homebrew`, the fields above with `classes` sorted and
+`components` in `V`, `S`, `M` order, `material` only with `M`, and `text`
+opening with the stat block as printed:
+
+```text
+*Level 1 Evocation (Sorcerer, Wizard)*
+**Casting Time:** Action
+**Range:** 60 feet
+**Components:** V, S, M (a shard of obsidian)
+**Duration:** Instantaneous
+```
+
+Each stat line ends with two spaces, a Markdown line break. A cantrip's first
+line reads *Evocation Cantrip (Sorcerer, Wizard)*. Deleting a spell withdraws
+its document at the next publish, as for items.

@@ -34,6 +34,7 @@ import {
   featProblem,
   flatten,
   flattenFeat,
+  flattenSpell,
   flattenSubclass,
   freeId,
   HomebrewError,
@@ -46,11 +47,13 @@ import {
   newSet,
   newItem,
   newFeat,
+  newSpell,
   newSubclass,
   planImport,
   planPublish,
   rarities,
   slug,
+  spellProblem,
   subclassProblem,
   titleOf,
   type BodyPlacement,
@@ -60,12 +63,14 @@ import {
   type ItemSet,
   type Problem,
   type Rarity,
+  type Spell,
   type Stored,
   type Subclass,
 } from "./model.js";
-import type { References } from "./references.js";
+import { optionOf, type References } from "./references.js";
 import type { DraftCollection, Drafts, PublishedState } from "./repository.js";
 import { runtimeFor, type HomebrewRuntime } from "./runtime.js";
+import { spellEditor, spellLevelLabel, type SpellEditor } from "./spell-editor.js";
 import { mechanicsEditor, type MechanicsEditor } from "./subclass-editor.js";
 import { fieldLabel } from "./vocabulary.js";
 import type { ContributionContext } from "./sdk.js";
@@ -81,7 +86,9 @@ type Selection =
   | { readonly kind: "subclass"; readonly id: string }
   | { readonly kind: "new-subclass"; readonly template?: Subclass }
   | { readonly kind: "feat"; readonly id: string }
-  | { readonly kind: "new-feat"; readonly template?: Feat };
+  | { readonly kind: "new-feat"; readonly template?: Feat }
+  | { readonly kind: "spell"; readonly id: string }
+  | { readonly kind: "new-spell"; readonly template?: Spell };
 
 export function defineCatalogElement(generation?: string): string {
   const tag = generation ? `${catalogElementTag}-${generation}` : catalogElementTag;
@@ -243,7 +250,7 @@ export function defineCatalogElement(generation?: string): string {
           "p",
           "",
           t(
-            "Create items, item sets, subclasses and feats, then publish them to use them on character sheets.",
+            "Create items, item sets, subclasses, feats and spells, then publish them to use them on character sheets.",
           ),
         ),
       );
@@ -264,6 +271,7 @@ export function defineCatalogElement(generation?: string): string {
           () => void this.#select({ kind: "new-subclass" }),
         ),
         actionButton(document, t("New feat"), () => void this.#select({ kind: "new-feat" })),
+        actionButton(document, t("New spell"), () => void this.#select({ kind: "new-spell" })),
         actionButton(document, t("Import file"), () => this.#fileInput.click()),
         actionButton(document, t("Export"), () => this.#export()),
       ];
@@ -356,11 +364,15 @@ export function defineCatalogElement(generation?: string): string {
       const feats = [...this.#drafts.feats].sort((a, b) =>
         compare(fold(a.value.name), fold(b.value.name)),
       );
+      const spells = [...this.#drafts.spells].sort((a, b) =>
+        compare(fold(a.value.name), fold(b.value.name)),
+      );
       if (
         sets.length === 0 &&
         items.length === 0 &&
         subclasses.length === 0 &&
-        feats.length === 0
+        feats.length === 0 &&
+        spells.length === 0
       ) {
         groups.append(
           element(
@@ -368,7 +380,7 @@ export function defineCatalogElement(generation?: string): string {
             "p",
             "hb-hint",
             t(
-              "Nothing yet. Create an item, a set, a subclass or a feat, or import a file to begin.",
+              "Nothing yet. Create an item, a set, a subclass, a feat or a spell, or import a file to begin.",
             ),
           ),
         );
@@ -436,58 +448,87 @@ export function defineCatalogElement(generation?: string): string {
           item.value.setId === "" || !sets.some((entry) => entry.value.id === item.value.setId),
       );
       if (loose.length > 0) group(t("Items without a set"), undefined, loose);
-      const visible = subclasses.filter(
-        (entry) =>
-          !query ||
-          fold(entry.value.name).includes(query) ||
-          fold(this.#className(entry.value.classId)).includes(query),
-      );
-      if (visible.length > 0) {
+      // Subclasses, feats and spells: each draft with a detail badge and its publish state.
+      const kind = <T extends { readonly id: string; readonly name: string }>(
+        label: string,
+        drafts: readonly Stored<T>[],
+        selection: (id: string) => Selection,
+        detail: (draft: T) => string,
+        state: (draft: T) => "Unpublished" | "Changed" | undefined,
+      ): void => {
+        const shown = drafts.filter(
+          (entry) =>
+            !query ||
+            fold(entry.value.name).includes(query) ||
+            fold(detail(entry.value)).includes(query),
+        );
+        if (shown.length === 0) return;
         const section = element(document, "section", "hb-group");
-        section.append(element(document, "h2", "hb-group-head", t("Subclasses")));
+        section.append(element(document, "h2", "hb-group-head", label));
         const list = element(document, "ul");
-        for (const entry of visible) {
-          const button = this.#treeButton(entry.value.name, {
-            kind: "subclass",
-            id: entry.value.id,
-          });
-          button.append(badge(document, this.#className(entry.value.classId), "muted"));
-          const published = this.#published?.subclasses.get(`hb.${entry.value.id}`);
-          if (!published || published.value.withdrawn)
-            button.append(badge(document, t("Unpublished"), "warn"));
-          else if (canonical(published.value) !== canonical(flattenSubclass(entry.value)))
-            button.append(badge(document, t("Changed"), "warn"));
+        for (const entry of shown) {
+          const button = this.#treeButton(entry.value.name, selection(entry.value.id));
+          button.append(badge(document, detail(entry.value), "muted"));
+          const pending = state(entry.value);
+          if (pending) button.append(badge(document, t(pending), "warn"));
           const row = element(document, "li");
           row.append(button);
           list.append(row);
         }
         section.append(list);
         groups.append(section);
-      }
-      const shownFeats = feats.filter(
-        (entry) =>
-          !query ||
-          fold(entry.value.name).includes(query) ||
-          fold(t(featCategoryLabels[entry.value.category])).includes(query),
+      };
+      const stateOf = (
+        published: Stored<{ readonly withdrawn: boolean }> | undefined,
+        flattened: () => unknown,
+      ): "Unpublished" | "Changed" | undefined =>
+        !published || published.value.withdrawn
+          ? "Unpublished"
+          : canonical(published.value) !== canonical(flattened())
+            ? "Changed"
+            : undefined;
+      kind(
+        t("Subclasses"),
+        subclasses,
+        (id) => ({ kind: "subclass", id }),
+        (subclass) => this.#className(subclass.classId),
+        (subclass) =>
+          stateOf(this.#published?.subclasses.get(`hb.${subclass.id}`), () =>
+            flattenSubclass(subclass),
+          ),
       );
-      if (shownFeats.length === 0) return;
-      const featSection = element(document, "section", "hb-group");
-      featSection.append(element(document, "h2", "hb-group-head", t("Feats")));
-      const featList = element(document, "ul");
-      for (const entry of shownFeats) {
-        const button = this.#treeButton(entry.value.name, { kind: "feat", id: entry.value.id });
-        button.append(badge(document, t(featCategoryLabels[entry.value.category]), "muted"));
-        const published = this.#published?.feats.get(`hb.${entry.value.id}`);
-        if (!published || published.value.withdrawn)
-          button.append(badge(document, t("Unpublished"), "warn"));
-        else if (canonical(published.value) !== canonical(flattenFeat(entry.value)))
-          button.append(badge(document, t("Changed"), "warn"));
-        const row = element(document, "li");
-        row.append(button);
-        featList.append(row);
-      }
-      featSection.append(featList);
-      groups.append(featSection);
+      kind(
+        t("Feats"),
+        feats,
+        (id) => ({ kind: "feat", id }),
+        (feat) => t(featCategoryLabels[feat.category]),
+        (feat) => stateOf(this.#published?.feats.get(`hb.${feat.id}`), () => flattenFeat(feat)),
+      );
+      kind(
+        t("Spells"),
+        spells,
+        (id) => ({ kind: "spell", id }),
+        (spell) => spellLevelLabel(t, spell.level),
+        (spell) =>
+          stateOf(this.#published?.spells.get(`hb.${spell.id}`), () => flattenSpell(spell)),
+      );
+    }
+    /**
+     * The rules data subclass and feat grants pick from, with this campaign's
+     * spells added: grants name them by `hb.<id>`. Item spells cannot.
+     */
+    #grantReferences(): References | undefined {
+      const references = this.#references,
+        own = (this.#drafts?.spells ?? []).flatMap(
+          (entry) => optionOf("spell", flattenSpell(entry.value).record) ?? [],
+        );
+      if (!references || own.length === 0) return references;
+      return {
+        ...references,
+        spells: [...references.spells, ...own].sort((left, right) =>
+          left.name.localeCompare(right.name),
+        ),
+      };
     }
     /** A class's name from the rules data, or its id in words. */
     #className(classId: string): string {
@@ -540,6 +581,8 @@ export function defineCatalogElement(generation?: string): string {
         this.#published.subclasses,
         this.#drafts.feats.map((entry) => entry.value),
         this.#published.feats,
+        this.#drafts.spells.map((entry) => entry.value),
+        this.#published.spells,
       );
       // A published draft with a problem would also be withdrawn; count it once.
       return new Set([
@@ -548,7 +591,8 @@ export function defineCatalogElement(generation?: string): string {
       ]).size;
     }
 
-    #selected(): Stored<ItemSet> | Stored<Item> | Stored<Subclass> | Stored<Feat> | undefined {
+    #selected():
+      Stored<ItemSet> | Stored<Item> | Stored<Subclass> | Stored<Feat> | Stored<Spell> | undefined {
       const selection = this.#selection;
       if (!selection || !this.#drafts) return undefined;
       if (selection.kind === "set")
@@ -559,6 +603,8 @@ export function defineCatalogElement(generation?: string): string {
         return this.#drafts.subclasses.find((entry) => entry.value.id === selection.id);
       if (selection.kind === "feat")
         return this.#drafts.feats.find((entry) => entry.value.id === selection.id);
+      if (selection.kind === "spell")
+        return this.#drafts.spells.find((entry) => entry.value.id === selection.id);
       return undefined;
     }
     #currentSetId(): string {
@@ -638,6 +684,7 @@ export function defineCatalogElement(generation?: string): string {
           ],
           ["Subclass", "A class's subclass, with its features by level."],
           ["Feat", "An origin feat, a general feat, a fighting style or an epic boon."],
+          ["Spell", "A spell with its stat block, on the spell lists of the classes you choose."],
         ] as const)
           kinds.append(element(document, "dt", "", t(name)), element(document, "dd", "", t(about)));
         start.append(
@@ -654,7 +701,15 @@ export function defineCatalogElement(generation?: string): string {
         this.#editor.replaceChildren(start);
         return;
       }
-      if (selection.kind === "feat" || selection.kind === "new-feat") {
+      if (selection.kind === "spell" || selection.kind === "new-spell") {
+        const stored =
+          selection.kind === "spell"
+            ? this.#drafts.spells.find((entry) => entry.value.id === selection.id)
+            : undefined;
+        this.#editor.replaceChildren(
+          this.#spellForm(stored, selection.kind === "new-spell" ? selection.template : undefined),
+        );
+      } else if (selection.kind === "feat" || selection.kind === "new-feat") {
         const stored =
           selection.kind === "feat"
             ? this.#drafts.feats.find((entry) => entry.value.id === selection.id)
@@ -728,6 +783,13 @@ export function defineCatalogElement(generation?: string): string {
       return new Set([
         ...(this.#drafts?.items.map((entry) => entry.value.id) ?? []),
         ...[...(this.#published?.records.values() ?? [])].map((entry) => entry.value.itemId),
+      ]);
+    }
+    /** Spell ids in use, including published spells whose draft was deleted. */
+    #spellIds(): ReadonlySet<string> {
+      return new Set([
+        ...(this.#drafts?.spells.map((entry) => entry.value.id) ?? []),
+        ...[...(this.#published?.spells.values() ?? [])].map((entry) => entry.value.spellId),
       ]);
     }
     /** Feat ids in use, including published feats whose draft was deleted. */
@@ -1187,7 +1249,7 @@ export function defineCatalogElement(generation?: string): string {
         {
           document,
           t,
-          references: this.#references,
+          references: this.#grantReferences(),
           subclassLevel: () => formNumber(new FormData(form), "subclassLevel") ?? 3,
           changed: () => {
             this.#setDirty(true);
@@ -1349,7 +1411,7 @@ export function defineCatalogElement(generation?: string): string {
         {
           document,
           t,
-          references: this.#references,
+          references: this.#grantReferences(),
           takenIds: () => this.#featIds(),
           changed: () => this.#setDirty(true),
           restructured: () => this.#controls?.refresh(),
@@ -1422,6 +1484,82 @@ export function defineCatalogElement(generation?: string): string {
           : undefined,
       );
     }
+    #spellForm(stored: Stored<Spell> | undefined, template?: Spell): HTMLFormElement {
+      const t = this.#t;
+      const value = stored?.value ?? template ?? newSpell("", "", Date.now());
+      const { form, main } = this.#form(stored ? value.name : t("New spell"));
+      const editor = spellEditor(
+        { document, t, references: this.#references, takenIds: () => this.#spellIds() },
+        form,
+        main,
+        value,
+        stored !== undefined,
+      );
+      const actions = element(document, "div", "hb-editor-actions");
+      actions.dataset["uiActions"] = "";
+      const save = actionButton(
+        document,
+        t("Save"),
+        () => void this.#saveSpell(editor, stored),
+        "primary",
+      );
+      save.type = "submit";
+      actions.append(save);
+      if (stored)
+        actions.append(
+          actionButton(
+            document,
+            t("Duplicate"),
+            () =>
+              void this.#select({
+                kind: "new-spell",
+                template: {
+                  ...stored.value,
+                  id: "",
+                  name: t("{name} (copy)", { name: stored.value.name }),
+                },
+              }),
+          ),
+          actionButton(document, t("Delete"), () => void this.#deleteSpell(stored), "danger"),
+        );
+      main.append(actions);
+      form.addEventListener("submit", (event) => event.preventDefault());
+      return form;
+    }
+    async #saveSpell(editor: SpellEditor, stored: Stored<Spell> | undefined): Promise<void> {
+      const value = editor.read();
+      const named =
+        !stored && formText(new FormData(this.#editor.querySelector("form")!), "id").trim() === "";
+      if (!stored && this.#spellIds().has(value.id))
+        return this.#editorProblem({ text: "This id is already in use. Choose another id." });
+      const failure = spellProblem(value);
+      if (failure) return this.#editorProblem(failure);
+      await this.#save(
+        collections.spells,
+        value,
+        stored,
+        (saved) => ({ kind: "spell", id: saved.id }),
+        named
+          ? (failed) => ({
+              ...value,
+              id: freeId(value.name, new Set([...this.#spellIds(), ...failed])),
+            })
+          : undefined,
+      );
+    }
+    async #deleteSpell(stored: Stored<Spell>): Promise<void> {
+      const t = this.#t;
+      const published = this.#published?.spells.get(`hb.${stored.value.id}`);
+      const question =
+        published && !published.value.withdrawn
+          ? t(
+              "Deleting a published spell withdraws it at the next publish; characters with it then show a missing-source problem. Delete {name}?",
+              { name: stored.value.name },
+            )
+          : t("Delete {name}?", { name: stored.value.name });
+      if (!(await confirmDialog(this, t, question, t("Delete")))) return;
+      await this.#remove(collections.spells, stored);
+    }
     async #deleteFeat(stored: Stored<Feat>): Promise<void> {
       const t = this.#t;
       const published = this.#published?.feats.get(`hb.${stored.value.id}`);
@@ -1461,7 +1599,7 @@ export function defineCatalogElement(generation?: string): string {
      * came from its name can still meet a deleted draft's key, which the
      * browser cannot reuse; `rename` then gives the next free id.
      */
-    async #save<T extends ItemSet | Item | Subclass | Feat>(
+    async #save<T extends ItemSet | Item | Subclass | Feat | Spell>(
       collection: DraftCollection,
       value: T,
       stored: Stored<T> | undefined,
@@ -1625,7 +1763,7 @@ export function defineCatalogElement(generation?: string): string {
     }
     async #remove(
       collection: DraftCollection,
-      stored: Stored<ItemSet> | Stored<Item> | Stored<Subclass> | Stored<Feat>,
+      stored: Stored<ItemSet> | Stored<Item> | Stored<Subclass> | Stored<Feat> | Stored<Spell>,
     ): Promise<void> {
       const runtime = this.#runtime;
       if (!runtime || this.#busy) return;
@@ -1679,6 +1817,8 @@ export function defineCatalogElement(generation?: string): string {
           published.subclasses,
           drafts.feats.map((entry) => entry.value),
           published.feats,
+          drafts.spells.map((entry) => entry.value),
+          published.spells,
         );
         const body = element(document, "div", "hb-dialog-body");
         let confirmable = plan.problems.length === 0 && plan.mutations.length > 0;
@@ -1691,6 +1831,7 @@ export function defineCatalogElement(generation?: string): string {
               drafts.subclasses.find((subclass) => subclass.value.id === entry.itemId)?.value
                 .name ??
               drafts.feats.find((feat) => feat.value.id === entry.itemId)?.value.name ??
+              drafts.spells.find((spell) => spell.value.id === entry.itemId)?.value.name ??
               entry.itemId;
             list.append(element(document, "li", "", `${name}: ${problemText(t, entry.problem)}`));
           }
@@ -1735,7 +1876,7 @@ export function defineCatalogElement(generation?: string): string {
               messageBlock(
                 document,
                 t(
-                  "Characters with a withdrawn item, subclass or feat show a missing-source problem until it is removed from them.",
+                  "Characters with a withdrawn item, subclass, feat or spell show a missing-source problem until it is removed from them.",
                 ),
                 "alert",
               ),
@@ -1791,6 +1932,7 @@ export function defineCatalogElement(generation?: string): string {
           Date.now(),
           new Map(this.#drafts.subclasses.map((entry) => [entry.value.id, entry])),
           new Map(this.#drafts.feats.map((entry) => [entry.value.id, entry])),
+          new Map(this.#drafts.spells.map((entry) => [entry.value.id, entry])),
         );
       } catch (error) {
         return error instanceof HomebrewError
@@ -1848,6 +1990,7 @@ export function defineCatalogElement(generation?: string): string {
           [collections.items]: t("item"),
           [collections.subclasses]: t("subclass"),
           [collections.feats]: t("feat"),
+          [collections.spells]: t("spell"),
         };
         for (const [operation, label] of [
           ["create", "Created"],
@@ -1907,6 +2050,7 @@ export function defineCatalogElement(generation?: string): string {
         now.getTime(),
         this.#drafts.subclasses.map((entry) => entry.value),
         this.#drafts.feats.map((entry) => entry.value),
+        this.#drafts.spells.map((entry) => entry.value),
       );
       downloadFile(
         document,

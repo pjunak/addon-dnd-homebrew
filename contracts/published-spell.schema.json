@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["id", "schemaVersion", "spellId", "withdrawn", "record"],
+  "properties": {
+    "id": { "$ref": "#/$defs/recordId" },
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "spellId": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+    "withdrawn": { "type": "boolean" },
+    "record": { "$ref": "#/$defs/spellRecord" }
+  },
+  "$defs": {
+    "recordId": { "type": "string", "maxLength": 67, "pattern": "^hb\\.[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "spellRecord": {
+      "$comment": "The Compendium's spell record; material only with a material component.",
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "name", "edition", "book", "level", "school", "classes", "ritual", "concentration", "castingTime", "range", "components", "duration", "text"],
+      "properties": {
+        "kind": { "const": "spell" },
+        "id": { "$ref": "#/$defs/recordId" },
+        "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+        "edition": { "const": "2024" },
+        "book": { "const": "homebrew" },
+        "level": { "$ref": "homebrew-common.schema.json#/$defs/spellLevel" },
+        "school": { "$ref": "homebrew-spell.schema.json#/$defs/school" },
+        "classes": { "$ref": "homebrew-spell.schema.json#/$defs/classes" },
+        "ritual": { "type": "boolean" },
+        "concentration": { "type": "boolean" },
+        "castingTime": { "$ref": "homebrew-spell.schema.json#/$defs/line" },
+        "range": { "$ref": "homebrew-spell.schema.json#/$defs/line" },
+        "components": { "$ref": "homebrew-spell.schema.json#/$defs/components" },
+        "material": { "$ref": "homebrew-spell.schema.json#/$defs/line" },
+        "duration": { "$ref": "homebrew-spell.schema.json#/$defs/line" },
+        "text": { "type": "string", "maxLength": 23000 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "components": { "contains": { "const": "M" } } } },
+          "then": { "required": ["material"] },
+          "else": { "not": { "required": ["material"] } }
+        },
+        { "$ref": "homebrew-spell.schema.json#/$defs/concentration" }
+      ]
+    }
+  }
+}

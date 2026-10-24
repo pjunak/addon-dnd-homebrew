@@ -1153,12 +1153,6 @@ export const cs: Readonly<Record<string, string>> = {
   Created: "Vytvořeno",
   Removed: "Odstraněno",
   // Feats
-  "Create items, item sets, subclasses and feats, then publish them to use them on character sheets.":
-    "Vytvářejte předměty, sady předmětů, podpovolání a odbornosti a pak je zveřejněte, aby šly použít na denících postav.",
-  "Nothing yet. Create an item, a set, a subclass or a feat, or import a file to begin.":
-    "Zatím nic. Začněte vytvořením předmětu, sady, podpovolání nebo odbornosti, nebo importem souboru.",
-  "Characters with a withdrawn item, subclass or feat show a missing-source problem until it is removed from them.":
-    "Postavy se staženým předmětem, podpovoláním nebo odborností ukazují problém s chybějícím zdrojem, dokud jim ho neodeberete.",
   "An import holds at most 2000 entries.": "Import obsahuje nejvýše 2000 položek.",
   "New feat": "Nová odbornost",
   Feats: "Odbornosti",
@@ -1236,6 +1230,66 @@ export const cs: Readonly<Record<string, string>> = {
   "An origin feat, a general feat, a fighting style or an epic boon.":
     "Odbornost původu, obecná odbornost, bojový styl nebo epické dobrodiní.",
   "Open {name}": "Otevřít {name}",
+  // Spells
+  "Create items, item sets, subclasses, feats and spells, then publish them to use them on character sheets.":
+    "Vytvářejte předměty, sady předmětů, podpovolání, odbornosti a kouzla a pak je zveřejněte, aby šly použít na denících postav.",
+  "Nothing yet. Create an item, a set, a subclass, a feat or a spell, or import a file to begin.":
+    "Zatím nic. Začněte vytvořením předmětu, sady, podpovolání, odbornosti nebo kouzla, nebo importem souboru.",
+  "Characters with a withdrawn item, subclass, feat or spell show a missing-source problem until it is removed from them.":
+    "Postavy se staženým předmětem, podpovoláním, odborností nebo kouzlem ukazují problém s chybějícím zdrojem, dokud jim ho neodeberete.",
+  "New spell": "Nové kouzlo",
+  spell: "kouzlo",
+  Spell: "Kouzlo",
+  "A spell with its stat block, on the spell lists of the classes you choose.":
+    "Kouzlo s jeho údaji, na seznamech kouzel povolání, která zvolíte.",
+  "Deleting a published spell withdraws it at the next publish; characters with it then show a missing-source problem. Delete {name}?":
+    "Smazání zveřejněného kouzla ho při příštím zveřejnění stáhne; postavy, které ho mají, pak ukážou problém s chybějícím zdrojem. Smazat {name}?",
+  Cantrip: "Trik",
+  "Level {level}": "Úroveň {level}",
+  "Spell lists": "Seznamy kouzel",
+  "Characters of these classes can learn or prepare it. A subclass or feat can also grant it by its id, hb.<id>.":
+    "Postavy těchto povolání se ho mohou naučit nebo si ho připravit. Podpovolání nebo odbornost ho také mohou dát podle identifikátoru hb.<id>.",
+  "Casting time": "Čas sesílání",
+  Duration: "Trvání",
+  Concentration: "Soustředění",
+  'Type the duration without "Concentration, up to"; publishing adds it.':
+    "Trvání napište bez „Concentration, up to“; zveřejnění ho doplní.",
+  Ritual: "Rituál",
+  "It can also be cast as a ritual.": "Lze ho seslat i jako rituál.",
+  Components: "Složky",
+  "Verbal (V)": "Verbální (V)",
+  "Somatic (S)": "Pohybová (S)",
+  "Material (M)": "Materiální (M)",
+  Material: "Materiál",
+  "What the spell does, as players read it; the stat block above is added when published.":
+    "Co kouzlo dělá, tak jak to čtou hráči; údaje výše se při zveřejnění doplní před text.",
+  "Choose the spell's level: 0 for a cantrip, up to 9.":
+    "Zvolte úroveň kouzla: 0 pro trik, nejvýše 9.",
+  "Choose the spell's school.": "Zvolte školu kouzla.",
+  "List each class at most once, by its id.":
+    "Uveďte každé povolání nejvýše jednou, jeho identifikátorem.",
+  "Give the spell's casting time on one line of at most {count} characters.":
+    "Uveďte čas sesílání kouzla na jednom řádku o nejvýše {count} znacích.",
+  "Give the spell's range on one line of at most {count} characters.":
+    "Uveďte dosah kouzla na jednom řádku o nejvýše {count} znacích.",
+  "Give the spell's duration on one line of at most {count} characters.":
+    "Uveďte trvání kouzla na jednom řádku o nejvýše {count} znacích.",
+  "Choose the spell's components: V, S or M, each at most once.":
+    "Zvolte složky kouzla: V, S nebo M, každou nejvýše jednou.",
+  "Name the material of the material (M) component on one line.":
+    "Uveďte na jednom řádku materiál materiální složky (M).",
+  "Only a spell with a material (M) component names a material.":
+    "Materiál uvádí jen kouzlo s materiální složkou (M).",
+  'A concentration spell\'s duration reads "Concentration, up to 1 minute".':
+    "Trvání kouzla se soustředěním zní například „Concentration, up to 1 minute“.",
+  'Only a concentration spell\'s duration starts with "Concentration".':
+    "Jen trvání kouzla se soustředěním začíná „Concentration“.",
+  "The spell is malformed.": "Kouzlo je poškozené.",
+  "Unsupported spell version.": "Nepodporovaná verze kouzla.",
+  "Give the spell a one-line name of at most 120 characters.":
+    "Dejte kouzlu jednořádkový název o nejvýše 120 znacích.",
+  "A published spell is invalid.": "Zveřejněné kouzlo je neplatné.",
+  "{at}: spell {id} appears twice.": "{at}: kouzlo {id} je uvedeno dvakrát.",
   // Weapons and armor
   "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.":
     "Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá hráče vybrat na deníku.",

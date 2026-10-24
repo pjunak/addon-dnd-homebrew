@@ -1,0 +1,49 @@
+{
+  "format": "dnd-homebrew",
+  "schemaVersion": 1,
+  "mode": "merge",
+  "sets": [],
+  "items": [],
+  "spells": [
+    {
+      "id": "ember-lance",
+      "name": "Ember Lance",
+      "level": 1,
+      "school": "Evocation",
+      "classes": ["sorcerer", "wizard"],
+      "castingTime": "Action",
+      "range": "60 feet",
+      "components": ["V", "S", "M"],
+      "material": "a shard of obsidian",
+      "duration": "Instantaneous",
+      "text": "A lance of embers streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, the target takes 3d8 Fire damage.\n\n**Using a Higher-Level Spell Slot.** The damage increases by 1d8 for each spell slot level above 1."
+    },
+    {
+      "id": "hearth-ward",
+      "name": "Hearth Ward",
+      "level": 0,
+      "school": "Abjuration",
+      "classes": ["cleric", "druid"],
+      "concentration": true,
+      "castingTime": "Bonus Action",
+      "range": "Touch",
+      "components": ["V", "S"],
+      "duration": "Concentration, up to 1 minute",
+      "text": "A willing creature you touch gains a +1 bonus to Armor Class until the spell ends."
+    },
+    {
+      "id": "whispered-map",
+      "name": "Whispered Map",
+      "level": 2,
+      "school": "Divination",
+      "classes": ["bard", "wizard"],
+      "ritual": true,
+      "castingTime": "10 minutes",
+      "range": "Self",
+      "components": ["V", "S", "M"],
+      "material": "a map drawn in your own hand",
+      "duration": "1 hour",
+      "text": "You whisper the name of a place you have visited within 1 mile, and the map shows you the shortest safe way there. The way updates as you travel until the spell ends."
+    }
+  ]
+}

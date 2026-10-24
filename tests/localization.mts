@@ -30,7 +30,11 @@ void test("every English message shown in the UI has a Czech translation", async
         const text = unescape(match[1]!);
         if (text !== "" && !(text in cs)) missing.add(`${file}: ${text}`);
       }
-    if (["effects.ts", "grants.ts", "magic-gear.ts", "feat-editor.ts"].includes(file))
+    if (
+      ["effects.ts", "grants.ts", "magic-gear.ts", "feat-editor.ts", "spell-editor.ts"].includes(
+        file,
+      )
+    )
       for (const block of source.matchAll(/Readonly<Record<\w+, string>> = \{([^}]*)\}/gu))
         for (const match of block[1]!.matchAll(/:\s*"((?:[^"\\]|\\.)*)"/gu))
           if (!(unescape(match[1]!) in cs)) missing.add(`${file}: ${match[1]}`);

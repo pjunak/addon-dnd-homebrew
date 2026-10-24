@@ -111,6 +111,8 @@ func decodeDraft(collection string, body json.RawMessage) error {
 		_, err = homebrew.DecodeSubclass(body)
 	case homebrew.FeatsCollection:
 		_, err = homebrew.DecodeFeat(body)
+	case homebrew.SpellsCollection:
+		_, err = homebrew.DecodeSpell(body)
 	default:
 		_, err = homebrew.DecodeItem(body)
 	}

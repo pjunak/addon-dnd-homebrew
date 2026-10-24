@@ -100,3 +100,14 @@ func TestTheSampleFeatsAreValid(t *testing.T) {
 		t.Fatalf("report:\n%s", out.String())
 	}
 }
+
+func TestTheSampleSpellsAreValid(t *testing.T) {
+	var out bytes.Buffer
+	if err := run([]string{"../../docs/examples/sample-spells.json"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(out.String(), "VALID: 3 new, 0 changed, 0 unchanged, 0 removed (merge).") ||
+		!strings.Contains(out.String(), "create homebrew_spells/ember-lance") {
+		t.Fatalf("report:\n%s", out.String())
+	}
+}

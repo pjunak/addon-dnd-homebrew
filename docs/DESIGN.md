@@ -16,16 +16,19 @@ one draft, as the DM edits it, and publishes as the Engine's `subclass`
 record plus one `feature` record per feature, kept together in one document
 so a subclass is withdrawn or replaced as a whole
 ([format](FORMAT.md#published-subclass)). A feat publishes as one `feat`
-record ([format](FORMAT.md#published-feat)).
+record ([format](FORMAT.md#published-feat)) and a spell as one `spell` record
+in the Compendium's shape ([format](FORMAT.md#published-spell)); a spell's
+`classes` put it on those classes' spell lists, so the Engine offers it with
+no change.
 
 ## Drafts and publishing
 
 Any change to served rules data makes every character sheet ask its owner to
 adopt the new rules on the next save. Editing drafts never does that; only
-**Publish** writes `homebrew_published`, `homebrew_published_subclasses` and
-`homebrew_published_feats` and moves the revision in `homebrew_meta`, in one
-transaction guarded by the revisions of all eight collections. An unchanged
-publish writes nothing.
+**Publish** writes `homebrew_published`, `homebrew_published_subclasses`,
+`homebrew_published_feats` and `homebrew_published_spells` and moves the
+revision in `homebrew_meta`, in one transaction guarded by the revisions of all
+ten collections. An unchanged publish writes nothing.
 
 The worker's catalog revision is `<meta document revision>-<hash of the served
 records>`. The Engine calls `catalog` on every evaluation, so the warm path is
@@ -74,8 +77,8 @@ form names its controls by the same path, so saving moves to the problem.
 ## Visibility
 
 Character sheets evaluate with the viewer's authority, so `homebrew_published`,
-`homebrew_published_subclasses`, `homebrew_published_feats` and
-`homebrew_meta` are public collections.
+`homebrew_published_subclasses`, `homebrew_published_feats`,
+`homebrew_published_spells` and `homebrew_meta` are public collections.
 Drafts are DM-only. *Visible to players* is presentation: it decides what the
 gallery and wiki search list. An exact `magic-item:hb.<id>` reference resolves regardless, because the sheet
 asking already holds the item. A truly secret item stays unpublished.
@@ -92,8 +95,9 @@ data, the DM must review a data migration (**Heal and update**) before the new
 version runs. `homebrew-common.schema.json` is referenced by the item, set,
 publish and subclass collections, so a change there touches all of them; a new
 kind of homebrew keeps its own definitions in its own schema file
-(`homebrew-feat.schema.json` holds the prerequisite vocabulary), which
-leaves the existing collections untouched.
+(`homebrew-feat.schema.json` holds the prerequisite vocabulary,
+`homebrew-spell.schema.json` the spell's fields), which leaves the existing
+collections untouched.
 
 ## Limits
 
@@ -117,15 +121,23 @@ leaves the existing collections untouched.
   an optional consumer that excludes this add-on's own records. Without a
   Compendium they are typed as ids. Either way the Engine checks them: an
   unknown spell is unavailable on the sheet, and a leveled spell without a use
-  or `atWill` is refused there, not here.
+  or `atWill` is refused there, not here. Subclass and feat grants also offer
+  this campaign's spell drafts as `hb.<id>`; an item's spell ids hold no dot
+  (`homebrew-common.schema.json`), so an item cannot cast a homebrew spell
+  until that schema changes, which needs a reviewed migration.
 - A set condition only counts levels. What each level does stays text in
   its summary, and conditional rules beyond toggles stay in the description;
   the DM can add a linked adjustment on a character instead.
 - A feat's prerequisite uses only the predicates the Engine evaluates; a
   requirement in words would need a DM's waiver on every character, so it
   stays in the text. Any and all nest at most three deep.
-- The wiki provider resolves items only; a homebrew subclass or feat has no
-  page of its own outside the sheets.
+- A spell carries no grants or effects. The Engine reads its level, school,
+  classes, ritual, concentration and casting time; damage, saves and areas
+  stay in its text, as for the Compendium's spells. Its stat block is written
+  into the published text, so changing a casting time or range republishes the
+  spell.
+- The wiki provider resolves items only; a homebrew subclass, feat or spell has
+  no page of its own outside the sheets.
 - If the worker stops, the Engine cannot read its rules sources and character
   editing pauses; saved sheets stay readable. Disable the add-on to remove it
   from the Engine's sources.

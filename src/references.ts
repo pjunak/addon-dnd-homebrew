@@ -31,7 +31,7 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 const ordinal = (level: number): string => (level === 0 ? "Cantrip" : `Level ${level}`);
 
 /** The picker entry for a record value, or undefined when it is malformed. */
-function optionOf(kind: Kind, value: unknown): RuleOption | undefined {
+export function optionOf(kind: Kind, value: unknown): RuleOption | undefined {
   if (!isObject(value) || typeof value["id"] !== "string" || typeof value["name"] !== "string")
     return undefined;
   if (kind === "class") return { id: value["id"], name: value["name"], detail: "" };

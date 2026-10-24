@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["id", "schemaVersion", "name", "level", "school", "classes", "ritual", "concentration", "castingTime", "range", "components", "material", "duration", "text", "updatedAt"],
+  "properties": {
+    "id": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+    "level": { "$ref": "homebrew-common.schema.json#/$defs/spellLevel" },
+    "school": { "$ref": "#/$defs/school" },
+    "classes": { "$ref": "#/$defs/classes" },
+    "ritual": { "type": "boolean" },
+    "concentration": { "type": "boolean" },
+    "castingTime": { "$ref": "#/$defs/line" },
+    "range": { "$ref": "#/$defs/line" },
+    "components": { "$ref": "#/$defs/components" },
+    "material": { "anyOf": [{ "const": "" }, { "$ref": "#/$defs/line" }] },
+    "duration": { "$ref": "#/$defs/line" },
+    "text": { "$ref": "homebrew-common.schema.json#/$defs/markdown" },
+    "updatedAt": { "$ref": "homebrew-common.schema.json#/$defs/updatedAt" }
+  },
+  "allOf": [{ "$ref": "#/$defs/material" }, { "$ref": "#/$defs/concentration" }],
+  "$defs": {
+    "school": { "enum": ["Abjuration", "Conjuration", "Divination", "Enchantment", "Evocation", "Illusion", "Necromancy", "Transmutation"] },
+    "classes": {
+      "$comment": "The class spell lists the spell joins, by class id.",
+      "type": "array", "maxItems": 20, "uniqueItems": true, "items": { "$ref": "homebrew-common.schema.json#/$defs/id" }
+    },
+    "line": { "type": "string", "minLength": 1, "maxLength": 300, "pattern": "^\\S(?:.*\\S)?$" },
+    "components": { "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true, "items": { "enum": ["V", "S", "M"] } },
+    "material": {
+      "$comment": "A material component names its material; without one there is none.",
+      "if": { "properties": { "components": { "contains": { "const": "M" } } } },
+      "then": { "properties": { "material": { "minLength": 1 } } },
+      "else": { "properties": { "material": { "const": "" } } }
+    },
+    "concentration": {
+      "$comment": "As printed, a concentration spell's duration reads \"Concentration, up to 1 minute\".",
+      "if": { "properties": { "concentration": { "const": true } } },
+      "then": { "properties": { "duration": { "pattern": "^Concentration, up to \\S" } } },
+      "else": { "properties": { "duration": { "not": { "pattern": "^Concentration" } } } }
+    }
+  }
+}

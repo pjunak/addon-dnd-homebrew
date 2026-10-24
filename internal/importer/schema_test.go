@@ -68,8 +68,10 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 		itemGrants   = "homebrew-common.schema.json#/$defs/itemGrants"
 		featSchema   = "homebrew-feat.schema.json"
 		featRecord   = "published-feat.schema.json"
+		spellSchema  = "homebrew-spell.schema.json"
+		spellRecord  = "published-spell.schema.json"
 	)
-	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, engineGrants, recordGrants, itemGrants, featSchema, featRecord)
+	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, engineGrants, recordGrants, itemGrants, featSchema, featRecord, spellSchema, spellRecord)
 	accept := func(name, label string, body []byte) {
 		t.Helper()
 		if err := validate(t, schemas[name], label, body); err != nil {
@@ -107,6 +109,8 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 				name = setSchema
 			case homebrew.FeatsCollection:
 				name = featSchema
+			case homebrew.SpellsCollection:
+				name = spellSchema
 			}
 			accept(name, mutation.Reference.DataID+"/"+mutation.Key, mutation.Value.(json.RawMessage))
 		}
@@ -161,25 +165,30 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 		accept(servedSchema, fmt.Sprintf("published subclass record %d (served)", index+1), record)
 	}
 
-	// Feats: every valid draft, the published document and its served record.
-	var feats struct {
-		Valid     []json.RawMessage `json:"valid"`
-		Published json.RawMessage   `json:"published"`
+	// Feats and spells: every valid draft, the published document and its served record.
+	for _, kind := range []struct{ label, fixture, draft, published string }{
+		{"feat", "feats.json", featSchema, featRecord},
+		{"spell", "spells.json", spellSchema, spellRecord},
+	} {
+		var fixture struct {
+			Valid     []json.RawMessage `json:"valid"`
+			Published json.RawMessage   `json:"published"`
+		}
+		if body, err := os.ReadFile("../../tests/fixtures/" + kind.fixture); err != nil || json.Unmarshal(body, &fixture) != nil {
+			t.Fatalf("%s fixture: %v", kind.label, err)
+		}
+		for index, draft := range fixture.Valid {
+			accept(kind.draft, fmt.Sprintf("%s %d", kind.label, index+1), draft)
+		}
+		accept(kind.published, "published "+kind.label, fixture.Published)
+		var served struct {
+			Record json.RawMessage `json:"record"`
+		}
+		if json.Unmarshal(fixture.Published, &served) != nil {
+			t.Fatal("published " + kind.label)
+		}
+		accept(servedSchema, "published "+kind.label+" (served)", served.Record)
 	}
-	if body, err := os.ReadFile("../../tests/fixtures/feats.json"); err != nil || json.Unmarshal(body, &feats) != nil {
-		t.Fatalf("feat fixture: %v", err)
-	}
-	for index, feat := range feats.Valid {
-		accept(featSchema, fmt.Sprintf("feat %d", index+1), feat)
-	}
-	accept(featRecord, "published feat", feats.Published)
-	var servedFeat struct {
-		Record json.RawMessage `json:"record"`
-	}
-	if json.Unmarshal(feats.Published, &servedFeat) != nil {
-		t.Fatal("published feat")
-	}
-	accept(servedSchema, "published feat (served)", servedFeat.Record)
 
 	var effects struct {
 		Grants struct {

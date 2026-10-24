@@ -157,6 +157,8 @@ export const collections = {
   publishedSubclasses: "homebrew_published_subclasses",
   feats: "homebrew_feats",
   publishedFeats: "homebrew_published_feats",
+  spells: "homebrew_spells",
+  publishedSpells: "homebrew_published_spells",
 } as const;
 export const metaKey = "publish";
 export const idPrefix = "hb.";
@@ -637,7 +639,10 @@ function spellFilterProblem(value: unknown): Problem | undefined {
     : problem("The spell filter needs a class, a school, spell ids or ritual.");
 }
 
-function spellProblem(value: unknown, resources: ReadonlyMap<string, number>): Problem | undefined {
+function itemSpellProblem(
+  value: unknown,
+  resources: ReadonlyMap<string, number>,
+): Problem | undefined {
   if (!isRecord(value)) return problem("The value must be an object.");
   if (value["ids"] !== undefined) {
     const shape = exactFields(value, ["ids"], ["resource", "atWill"]);
@@ -782,7 +787,7 @@ export function grantsProblem(value: unknown): Problem | undefined {
     if (!Array.isArray(list)) return list;
     const ids = new Set<string>();
     for (const [index, entry] of list.entries()) {
-      const failure = spellProblem(entry, resources);
+      const failure = itemSpellProblem(entry, resources);
       if (failure) return problem("Spell {position}: {problem}", positioned(index + 1, failure));
       const id = (entry as SpellGrant).id;
       if (id === undefined) continue;
@@ -2092,6 +2097,287 @@ export function parsePublishedFeat(value: unknown): PublishedFeat {
   return published;
 }
 
+// --- Spells ------------------------------------------------------------------
+
+// internal/homebrew/spell.go enforces the same rules through the contracts; the
+// shared fixture tests/fixtures/spells.json keeps the two in step. A spell is
+// the Compendium's spell record, and its classes put it on their spell lists.
+
+export type SpellSchoolName = Capitalize<SpellSchool>;
+/** Schools as spell records name them: Evocation. */
+export const spellSchoolNames = spellSchools.map((school) =>
+  titleOf(school),
+) as readonly SpellSchoolName[];
+export const spellComponents = ["V", "S", "M"] as const;
+export type SpellComponent = (typeof spellComponents)[number];
+/** How a concentration spell's duration starts, as printed. */
+export const concentrationPrefix = "Concentration, up to ";
+/** Casting time, range, material and duration are one line of at most this. */
+export const maxSpellLine = 300;
+export interface Spell {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly name: string;
+  /** 0 for a cantrip, up to 9. */
+  readonly level: number;
+  readonly school: SpellSchoolName;
+  /** The class ids whose spell lists include it. */
+  readonly classes: readonly string[];
+  readonly ritual: boolean;
+  readonly concentration: boolean;
+  readonly castingTime: string;
+  readonly range: string;
+  readonly components: readonly SpellComponent[];
+  /** The material component's material, or "" without one. */
+  readonly material: string;
+  /** "Concentration, up to 1 minute" for a concentration spell. */
+  readonly duration: string;
+  readonly text: string;
+  readonly updatedAt: number;
+}
+/** The Compendium's spell record with an `hb.` id; material only with an M component. */
+export interface SpellRecord {
+  readonly kind: "spell";
+  readonly id: string;
+  readonly name: string;
+  readonly edition: "2024";
+  readonly book: "homebrew";
+  readonly level: number;
+  readonly school: SpellSchoolName;
+  readonly classes: readonly string[];
+  readonly ritual: boolean;
+  readonly concentration: boolean;
+  readonly castingTime: string;
+  readonly range: string;
+  readonly components: readonly SpellComponent[];
+  readonly material?: string;
+  readonly duration: string;
+  readonly text: string;
+}
+/** One served spell; withdrawn like an item when its draft is deleted. */
+export interface PublishedSpell {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly spellId: string;
+  readonly withdrawn: boolean;
+  readonly record: SpellRecord;
+}
+const spellFields = [
+  "id",
+  "schemaVersion",
+  "name",
+  "level",
+  "school",
+  "classes",
+  "ritual",
+  "concentration",
+  "castingTime",
+  "range",
+  "components",
+  "material",
+  "duration",
+  "text",
+  "updatedAt",
+] as const;
+const spellLines: readonly (readonly [string, Problem])[] = [
+  [
+    "castingTime",
+    problem("Give the spell's casting time on one line of at most {count} characters.", {
+      count: maxSpellLine,
+    }),
+  ],
+  [
+    "range",
+    problem("Give the spell's range on one line of at most {count} characters.", {
+      count: maxSpellLine,
+    }),
+  ],
+  [
+    "duration",
+    problem("Give the spell's duration on one line of at most {count} characters.", {
+      count: maxSpellLine,
+    }),
+  ],
+];
+
+/** The rules a draft and its record share; `material` is "" for none. */
+function spellRulesProblem(value: Json, material: string): Problem | undefined {
+  if (!isInteger(value["level"], 0, 9))
+    return problem("Choose the spell's level: 0 for a cantrip, up to 9.");
+  if (!oneOf(spellSchoolNames, value["school"])) return problem("Choose the spell's school.");
+  const classes = value["classes"];
+  if (
+    !Array.isArray(classes) ||
+    classes.length > 20 ||
+    !classes.every(validId) ||
+    !distinct(classes)
+  )
+    return problem("List each class at most once, by its id.");
+  if (typeof value["ritual"] !== "boolean" || typeof value["concentration"] !== "boolean")
+    return problem("The spell is malformed.");
+  for (const [field, failure] of spellLines)
+    if (!validName(value[field], maxSpellLine)) return failure;
+  const components = value["components"];
+  if (
+    !Array.isArray(components) ||
+    components.length === 0 ||
+    !components.every((entry) => oneOf(spellComponents, entry)) ||
+    !distinct(components)
+  )
+    return problem("Choose the spell's components: V, S or M, each at most once.");
+  if (components.includes("M") && !validName(material, maxSpellLine))
+    return problem("Name the material of the material (M) component on one line.");
+  if (!components.includes("M") && material !== "")
+    return problem("Only a spell with a material (M) component names a material.");
+  const duration = value["duration"] as string;
+  if (value["concentration"] === true && !/^Concentration, up to \S/u.test(duration))
+    return problem('A concentration spell\'s duration reads "Concentration, up to 1 minute".');
+  if (value["concentration"] === false && duration.startsWith("Concentration"))
+    return problem('Only a concentration spell\'s duration starts with "Concentration".');
+  return undefined;
+}
+
+export function spellProblem(value: Spell): Problem | undefined {
+  if (value.schemaVersion !== 1) return problem("Unsupported spell version.");
+  if (!validId(value.id)) return problem("The id must be lowercase words joined by hyphens.");
+  if (!validName(value.name))
+    return problem("Give the spell a one-line name of at most 120 characters.");
+  if (!validMarkdown(value.text))
+    return problem("Descriptions are limited to {count} characters.", { count: maxMarkdown });
+  if (
+    !Number.isSafeInteger(value.updatedAt) ||
+    value.updatedAt < 0 ||
+    typeof value.material !== "string"
+  )
+    return problem("The spell is malformed.");
+  return spellRulesProblem(value as unknown as Json, value.material);
+}
+
+/** Checks an untrusted value as a stored spell draft and returns it. */
+export function parseSpell(value: unknown): Spell {
+  const failure = exactFields(value, spellFields) ?? spellProblem(value as unknown as Spell);
+  if (failure) throw new HomebrewError(failure.text, failure.params);
+  return value as unknown as Spell;
+}
+
+export function newSpell(name: string, id: string, now: number): Spell {
+  return {
+    id,
+    schemaVersion: 1,
+    name,
+    level: 1,
+    school: "Evocation",
+    classes: [],
+    ritual: false,
+    concentration: false,
+    castingTime: "Action",
+    range: "60 feet",
+    components: ["V", "S"],
+    material: "",
+    duration: "Instantaneous",
+    text: "",
+    updatedAt: now,
+  };
+}
+
+/** The line under a spell's name, as printed: "Level 3 Evocation (Sorcerer, Wizard)", classes by id. */
+export function spellHeader(spell: Pick<Spell, "level" | "school" | "classes">): string {
+  const kind =
+    spell.level === 0 ? `${spell.school} Cantrip` : `Level ${spell.level} ${spell.school}`;
+  const classes = [...spell.classes].sort(compare).map((id) => titleOf(id));
+  return classes.length > 0 ? `${kind} (${classes.join(", ")})` : kind;
+}
+
+/**
+ * The spell record the Engine reads, its text opening with the printed stat
+ * block. Classes and components take a fixed order, so the order a form or a
+ * file lists them in never changes the record.
+ */
+export function flattenSpell(spell: Spell): PublishedSpell {
+  const id = idPrefix + spell.id;
+  const components = spellComponents.filter((component) => spell.components.includes(component));
+  const material = components.includes("M");
+  // Two trailing spaces break the line without starting a paragraph.
+  const block = [
+    `*${spellHeader(spell)}*`,
+    `**Casting Time:** ${spell.castingTime}${spell.ritual ? " or Ritual" : ""}`,
+    `**Range:** ${spell.range}`,
+    `**Components:** ${components.join(", ")}${material ? ` (${spell.material})` : ""}`,
+    `**Duration:** ${spell.duration}`,
+  ].join("  \n");
+  return {
+    id,
+    schemaVersion: 1,
+    spellId: spell.id,
+    withdrawn: false,
+    record: {
+      kind: "spell",
+      id,
+      name: spell.name,
+      edition: "2024",
+      book: "homebrew",
+      level: spell.level,
+      school: spell.school,
+      classes: [...spell.classes].sort(compare),
+      ritual: spell.ritual,
+      concentration: spell.concentration,
+      castingTime: spell.castingTime,
+      range: spell.range,
+      components,
+      ...(material ? { material: spell.material } : {}),
+      duration: spell.duration,
+      text: [block, spell.text.trim()].filter((part) => part !== "").join("\n\n"),
+    },
+  };
+}
+
+/** Checks an untrusted value as a published spell and returns it. */
+export function parsePublishedSpell(value: unknown): PublishedSpell {
+  const shape = exactFields(value, ["id", "schemaVersion", "spellId", "withdrawn", "record"]);
+  if (shape) throw new HomebrewError(shape.text, shape.params);
+  const published = value as PublishedSpell;
+  const record = published.record as unknown;
+  const recordShape = exactFields(
+    record,
+    [
+      "kind",
+      "id",
+      "name",
+      "edition",
+      "book",
+      "level",
+      "school",
+      "classes",
+      "ritual",
+      "concentration",
+      "castingTime",
+      "range",
+      "components",
+      "duration",
+      "text",
+    ],
+    ["material"],
+  );
+  const served = record as Json;
+  const material = served["material"];
+  const valid =
+    recordShape === undefined &&
+    published.schemaVersion === 1 &&
+    validId(published.spellId) &&
+    published.id === idPrefix + published.spellId &&
+    typeof published.withdrawn === "boolean" &&
+    served["kind"] === "spell" &&
+    served["id"] === published.id &&
+    validName(served["name"]) &&
+    served["edition"] === "2024" &&
+    served["book"] === "homebrew" &&
+    typeof served["text"] === "string" &&
+    (material === undefined || (typeof material === "string" && material !== "")) &&
+    spellRulesProblem(served, typeof material === "string" ? material : "") === undefined;
+  if (!valid) throw new HomebrewError("A published spell is invalid.");
+  return published;
+}
+
 // --- Publishing ------------------------------------------------------------
 
 /** Set defaults, per-item overrides and the item's own text, as one record. */
@@ -2248,7 +2534,7 @@ export function draftDeletes(
 }
 
 export interface PublishPlan {
-  /** `itemId` names the draft: an item, a subclass or a feat. */
+  /** `itemId` names the draft: an item, a subclass, a feat or a spell. */
   readonly problems: readonly { readonly itemId: string; readonly problem: Problem }[];
   readonly changes: readonly PublishChange[];
   readonly mutations: readonly CollectionMutation[];
@@ -2270,6 +2556,8 @@ export function planPublish(
   publishedSubclasses: ReadonlyMap<string, Stored<PublishedSubclass>> = new Map(),
   feats: readonly Feat[] = [],
   publishedFeats: ReadonlyMap<string, Stored<PublishedFeat>> = new Map(),
+  spells: readonly Spell[] = [],
+  publishedSpells: ReadonlyMap<string, Stored<PublishedSpell>> = new Map(),
 ): PublishPlan {
   const bySet = new Map(sets.map((entry) => [entry.id, entry]));
   const problems: { itemId: string; problem: Problem }[] = [];
@@ -2361,41 +2649,55 @@ export function planPublish(
     putSubclass(id, { ...current.value, withdrawn: true }, current.revision);
     changes.push({ id, name: nameOf(current.value), operation: "withdraw" });
   }
-  const desiredFeats = new Map<string, PublishedFeat>();
-  for (const feat of feats) {
-    const failure = featProblem(feat);
-    if (failure) problems.push({ itemId: feat.id, problem: failure });
-    else desiredFeats.set(idPrefix + feat.id, flattenFeat(feat));
-  }
-  const putFeat = (key: string, value: unknown, expectedRevision: number): void => {
-    mutations.push({
-      operation: "put",
-      kind: "collection",
-      dataId: collections.publishedFeats,
-      key,
-      expectedRevision,
-      value,
-    });
+  /** Puts and withdrawals for a kind that publishes one record per draft; returns how many it serves. */
+  const planRecords = <
+    D extends { readonly id: string },
+    P extends { readonly withdrawn: boolean; readonly record: { readonly name?: unknown } },
+  >(
+    drafts: readonly D[],
+    current: ReadonlyMap<string, Stored<P>>,
+    collection: string,
+    check: (draft: D) => Problem | undefined,
+    publish: (draft: D) => P,
+  ): number => {
+    const wanted = new Map<string, P>();
+    for (const draft of drafts) {
+      const failure = check(draft);
+      if (failure) problems.push({ itemId: draft.id, problem: failure });
+      else wanted.set(idPrefix + draft.id, publish(draft));
+    }
+    const putRecord = (key: string, value: unknown, expectedRevision: number): void => {
+      mutations.push({
+        operation: "put",
+        kind: "collection",
+        dataId: collection,
+        key,
+        expectedRevision,
+        value,
+      });
+    };
+    for (const [id, value] of [...wanted].sort(([left], [right]) => compare(left, right))) {
+      const stored = current.get(id);
+      if (stored && canonical(stored.value) === canonical(value)) continue;
+      putRecord(id, value, stored?.revision ?? 0);
+      changes.push({
+        id,
+        name: String(value.record.name),
+        operation: stored && !stored.value.withdrawn ? "update" : "add",
+      });
+    }
+    for (const [id, stored] of [...current].sort(([left], [right]) => compare(left, right))) {
+      if (wanted.has(id) || stored.value.withdrawn) continue;
+      putRecord(id, { ...stored.value, withdrawn: true }, stored.revision);
+      changes.push({ id, name: String(stored.value.record.name), operation: "withdraw" });
+    }
+    return wanted.size;
   };
-  for (const [id, value] of [...desiredFeats].sort(([left], [right]) => compare(left, right))) {
-    const current = publishedFeats.get(id);
-    if (current && canonical(current.value) === canonical(value)) continue;
-    putFeat(id, value, current?.revision ?? 0);
-    changes.push({
-      id,
-      name: String(value.record["name"]),
-      operation: current && !current.value.withdrawn ? "update" : "add",
-    });
-  }
-  for (const [id, current] of [...publishedFeats].sort(([left], [right]) => compare(left, right))) {
-    if (desiredFeats.has(id) || current.value.withdrawn) continue;
-    putFeat(id, { ...current.value, withdrawn: true }, current.revision);
-    changes.push({ id, name: String(current.value.record["name"]), operation: "withdraw" });
-  }
   const recordCount =
     desired.size +
     [...desiredSubclasses.values()].reduce((total, value) => total + value.records.length, 0) +
-    desiredFeats.size;
+    planRecords(feats, publishedFeats, collections.publishedFeats, featProblem, flattenFeat) +
+    planRecords(spells, publishedSpells, collections.publishedSpells, spellProblem, flattenSpell);
   if (mutations.length > 0)
     mutations.push({
       operation: "put",
@@ -2457,6 +2759,13 @@ const featDefaults: Record<string, unknown> = {
   text: "",
   excerpt: "",
 };
+const spellDefaults: Record<string, unknown> = {
+  classes: [],
+  ritual: false,
+  concentration: false,
+  material: "",
+  text: "",
+};
 const subclassDefaults: Record<string, unknown> = {
   text: "",
   excerpt: "",
@@ -2465,12 +2774,14 @@ const subclassDefaults: Record<string, unknown> = {
   tableColumns: [],
   features: [],
 };
+type DraftKind = "set" | "item" | "subclass" | "feat" | "spell";
 /** Optional objects `{}` clears in an import; a cleared field takes its partner. */
-const clearable: Readonly<Record<"set" | "item" | "subclass" | "feat", readonly string[]>> = {
+const clearable: Readonly<Record<DraftKind, readonly string[]>> = {
   set: ["condition"],
   item: ["grants", "attunementPrerequisites", "container", "baseItem"],
   subclass: ["grants", "spellcasting"],
   feat: ["grants"],
+  spell: [],
 };
 const partners: Readonly<Record<string, string>> = { spellcasting: "progression" };
 
@@ -2486,11 +2797,12 @@ export function planImport(
   now: number,
   storedSubclasses: ReadonlyMap<string, Stored<unknown>> = new Map(),
   storedFeats: ReadonlyMap<string, Stored<unknown>> = new Map(),
+  storedSpells: ReadonlyMap<string, Stored<unknown>> = new Map(),
 ): ImportPlan {
   const unknownField = exactFields(
     document,
     ["format", "schemaVersion", "sets", "items"],
-    ["generatedAt", "mode", "subclasses", "feats"],
+    ["generatedAt", "mode", "subclasses", "feats", "spells"],
   );
   if (unknownField)
     throw new HomebrewError("The document is invalid: {problem}", {
@@ -2507,16 +2819,22 @@ export function planImport(
   const incomingSets = source["sets"],
     incomingItems = source["items"],
     incomingSubclasses = source["subclasses"] ?? [],
-    incomingFeats = source["feats"] ?? [];
+    incomingFeats = source["feats"] ?? [],
+    incomingSpells = source["spells"] ?? [];
   if (
     !Array.isArray(incomingSets) ||
     !Array.isArray(incomingItems) ||
     !Array.isArray(incomingSubclasses) ||
-    !Array.isArray(incomingFeats)
+    !Array.isArray(incomingFeats) ||
+    !Array.isArray(incomingSpells)
   )
     throw new HomebrewError("The document needs sets and items lists.");
   if (
-    incomingSets.length + incomingItems.length + incomingSubclasses.length + incomingFeats.length >
+    incomingSets.length +
+      incomingItems.length +
+      incomingSubclasses.length +
+      incomingFeats.length +
+      incomingSpells.length >
     2000
   )
     throw new HomebrewError("An import holds at most 2000 entries.");
@@ -2606,12 +2924,24 @@ export function planImport(
     seen.add(`feat:${value.id}`);
     add(collections.feats, value.id, value.name, value, existing);
   }
+  for (const [index, raw] of incomingSpells.entries()) {
+    const at = `spells[${index}]`;
+    const existing = storedSpells.get(entryId(raw));
+    const value = guarded(at, () =>
+      parseSpell(normalize(raw, existing, spellDefaults, "spell", now)),
+    );
+    if (seen.has(`spell:${value.id}`))
+      throw new HomebrewError("{at}: spell {id} appears twice.", { at, id: value.id });
+    seen.add(`spell:${value.id}`);
+    add(collections.spells, value.id, value.name, value, existing);
+  }
   if (mode === "replace")
     for (const [collection, stored, prefix] of [
       [collections.sets, storedSets, "set:"],
       [collections.items, storedItems, "item:"],
       [collections.subclasses, storedSubclasses, "subclass:"],
       [collections.feats, storedFeats, "feat:"],
+      [collections.spells, storedSpells, "spell:"],
     ] as const)
       for (const id of [...stored.keys()].sort(compare)) {
         if (seen.has(prefix + id)) continue;
@@ -2637,12 +2967,13 @@ export function planImport(
         count: mutations.length,
       },
     );
-  // Sets, their items, subclasses, then feats; each collection by id.
+  // Sets, their items, subclasses, feats, then spells; each collection by id.
   const order: readonly string[] = [
     collections.sets,
     collections.items,
     collections.subclasses,
     collections.feats,
+    collections.spells,
   ];
   const rank = (change: ImportChange): number => order.indexOf(change.collection);
   changes.sort((left, right) => rank(left) - rank(right) || compare(left.id, right.id));
@@ -2665,7 +2996,7 @@ function normalize(
   raw: unknown,
   existing: Stored<unknown> | undefined,
   defaults: Record<string, unknown>,
-  kind: "set" | "item" | "subclass" | "feat",
+  kind: DraftKind,
   now: number,
 ): Record<string, unknown> {
   if (!isRecord(raw)) throw new HomebrewError("The entry must be an object.");
@@ -2701,6 +3032,7 @@ export function exportDocument(
   now: number,
   subclasses: readonly Subclass[] = [],
   feats: readonly Feat[] = [],
+  spells: readonly Spell[] = [],
 ): unknown {
   return {
     format: importFormat,
@@ -2711,6 +3043,7 @@ export function exportDocument(
     items: [...items].sort((left, right) => compare(left.id, right.id)),
     subclasses: [...subclasses].sort((left, right) => compare(left.id, right.id)),
     feats: [...feats].sort((left, right) => compare(left.id, right.id)),
+    spells: [...spells].sort((left, right) => compare(left.id, right.id)),
   };
 }
 

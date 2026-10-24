@@ -488,3 +488,52 @@ func TestServesPublishedFeats(t *testing.T) {
 		t.Fatalf("a withdrawn feat must not be served: %v", failure)
 	}
 }
+
+func fixtureSpell(t *testing.T) json.RawMessage {
+	t.Helper()
+	body, err := os.ReadFile("../../tests/fixtures/spells.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		Published json.RawMessage `json:"published"`
+	}
+	if err := json.Unmarshal(body, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	return fixture.Published
+}
+
+func TestServesPublishedSpells(t *testing.T) {
+	data := newFakeData()
+	spell := fixtureSpell(t)
+	broken := json.RawMessage(strings.ReplaceAll(strings.Replace(string(spell), `"level": 1`, `"level": 10`, 1), "ember-lance", "broken-spell"))
+	withdrawn := json.RawMessage(strings.Replace(strings.ReplaceAll(string(spell), "ember-lance", "old-spell"), `"withdrawn": false`, `"withdrawn": true`, 1))
+	publish(t, data, fixtureRecords(t)[:1])
+	data.put(homebrew.PublishedFeatsCollection, "hb.storm-touched", fixtureFeat(t))
+	data.put(homebrew.PublishedSpellsCollection, "hb.ember-lance", spell)
+	data.put(homebrew.PublishedSpellsCollection, "hb.broken-spell", broken)
+	data.put(homebrew.PublishedSpellsCollection, "hb.old-spell", withdrawn)
+	var log bytes.Buffer
+	handler, _ := New(data, &log)
+	set := catalogSet(t, handler)
+	assertEngineCatalog(t, set)
+	if kinds := set["kinds"].(map[string]any); kinds["magic-item"].(float64) != 1 || kinds["feat"].(float64) != 1 || kinds["spell"].(float64) != 1 {
+		t.Fatalf("kinds %v", kinds)
+	}
+	if !strings.Contains(log.String(), "published spell \"hb.broken-spell\"") {
+		t.Fatalf("an invalid spell must be reported: %q", log.String())
+	}
+	got := call(t, handler, "get", `{"setId":"rules","kind":"spell","id":"hb.ember-lance"}`)["record"].(map[string]any)
+	value := got["value"].(map[string]any)
+	if value["school"] != "Evocation" || value["level"].(float64) != 1 || len(value["classes"].([]any)) != 2 {
+		t.Fatalf("spell %v", got)
+	}
+	page := call(t, handler, "query", `{"setId":"rules","kind":"spell","limit":10}`)["records"].([]any)
+	if len(page) != 1 || page[0].(map[string]any)["id"] != "hb.ember-lance" {
+		t.Fatalf("spell query %v", page)
+	}
+	if failure := callError(t, handler, "get", `{"setId":"rules","kind":"spell","id":"hb.old-spell"}`); failure.Data.Kind != workerrpc.KindNotFound {
+		t.Fatalf("a withdrawn spell must not be served: %v", failure)
+	}
+}

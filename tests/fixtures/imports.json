@@ -196,6 +196,55 @@
         "feats": [{ "id": "dwarf-kin", "name": "Dwarf Kin", "category": "general", "prerequisites": { "text": "a Dwarf" } }]
       },
       "errorIncludes": "feats[0]"
+    },
+    {
+      "name": "a new spell takes defaults",
+      "document": {
+        "format": "dnd-homebrew",
+        "schemaVersion": 1,
+        "sets": [],
+        "items": [],
+        "spells": [
+          {
+            "id": "ember-lance",
+            "name": "Ember Lance",
+            "level": 1,
+            "school": "Evocation",
+            "castingTime": "Action",
+            "range": "60 feet",
+            "components": ["V", "S"],
+            "duration": "Instantaneous"
+          }
+        ]
+      },
+      "summary": { "creates": 1, "updates": 0, "skips": 0, "deletes": 0 },
+      "changes": [["homebrew_spells", "ember-lance", "create"]],
+      "values": {
+        "homebrew_spells/ember-lance": { "classes": [], "ritual": false, "concentration": false, "material": "", "text": "", "updatedAt": 1000 }
+      }
+    },
+    {
+      "name": "a concentration spell without the printed duration",
+      "document": {
+        "format": "dnd-homebrew",
+        "schemaVersion": 1,
+        "sets": [],
+        "items": [],
+        "spells": [
+          {
+            "id": "hearth-ward",
+            "name": "Hearth Ward",
+            "level": 0,
+            "school": "Abjuration",
+            "concentration": true,
+            "castingTime": "Bonus Action",
+            "range": "Touch",
+            "components": ["V", "S"],
+            "duration": "1 minute"
+          }
+        ]
+      },
+      "errorIncludes": "spells[0]"
     }
   ]
 }
