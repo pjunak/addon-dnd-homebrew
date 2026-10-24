@@ -82,6 +82,6 @@ After changing the provider, publishing, the import format or the manifest,
 also run the host's installed suite with `CODEX_HOMEBREW_ZIP` set to the new
 build (see the host's CONTRIBUTING.md); `installed-homebrew.browser.mts` there
 is the only check that runs the real Engine and sheets. Its sample documents
-copy `docs/examples/sample-items.json` and `sample-subclass.json`; change them
-together.
+copy `docs/examples/sample-items.json`, `sample-subclass.json` and
+`sample-feats.json`; change them together.
 Ask before pushing, deploying, installing on a site or touching live data.
