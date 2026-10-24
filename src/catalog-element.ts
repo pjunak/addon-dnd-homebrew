@@ -699,11 +699,17 @@ export function defineCatalogElement(generation?: string): string {
       const main = element(document, "div", "hb-form-main");
       main.append(element(document, "h2", "", title));
       form.append(main);
-      form.addEventListener("input", () => this.#setDirty(true));
-      form.addEventListener("change", () => this.#setDirty(true));
+      // A form replaced after saving can still report a field's last change.
+      const edited = (): void => {
+        if (form.isConnected) this.#setDirty(true);
+      };
+      form.addEventListener("input", edited);
+      form.addEventListener("change", edited);
       form.addEventListener("keydown", (event) => {
         if (event.key.toLowerCase() !== "s" || !(event.ctrlKey || event.metaKey)) return;
         event.preventDefault();
+        // Leaving the field first reports its change before the save, not after.
+        if (event.target instanceof HTMLElement) event.target.blur();
         form.querySelector<HTMLButtonElement>('.hb-editor-actions button[type="submit"]')?.click();
       });
       if (this.#editorMessage)
