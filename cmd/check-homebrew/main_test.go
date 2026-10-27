@@ -122,3 +122,14 @@ func TestTheSampleSpeciesAreValid(t *testing.T) {
 		t.Fatalf("report:\n%s", out.String())
 	}
 }
+
+func TestTheSampleBackgroundsAreValid(t *testing.T) {
+	var out bytes.Buffer
+	if err := run([]string{"../../docs/examples/sample-backgrounds.json"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(out.String(), "VALID: 2 new, 0 changed, 0 unchanged, 0 removed (merge).") ||
+		!strings.Contains(out.String(), "create homebrew_backgrounds/lamplighter") {
+		t.Fatalf("report:\n%s", out.String())
+	}
+}

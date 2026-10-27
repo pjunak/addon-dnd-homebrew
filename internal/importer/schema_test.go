@@ -72,8 +72,10 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 		spellRecord  = "published-spell.schema.json"
 		speciesDraft = "homebrew-species.schema.json"
 		speciesServe = "published-species.schema.json"
+		bgDraft      = "homebrew-background.schema.json"
+		bgServe      = "published-background.schema.json"
 	)
-	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, engineGrants, recordGrants, itemGrants, featSchema, featRecord, spellSchema, spellRecord, speciesDraft, speciesServe)
+	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, engineGrants, recordGrants, itemGrants, featSchema, featRecord, spellSchema, spellRecord, speciesDraft, speciesServe, bgDraft, bgServe)
 	accept := func(name, label string, body []byte) {
 		t.Helper()
 		if err := validate(t, schemas[name], label, body); err != nil {
@@ -115,6 +117,8 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 				name = spellSchema
 			case homebrew.SpeciesCollection:
 				name = speciesDraft
+			case homebrew.BackgroundsCollection:
+				name = bgDraft
 			}
 			accept(name, mutation.Reference.DataID+"/"+mutation.Key, mutation.Value.(json.RawMessage))
 		}
@@ -169,11 +173,12 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 		accept(servedSchema, fmt.Sprintf("published subclass record %d (served)", index+1), record)
 	}
 
-	// Feats, spells and species: every valid draft, the published document and its served record.
+	// Feats, spells, species and backgrounds: every valid draft, the published document and its served record.
 	for _, kind := range []struct{ label, fixture, draft, published string }{
 		{"feat", "feats.json", featSchema, featRecord},
 		{"spell", "spells.json", spellSchema, spellRecord},
 		{"species", "species.json", speciesDraft, speciesServe},
+		{"background", "backgrounds.json", bgDraft, bgServe},
 	} {
 		var fixture struct {
 			Valid     []json.RawMessage `json:"valid"`

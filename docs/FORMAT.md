@@ -1,6 +1,6 @@
 # Homebrew format
 
-One JSON document holds item sets, items, subclasses, feats, spells and species. Import it from
+One JSON document holds item sets, items, subclasses, feats, spells, species and backgrounds. Import it from
 **Homebrew → Import file** or from the DM Tools Import Center; **Export**
 writes the same shape. Files are limited to 2 MiB and 256 changes per import.
 
@@ -40,10 +40,10 @@ AI assistant:
    already exist are reused rather than duplicated.
 2. Give the writer this page, the [sample](examples/sample-items.json), the
    export and the source text. Ask for a `merge` file with only the sets,
-   items, subclasses, feats, spells and species to add or change, effects and grants
+   items, subclasses, feats, spells, species and backgrounds to add or change, effects and grants
    only where the rule matches them exactly, and the rest of the rule in
    `text`.
-   For a subclass, a feat or a species, also give the writer the Compendium's record
+   For a subclass, a feat, a species or a background, also give the writer the Compendium's record
    schema (`addon-dnd-2024-compendium/data/SCHEMA.md`), which explains the
    grants.
 3. Check the file offline from a clone of this repository, and fix every
@@ -71,6 +71,7 @@ AI assistant:
 | `feats` | no | A list of [feats](#feat) |
 | `spells` | no | A list of [spells](#spell) |
 | `species` | no | A list of [species](#species) |
+| `backgrounds` | no | A list of [backgrounds](#background) |
 
 Unknown fields anywhere are refused. In `merge` mode an entry updates the draft
 with the same `id`; a field the entry leaves out keeps its stored value, so
@@ -556,3 +557,64 @@ Each line ends with two spaces, a Markdown line break; darkvision and
 resistances appear only when the species has them. The Builder lists homebrew
 species beside the Compendium's. Deleting a species withdraws its document at
 the next publish, as for items.
+
+## Background
+
+```json
+{ "id": "lamplighter", "name": "Lamplighter", "abilityScores": ["DEX", "INT", "WIS"],
+  "originFeat": "magic-initiate", "originFeatChoices": { "spell-list": "wizard" },
+  "skillProficiencies": ["investigation", "perception"], "tools": ["tinkers-tools"],
+  "equipment": "Choose A or B: (A) Lantern, Tinker's Tools, 12 GP; or (B) 50 GP",
+  "text": "You kept a city's lamps burning through the long nights." }
+```
+
+[`examples/sample-backgrounds.json`](examples/sample-backgrounds.json) holds a
+background with a Compendium feat and a preset feat choice, and one with this
+campaign's origin feat and a tool choice. The fields follow the Compendium's
+`background` record (`addon-dnd-2024-compendium/data/SCHEMA.md`):
+
+| Field | Required | Default | Meaning |
+| --- | --- | --- | --- |
+| `id` | yes | | Lowercase words joined by hyphens, at most 64 characters; permanent |
+| `name` | yes | | One line, at most 120 characters |
+| `abilityScores` | yes | | Three different abilities (`STR`, `DEX`, `CON`, `INT`, `WIS`, `CHA`) the player raises by +2/+1 or +1/+1/+1 |
+| `originFeat` | no | `""` | A feat id, or this campaign's own as `hb.<id>`; empty for none |
+| `originFeatChoices` | no | | Up to 10 of the feat's choices the background makes, such as `{ "spell-list": "wizard" }`; only with `originFeat` |
+| `skillProficiencies` | no | `[]` | Up to 4 skills, each once, as effects name them: `arcana`, `sleightOfHand` |
+| `tools` | no | `[]` | One tool id the background gives, or two or more the player picks from |
+| `toolPicks` | no | `1` | With two or more tools, how many the player picks (1–3, fewer than listed); otherwise `1` |
+| `equipment` | no | `""` | The printed equipment, one line of at most 1,000 characters |
+| `grants` | no | | Anything else, in the Engine's grants vocabulary |
+| `text` | no | `""` | Markdown, at most 20,000 characters: the background as players read it |
+
+`grants` is the same vocabulary as a [subclass](#subclass)'s, checked the same
+way, without `acBonus`, which the Engine reads only from a species; a choice
+may not take the id `tool`, the background's own tool choice. The Engine
+silently skips an origin feat it does not know, so check the id; a feat that
+is not an origin feat still works. The equipment stays text: the Engine does
+not read it.
+
+### Published background
+
+Publishing writes one document per background to
+`homebrew_published_backgrounds`, holding the `background` record the Engine
+reads: `id` `hb.<id>`, `name`, `edition` `2024`, `book` `homebrew`,
+`abilityScores` and `skillProficiencies` in their usual order, `originFeat`
+and `originFeatChoices` when set, one tool as `toolProficiency` or several as
+`toolProficiencyChoice` `{ "count", "from" }` with the ids sorted, `grants`
+when set and `text`. `text` opens with the printed block:
+
+```text
+**Ability Scores:** Dexterity, Intelligence, Wisdom
+**Feat:** Magic Initiate (Wizard)
+**Skill Proficiencies:** Investigation and Perception
+**Tool Proficiency:** Tinker's Tools
+**Equipment:** Choose A or B: (A) Lantern, Tinker's Tools, 12 GP; or (B) 50 GP
+```
+
+Each line ends with two spaces, a Markdown line break, and appears only when
+the background has it; names come from the ids, and a tool choice reads
+*Choose one of Calligrapher's Supplies, Cartographer's Tools, or Painter's
+Supplies*. The Builder lists homebrew backgrounds beside the Compendium's.
+Deleting a background withdraws its document at the next publish, as for
+items.

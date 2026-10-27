@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["id", "schemaVersion", "name", "abilityScores", "originFeat", "skillProficiencies", "tools", "toolPicks", "equipment", "text", "updatedAt"],
+  "properties": {
+    "id": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+    "abilityScores": { "$ref": "#/$defs/abilityScores" },
+    "originFeat": { "anyOf": [{ "const": "" }, { "$ref": "#/$defs/featRef" }] },
+    "originFeatChoices": { "$ref": "#/$defs/featChoices" },
+    "skillProficiencies": { "$ref": "#/$defs/skills" },
+    "tools": {
+      "$comment": "One tool the background gives, or two or more the player picks toolPicks of.",
+      "type": "array", "maxItems": 40, "uniqueItems": true, "items": { "$ref": "homebrew-common.schema.json#/$defs/id" }
+    },
+    "toolPicks": { "type": "integer", "minimum": 1, "maximum": 3 },
+    "equipment": { "anyOf": [{ "const": "" }, { "$ref": "#/$defs/line" }] },
+    "grants": { "$ref": "#/$defs/backgroundGrants" },
+    "text": { "$ref": "homebrew-common.schema.json#/$defs/markdown" },
+    "updatedAt": { "$ref": "homebrew-common.schema.json#/$defs/updatedAt" }
+  },
+  "allOf": [
+    {
+      "$comment": "A preset feat choice needs the feat it presets.",
+      "if": { "required": ["originFeatChoices"] },
+      "then": { "properties": { "originFeat": { "minLength": 1 } } }
+    }
+  ],
+  "$defs": {
+    "abilityScores": {
+      "$comment": "The three abilities the player raises by +2/+1 or +1/+1/+1.",
+      "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": { "$ref": "homebrew-common.schema.json#/$defs/ability" }
+    },
+    "featRef": {
+      "$comment": "A feat from the rules data, or this campaign's own as hb.<id>.",
+      "type": "string", "minLength": 1, "maxLength": 67, "pattern": "^(?:hb\\.)?[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "featChoices": {
+      "$comment": "Choices of the origin feat the background makes, such as {\"spell-list\": \"wizard\"}.",
+      "type": "object", "minProperties": 1, "maxProperties": 10,
+      "propertyNames": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "^[a-z0-9]+(?:[-_.][a-z0-9]+)*$" },
+      "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "^\\S(?:.*\\S)?$" }
+    },
+    "skills": { "type": "array", "maxItems": 4, "uniqueItems": true, "items": { "$ref": "homebrew-common.schema.json#/$defs/skill" } },
+    "line": { "type": "string", "minLength": 1, "maxLength": 1000, "pattern": "^\\S[^\\n\\r]*\\S$|^\\S$" },
+    "backgroundGrants": {
+      "$comment": "The Engine's grants; it reads acBonus only from a species, and the tool choice is the background's own.",
+      "allOf": [
+        { "$ref": "engine-grants.schema.json#/$defs/grants" },
+        { "not": { "required": ["acBonus"] } },
+        { "properties": { "choices": { "items": { "properties": { "id": { "not": { "const": "tool" } } } } } } }
+      ]
+    }
+  }
+}

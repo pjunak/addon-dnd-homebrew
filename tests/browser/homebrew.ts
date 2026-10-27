@@ -1,12 +1,15 @@
+import { backgroundEditor } from "#web/background-editor";
 import { defineCatalogElement } from "#web/catalog-element";
 import { defineGalleryElement } from "#web/gallery-element";
 import { grantsSchema } from "#web/grants-schema";
 import {
   canonical,
+  flattenBackground,
   flattenFeat,
   flattenSpecies,
   flattenSpell,
   flattenSubclass,
+  type Background,
   type Feat,
   type Species,
   type Spell,
@@ -55,6 +58,9 @@ const spells = ((await (await fetch("../fixtures/spells.json")).json()) as { val
   .valid;
 const species = ((await (await fetch("../fixtures/species.json")).json()) as { valid: Species[] })
   .valid;
+const backgrounds = (
+  (await (await fetch("../fixtures/backgrounds.json")).json()) as { valid: Background[] }
+).valid;
 const documents = (values: readonly { id: string }[], key = (value: { id: string }) => value.id) =>
   values.map((value): AddonDocument<unknown> => ({ key: key(value), revision: 1, value }));
 const stored: Record<string, readonly AddonDocument<unknown>[]> = {
@@ -69,6 +75,8 @@ const stored: Record<string, readonly AddonDocument<unknown>[]> = {
   homebrew_published_spells: documents(spells.slice(0, 1).map(flattenSpell)),
   homebrew_species: documents(species),
   homebrew_published_species: documents(species.slice(0, 1).map(flattenSpecies)),
+  homebrew_backgrounds: documents(backgrounds),
+  homebrew_published_backgrounds: documents(backgrounds.slice(0, 1).map(flattenBackground)),
   homebrew_meta: [
     {
       key: "publish",
@@ -188,6 +196,7 @@ const catalog = mount(catalogTag),
   importedFeatCatalog = mount(catalogTag),
   spellCatalog = mount(catalogTag),
   speciesCatalog = mount(catalogTag),
+  backgroundCatalog = mount(catalogTag),
   edgeCatalog = mount(catalogTag),
   newCatalog = mount(catalogTag),
   gallery = mount(galleryTag),
@@ -279,6 +288,7 @@ await openDraft(featCatalog, "Storm Touched");
 await openDraft(importedFeatCatalog, "Elemental Scholar");
 await openDraft(spellCatalog, "Hearth Ward");
 await openDraft(speciesCatalog, "Emberkin");
+await openDraft(backgroundCatalog, "Hedge Scholar");
 for (
   let attempt = 0;
   attempt < 60 && newCatalog.querySelectorAll(".hb-tree-item").length < 6;
@@ -422,6 +432,31 @@ const speciesBack = species.map((value) => {
     ? "unchanged"
     : JSON.stringify(editor.read());
 });
+// Each fixture background in its own form, read back as the editor would save it.
+const backgroundsBack = backgrounds.map((value) => {
+  const form = document.createElement("form"),
+    main = document.createElement("div");
+  form.hidden = true;
+  form.append(main);
+  document.body.append(form);
+  const editor = backgroundEditor(
+    {
+      document,
+      t: (english) => english,
+      references: undefined,
+      takenIds: () => new Set(),
+      changed() {},
+      restructured() {},
+    },
+    form,
+    main,
+    value,
+    true,
+  );
+  return canonical(flattenBackground(editor.read())) === canonical(flattenBackground(value))
+    ? "unchanged"
+    : JSON.stringify(editor.read());
+});
 
 const lines = (root: Element, selector: string): string[] =>
   [...root.querySelectorAll(`${selector} li`)].map((node) => node.textContent ?? "");
@@ -469,6 +504,9 @@ globalThis.runRenderingContract = () => {
         "Whispered Map",
         "Emberkin",
         "Stoneborn",
+        "Hedge Scholar",
+        "Lamplighter",
+        "Wanderer",
       ]),
     names,
     [
@@ -492,6 +530,9 @@ globalThis.runRenderingContract = () => {
       "Whispered Map",
       "Emberkin",
       "Stoneborn",
+      "Hedge Scholar",
+      "Lamplighter",
+      "Wanderer",
     ],
   );
   const trinket = [...catalog.querySelectorAll(".hb-tree-item")].find((node) =>
@@ -506,9 +547,9 @@ globalThis.runRenderingContract = () => {
   const status = catalog.querySelector(".hb-status")?.textContent ?? "";
   check(
     "status counts pending changes",
-    status.includes("Unpublished changes: 10."),
+    status.includes("Unpublished changes: 12."),
     status,
-    "…Unpublished changes: 10.",
+    "…Unpublished changes: 12.",
   );
   const preview = catalog.querySelector(".hb-preview-name")?.textContent;
   check(
@@ -643,9 +684,9 @@ globalThis.runRenderingContract = () => {
   );
   check(
     "the empty editor explains each kind and leaves the buttons to the header",
-    JSON.stringify(startPanel) === JSON.stringify([0, 6]),
+    JSON.stringify(startPanel) === JSON.stringify([0, 7]),
     startPanel,
-    [0, 6],
+    [0, 7],
   );
   check(
     "a new item offers every template",
@@ -888,6 +929,48 @@ globalThis.runRenderingContract = () => {
     speciesBadges,
     ["EmberkinHumanoid", "StonebornGiantUnpublished"],
   );
+  check(
+    "the background editor publishes each fixture background as it was",
+    backgroundsBack.every((entry) => entry === "unchanged"),
+    backgroundsBack,
+    backgrounds.map(() => "unchanged"),
+  );
+  const backgroundHeader = backgroundCatalog
+    .querySelector(".hb-preview codex-addon-markdown")
+    ?.textContent?.split("\n")
+    .slice(0, 4)
+    .join("|");
+  const expectedBackgroundHeader =
+    "**Ability Scores:** Intelligence, Wisdom, Charisma  |**Feat:** Storm Touched  |**Skill Proficiencies:** Arcana and Sleight of Hand  |**Tool Proficiency:** Choose one of Calligrapher's Supplies, Cartographer's Tools, or Painter's Supplies";
+  check(
+    "a background previews the lines the sheet shows, without a problem",
+    backgroundHeader === expectedBackgroundHeader &&
+      backgroundCatalog.querySelectorAll(".hb-preview .hb-message").length === 0,
+    backgroundHeader,
+    expectedBackgroundHeader,
+  );
+  const originFeat = backgroundCatalog.querySelector<HTMLSelectElement>(
+    'select[name="originFeat"]',
+  );
+  const featOptions = [...(originFeat?.options ?? [])].map((entry) => entry.value);
+  check(
+    "the origin feat is picked among origin feats, this campaign's included",
+    originFeat?.value === "hb.storm-touched" &&
+      featOptions.includes("hb.hearthborn") === false &&
+      featOptions[0] === "",
+    [originFeat?.value, featOptions],
+    ["hb.storm-touched", "options start with None"],
+  );
+  const backgroundBadges = [...catalog.querySelectorAll(".hb-tree-item")]
+    .filter((node) => /^(Lamplighter|Wanderer)/u.test(node.textContent ?? ""))
+    .map((node) => node.textContent);
+  check(
+    "backgrounds in the tree show their origin feat and whether they are published",
+    JSON.stringify(backgroundBadges) ===
+      JSON.stringify(["LamplighterMagic Initiate", "WandererNo origin featUnpublished"]),
+    backgroundBadges,
+    ["LamplighterMagic Initiate", "WandererNo origin featUnpublished"],
+  );
   const homebrewSpellOffered = [featCatalog, ringCatalog].map(
     (root) => root.querySelectorAll('option[value="hb.ember-lance"]').length > 0,
   );
@@ -906,7 +989,7 @@ globalThis.runRenderingContract = () => {
   ];
   const expectedControls = [
     ["New item", "New set", "New…", "Import file", "Export"],
-    ["Subclass", "Feat", "Spell", "Species"],
+    ["Subclass", "Feat", "Spell", "Species", "Background"],
     true,
   ];
   check(

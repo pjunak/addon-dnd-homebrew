@@ -18,6 +18,7 @@ const state: PublishedState = {
   feats: new Map(),
   spells: new Map(),
   species: new Map(),
+  backgrounds: new Map(),
   meta: undefined,
   unreadable: [],
 };

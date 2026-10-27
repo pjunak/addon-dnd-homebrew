@@ -20,17 +20,19 @@ record ([format](FORMAT.md#published-feat)) and a spell as one `spell` record
 in the Compendium's shape ([format](FORMAT.md#published-spell)); a spell's
 `classes` put it on those classes' spell lists, so the Engine offers it with
 no change. A species publishes as one `species` record with its lineages inside
-it ([format](FORMAT.md#published-species)), which the Builder lists beside the
-Compendium's.
+it ([format](FORMAT.md#published-species)), and a background as one
+`background` record ([format](FORMAT.md#published-background)); the Builder
+lists both beside the Compendium's.
 
 ## Drafts and publishing
 
 Any change to served rules data makes every character sheet ask its owner to
 adopt the new rules on the next save. Editing drafts never does that; only
 **Publish** writes `homebrew_published`, `homebrew_published_subclasses`,
-`homebrew_published_feats`, `homebrew_published_spells` and
-`homebrew_published_species` and moves the revision in `homebrew_meta`, in one
-transaction guarded by the revisions of all twelve collections. An unchanged publish writes nothing.
+`homebrew_published_feats`, `homebrew_published_spells`,
+`homebrew_published_species` and `homebrew_published_backgrounds` and moves the
+revision in `homebrew_meta`, in one transaction guarded by the revisions of all
+fourteen collections. An unchanged publish writes nothing.
 
 The worker's catalog revision is `<meta document revision>-<hash of the served
 records>`. The Engine calls `catalog` on every evaluation, so the warm path is
@@ -65,12 +67,12 @@ the order of fields, starting entries and, for an activation change, which
 fields its target uses. A field without words still renders under its own
 name, so a new Engine field is editable once `npm run sync:engine-grants` and
 `npm run sync:grants-schema` run; giving it words and a Czech translation
-is the follow-up. Feats and species use the same form (`src/feat-editor.ts`,
-`src/species-editor.ts`); the grants' `subject` decides how fields are
+is the follow-up. Feats, species and backgrounds use the same form
+(`src/feat-editor.ts`, `src/species-editor.ts`, `src/background-editor.ts`); the grants' `subject` decides how fields are
 grouped, so a feat lists its own benefits (an ability score increase, spell
 lists, weapon mastery) first where a subclass sets them aside, a species lists
-its AC bonus with combat, and a lineage never offers the choices and AC bonus
-its schema refuses. Item grants keep their own smaller editor
+its AC bonus with combat, and a lineage or a background never offers what its
+schema refuses. Item grants keep their own smaller editor
 (`src/grants.ts`), because items accept only an allowlist.
 
 The same schema checks the values in the browser (`src/schema.ts`) and in the
@@ -82,8 +84,8 @@ form names its controls by the same path, so saving moves to the problem.
 
 Character sheets evaluate with the viewer's authority, so `homebrew_published`,
 `homebrew_published_subclasses`, `homebrew_published_feats`,
-`homebrew_published_spells`, `homebrew_published_species` and
-`homebrew_meta` are public collections.
+`homebrew_published_spells`, `homebrew_published_species`,
+`homebrew_published_backgrounds` and `homebrew_meta` are public collections.
 Drafts are DM-only. *Visible to players* is presentation: it decides what the
 gallery and wiki search list. An exact `magic-item:hb.<id>` reference resolves regardless, because the sheet
 asking already holds the item. A truly secret item stays unpublished.
@@ -102,7 +104,8 @@ publish and subclass collections, so a change there touches all of them; a new
 kind of homebrew keeps its own definitions in its own schema file
 (`homebrew-feat.schema.json` holds the prerequisite vocabulary,
 `homebrew-spell.schema.json` the spell's fields, `homebrew-species.schema.json`
-the species' sizes, speeds, traits and lineages), which leaves the existing
+the species' sizes, speeds, traits and lineages,
+`homebrew-background.schema.json` the background's), which leaves the existing
 collections untouched.
 
 ## Limits
@@ -147,8 +150,14 @@ collections untouched.
   schema refuses both on a lineage, and the Engine's size choice reserves the
   choice id `size`. Sizes, speeds and resistances publish in a fixed order, so
   the form's order never changes the record.
-- The wiki provider resolves items only; a homebrew subclass, feat, spell or
-  species has no page of its own outside the sheets.
+- A background's tools are one list: one tool is given outright and several
+  are the player's pick, as the Compendium's `toolProficiency` and
+  `toolProficiencyChoice`. Its printed lines name feats, skills and tools from
+  their ids, so publishing needs no rules data and gives the same text
+  everywhere. The Engine skips an origin feat it does not know without a
+  message.
+- The wiki provider resolves items only; a homebrew subclass, feat, spell,
+  species or background has no page of its own outside the sheets.
 - If the worker stops, the Engine cannot read its rules sources and character
   editing pauses; saved sheets stay readable. Disable the add-on to remove it
   from the Engine's sources.

@@ -6,6 +6,7 @@ import {
   effectTargets,
   keyedTargets,
   modes,
+  skillName,
   skills,
   type Effect,
   type EffectMode,
@@ -39,11 +40,7 @@ export const abilityNames: Readonly<Record<string, string>> = {
   WIS: "Wisdom",
   CHA: "Charisma",
 };
-export function skillName(skill: string): string {
-  if (skill === "sleightOfHand") return "Sleight of Hand";
-  if (skill === "animalHandling") return "Animal Handling";
-  return skill.charAt(0).toUpperCase() + skill.slice(1);
-}
+export { skillName };
 const isAbilityTarget = (target: string): boolean =>
   (abilityTargets as readonly string[]).includes(target);
 const isKeyedTarget = (target: string): boolean =>

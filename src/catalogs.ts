@@ -1232,12 +1232,12 @@ export const cs: Readonly<Record<string, string>> = {
     "Odbornost původu, obecná odbornost, bojový styl nebo epické dobrodiní.",
   "Open {name}": "Otevřít {name}",
   // Spells
-  "Create items, item sets, subclasses, feats, spells and species, then publish them to use them on character sheets.":
-    "Vytvářejte předměty, sady předmětů, podpovolání, odbornosti, kouzla a druhy a pak je zveřejněte, aby šly použít na denících postav.",
-  "Nothing yet. Create an item, a set, a subclass, a feat, a spell or a species, or import a file to begin.":
-    "Zatím nic. Začněte vytvořením předmětu, sady, podpovolání, odbornosti, kouzla nebo druhu, nebo importem souboru.",
-  "Characters with a withdrawn item, subclass, feat, spell or species show a missing-source problem until it is removed from them.":
-    "Postavy se staženým předmětem, podpovoláním, odborností, kouzlem nebo druhem ukazují problém s chybějícím zdrojem, dokud jim ho neodeberete.",
+  "Create items, item sets, subclasses, feats, spells, species and backgrounds, then publish them to use them on character sheets.":
+    "Vytvářejte předměty, sady předmětů, podpovolání, odbornosti, kouzla, druhy a zázemí a pak je zveřejněte, aby šly použít na denících postav.",
+  "Nothing yet. Create an item, a set, a subclass, a feat, a spell, a species or a background, or import a file to begin.":
+    "Zatím nic. Začněte vytvořením předmětu, sady, podpovolání, odbornosti, kouzla, druhu nebo zázemí, nebo importem souboru.",
+  "Characters with a withdrawn item, subclass, feat, spell, species or background show a missing-source problem until it is removed from them.":
+    "Postavy se staženým předmětem, podpovoláním, odborností, kouzlem, druhem nebo zázemím ukazují problém s chybějícím zdrojem, dokud jim ho neodeberete.",
   "New spell": "Nové kouzlo",
   spell: "kouzlo",
   Spell: "Kouzlo",
@@ -1383,6 +1383,58 @@ export const cs: Readonly<Record<string, string>> = {
   "Each lineage needs its own id.": "Každá rodová linie potřebuje vlastní identifikátor.",
   "A published species is invalid.": "Zveřejněný druh je neplatný.",
   "{at}: species {id} appears twice.": "{at}: druh {id} je uveden dvakrát.",
+  // Backgrounds
+  Background: "Zázemí",
+  Backgrounds: "Zázemí",
+  background: "zázemí",
+  "New background": "Nové zázemí",
+  "No origin feat": "Bez odbornosti původu",
+  "A background for character creation: the abilities it raises, its origin feat, skills, tools and equipment.":
+    "Zázemí pro tvorbu postavy: vlastnosti, které zvyšuje, odbornost původu, dovednosti, nástroje a vybavení.",
+  "Deleting a published background withdraws it at the next publish; characters with it then show a missing-source problem. Delete {name}?":
+    "Smazání zveřejněného zázemí ho při příštím zveřejnění stáhne; postavy s ním pak ukážou problém s chybějícím zdrojem. Smazat {name}?",
+  "Three abilities; the player adds +2 to one and +1 to another, or +1 to all three.":
+    "Tři vlastnosti; hráč přidá +2 jedné a +1 druhé, nebo +1 všem třem.",
+  "The origin feat a character gains at level 1.":
+    "Odbornost původu, kterou postava získá na 1. úrovni.",
+  "The feat's id, or hb.<id> for this campaign's own; empty for none.":
+    "Identifikátor odbornosti, nebo hb.<id> pro vlastní odbornost kampaně; prázdné, pokud žádná není.",
+  "Feat choices": "Volby odbornosti",
+  "Choices the background makes for its feat, as choice: value, separated by commas. Leave it empty to let the player choose.":
+    "Volby, které zázemí za odbornost udělá, ve tvaru volba: hodnota, oddělené čárkami. Nechte prázdné, aby volil hráč.",
+  "Tool ids, separated by commas.": "Identifikátory nástrojů oddělené čárkami.",
+  "Tools the player picks": "Počet nástrojů na výběr",
+  "With several tools listed, how many the player picks; one tool is given outright.":
+    "Kolik nástrojů si hráč vybere, je-li jich uvedeno víc; jeden nástroj získá rovnou.",
+  Equipment: "Vybavení",
+  "The background as players read it; its abilities, feat, proficiencies and equipment are added when published.":
+    "Zázemí, tak jak ho čtou hráči; vlastnosti, odbornost, zběhlosti a vybavení se při zveřejnění doplní.",
+  "Anything beyond the fields above, such as a language or a resistance. Add fields from the list.":
+    "Cokoli nad rámec polí výše, například jazyk nebo odolnost. Pole přidávejte ze seznamu.",
+  "Not applied on backgrounds": "Neplatí u zázemí",
+  "Preset at most 10 of the feat's choices, each a choice id and its value.":
+    "Přednastavte nejvýše 10 voleb odbornosti, každou jako identifikátor volby a hodnotu.",
+  "{path}: a background cannot give an AC bonus; the Engine reads it only from a species.":
+    "{path}: zázemí nemůže dávat bonus k OČ; Engine ho čte jen u druhu.",
+  "{path}: the choice id tool is the background's own tool choice.":
+    "{path}: identifikátor volby tool patří volbě nástroje, kterou má zázemí samo.",
+  "Choose three different abilities for the player to raise.":
+    "Zvolte tři různé vlastnosti, které si hráč zvýší.",
+  "List at most {count} different skills.": "Uveďte nejvýše {count} různé dovednosti.",
+  "Preset feat choices need an origin feat.": "Přednastavené volby potřebují odbornost původu.",
+  "Unsupported background version.": "Nepodporovaná verze zázemí.",
+  "Give the background a one-line name of at most 120 characters.":
+    "Dejte zázemí jednořádkový název o nejvýše 120 znacích.",
+  "Choose the origin feat by its id.": "Zvolte odbornost původu podle jejího identifikátoru.",
+  "List each tool at most once, by its id.":
+    "Uveďte každý nástroj nejvýše jednou, jeho identifikátorem.",
+  "The player picks fewer tools than the background lists.":
+    "Hráč si vybírá méně nástrojů, než kolik jich zázemí uvádí.",
+  "Give the equipment on one line of at most {count} characters.":
+    "Uveďte vybavení na jednom řádku o nejvýše {count} znacích.",
+  "The background is malformed.": "Zázemí je poškozené.",
+  "A published background is invalid.": "Zveřejněné zázemí je neplatné.",
+  "{at}: background {id} appears twice.": "{at}: zázemí {id} je uvedeno dvakrát.",
   // Weapons and armor
   "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.":
     "Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá hráče vybrat na deníku.",

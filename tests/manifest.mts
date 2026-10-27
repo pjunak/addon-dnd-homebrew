@@ -24,7 +24,7 @@ const manifest = (await read("addon.json")) as Manifest;
 void test("manifest serves rules data from a worker and keeps drafts DM-only", () => {
   assert.equal(manifest.packageFormat, 1);
   assert.equal(manifest.id, "dnd-homebrew");
-  assert.equal(manifest.version, "1.7.0");
+  assert.equal(manifest.version, "1.8.0");
   assert.equal(manifest.runtime.ui.entry, "web/index.js");
   assert.equal(manifest.runtime.worker.type, "native");
   assert.equal(Object.keys(manifest.runtime.worker.entrypoints).length, 3);
@@ -45,6 +45,8 @@ void test("manifest serves rules data from a worker and keeps drafts DM-only", (
       ["homebrew_published_spells", "public"],
       ["homebrew_species", "dm"],
       ["homebrew_published_species", "public"],
+      ["homebrew_backgrounds", "dm"],
+      ["homebrew_published_backgrounds", "public"],
     ],
   );
   assert.deepEqual(

@@ -504,7 +504,7 @@ const templates: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
 };
 
 /** Whose grants a form edits: some fields apply only to feats, species or items. */
-export type GrantSubject = "subclass" | "feat" | "species" | "lineage";
+export type GrantSubject = "subclass" | "feat" | "species" | "lineage" | "background";
 interface GrantGroup {
   readonly label: string;
   readonly fields: readonly string[];
@@ -592,6 +592,13 @@ const subjectGroups: Readonly<Record<GrantSubject, readonly GrantGroup[]>> = {
     ...sharedWith(featureOnly, { Combat: speciesOnly }),
     { label: "Not applied on species", fields: [...featureOnly, ...featOnly, ...elsewhere] },
   ],
+  background: [
+    ...sharedWith(featureOnly),
+    {
+      label: "Not applied on backgrounds",
+      fields: [...featureOnly, ...featOnly, ...elsewhere],
+    },
+  ],
   lineage: [
     ...sharedWith([...featureOnly, ...lineageRefused]),
     { label: "Not applied on lineages", fields: [...featureOnly, ...featOnly, ...elsewhere] },
@@ -603,7 +610,7 @@ export function grantGroups(subject: GrantSubject): readonly GrantGroup[] {
 }
 /** Top-level grants the schema refuses for this subject, so the editor never offers them. */
 export function refusedGrants(subject: GrantSubject): readonly string[] {
-  return subject === "lineage" ? lineageRefused : [];
+  return subject === "lineage" ? lineageRefused : subject === "background" ? speciesOnly : [];
 }
 
 // --- Offered values ------------------------------------------------------------

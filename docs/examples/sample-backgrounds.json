@@ -1,0 +1,31 @@
+{
+  "format": "dnd-homebrew",
+  "schemaVersion": 1,
+  "mode": "merge",
+  "sets": [],
+  "items": [],
+  "backgrounds": [
+    {
+      "id": "lamplighter",
+      "name": "Lamplighter",
+      "abilityScores": ["DEX", "INT", "WIS"],
+      "originFeat": "magic-initiate",
+      "originFeatChoices": { "spell-list": "wizard" },
+      "skillProficiencies": ["investigation", "perception"],
+      "tools": ["tinkers-tools"],
+      "equipment": "Choose A or B: (A) Lantern, Oil (2 flasks), Tinker's Tools, Traveler's Clothes, 12 GP; or (B) 50 GP",
+      "text": "You kept a city's lamps burning through the long nights, and learned what moves in the dark between them."
+    },
+    {
+      "id": "hearth-warden",
+      "name": "Hearth Warden",
+      "abilityScores": ["STR", "CON", "WIS"],
+      "originFeat": "hb.hearthborn",
+      "skillProficiencies": ["athletics", "survival"],
+      "tools": ["brewers-supplies", "carpenters-tools", "cooks-utensils"],
+      "equipment": "Choose A or B: (A) Cook's Utensils, Blanket, Traveler's Clothes, 14 GP; or (B) 50 GP",
+      "grants": { "languages": ["dwarvish"] },
+      "text": "You tended the common hearth of a mountain hold, where every traveler was fed and every quarrel settled by the fire."
+    }
+  ]
+}

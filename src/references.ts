@@ -6,12 +6,18 @@ export interface RuleOption {
   readonly name: string;
   readonly detail: string;
 }
-/** Spells, classes, weapons and armor from the installed rules data, sorted by name. */
+/** A feat in a picker, with the category the Builder offers it under. */
+export interface FeatOption extends RuleOption {
+  readonly category: string;
+}
+/** Spells, classes, weapons, armor, feats and tools from the installed rules data, sorted by name. */
 export interface References {
   readonly spells: readonly RuleOption[];
   readonly classes: readonly RuleOption[];
   readonly weapons: readonly RuleOption[];
   readonly armor: readonly RuleOption[];
+  readonly feats: readonly FeatOption[];
+  readonly tools: readonly RuleOption[];
 }
 
 /** Picker options from rule records: id, name, and details for the highlighted option. */
@@ -21,7 +27,7 @@ export function pickerOptions(
   return options.map((option) => [option.id, option.name, option.detail] as const);
 }
 
-const kinds = ["spell", "class", "weapon", "armor"] as const;
+const kinds = ["spell", "class", "weapon", "armor", "feat", "tool"] as const;
 type Kind = (typeof kinds)[number];
 const pageLimit = 200;
 const deadlineMs = 5000;
@@ -36,6 +42,17 @@ export function optionOf(kind: Kind, value: unknown): RuleOption | undefined {
     return undefined;
   if (kind === "class") return { id: value["id"], name: value["name"], detail: "" };
   const textOf = (field: string): string => (typeof value[field] === "string" ? value[field] : "");
+  // A feat keeps its category for pickers that want one kind; a tool shows its type.
+  if (kind === "feat") {
+    const feat: FeatOption = {
+      id: value["id"],
+      name: value["name"],
+      detail: textOf("category"),
+      category: textOf("category"),
+    };
+    return feat;
+  }
+  if (kind === "tool") return { id: value["id"], name: value["name"], detail: textOf("type") };
   // A weapon shows its category, range and damage; armor its type and AC.
   if (kind === "weapon")
     return {
@@ -103,6 +120,8 @@ export class ReferenceLoader {
       class: new Map(),
       weapon: new Map(),
       armor: new Map(),
+      feat: new Map(),
+      tool: new Map(),
     };
     let answered = false;
     for (const provider of handle.providers) {
@@ -145,6 +164,8 @@ export class ReferenceLoader {
       classes: sorted(found.class),
       weapons: sorted(found.weapon),
       armor: sorted(found.armor),
+      feats: sorted(found.feat) as FeatOption[],
+      tools: sorted(found.tool),
     };
   }
 }

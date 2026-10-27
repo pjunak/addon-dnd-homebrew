@@ -576,3 +576,42 @@ func TestServesPublishedSpecies(t *testing.T) {
 		t.Fatalf("a withdrawn species must not be served: %v", failure)
 	}
 }
+
+func TestServesPublishedBackgrounds(t *testing.T) {
+	data := newFakeData()
+	body, err := os.ReadFile("../../tests/fixtures/backgrounds.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		Published json.RawMessage `json:"published"`
+	}
+	if err := json.Unmarshal(body, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	background := string(fixture.Published)
+	broken := json.RawMessage(strings.ReplaceAll(strings.Replace(background, `"DEX",`, `"STR", "DEX",`, 1), "lamplighter", "broken-background"))
+	withdrawn := json.RawMessage(strings.Replace(strings.ReplaceAll(background, "lamplighter", "old-background"), `"withdrawn": false`, `"withdrawn": true`, 1))
+	publish(t, data, fixtureRecords(t)[:1])
+	data.put(homebrew.PublishedBackgroundsCollection, "hb.lamplighter", fixture.Published)
+	data.put(homebrew.PublishedBackgroundsCollection, "hb.broken-background", broken)
+	data.put(homebrew.PublishedBackgroundsCollection, "hb.old-background", withdrawn)
+	var log bytes.Buffer
+	handler, _ := New(data, &log)
+	set := catalogSet(t, handler)
+	assertEngineCatalog(t, set)
+	if kinds := set["kinds"].(map[string]any); kinds["background"].(float64) != 1 {
+		t.Fatalf("kinds %v", kinds)
+	}
+	if !strings.Contains(log.String(), "published background \"hb.broken-background\"") {
+		t.Fatalf("an invalid background must be reported: %q", log.String())
+	}
+	got := call(t, handler, "get", `{"setId":"rules","kind":"background","id":"hb.lamplighter"}`)["record"].(map[string]any)
+	value := got["value"].(map[string]any)
+	if value["originFeat"] != "magic-initiate" || value["toolProficiency"] != "tinkers-tools" || len(value["abilityScores"].([]any)) != 3 {
+		t.Fatalf("background %v", got)
+	}
+	if failure := callError(t, handler, "get", `{"setId":"rules","kind":"background","id":"hb.old-background"}`); failure.Data.Kind != workerrpc.KindNotFound {
+		t.Fatalf("a withdrawn background must not be served: %v", failure)
+	}
+}

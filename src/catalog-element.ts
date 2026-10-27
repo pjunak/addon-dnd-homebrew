@@ -27,12 +27,14 @@ import {
   canonical,
   setProblem,
   collections,
+  backgroundProblem,
   compare,
   draftDeletes,
   draftPuts,
   exportDocument,
   featProblem,
   flatten,
+  flattenBackground,
   flattenFeat,
   flattenSpecies,
   flattenSpell,
@@ -45,6 +47,7 @@ import {
   maxMarkdown,
   maxWeight,
   moveOverrides,
+  newBackground,
   newSet,
   newItem,
   newFeat,
@@ -59,6 +62,7 @@ import {
   spellProblem,
   subclassProblem,
   titleOf,
+  type Background,
   type BodyPlacement,
   type CollectionMutation,
   type Feat,
@@ -71,7 +75,8 @@ import {
   type Stored,
   type Subclass,
 } from "./model.js";
-import { optionOf, type References } from "./references.js";
+import { backgroundEditor, type BackgroundEditor } from "./background-editor.js";
+import { optionOf, type FeatOption, type References } from "./references.js";
 import type { DraftCollection, Drafts, PublishedState } from "./repository.js";
 import { runtimeFor, type HomebrewRuntime } from "./runtime.js";
 import { speciesEditor, type SpeciesEditor } from "./species-editor.js";
@@ -88,7 +93,8 @@ type StoredDraft =
   | Stored<Subclass>
   | Stored<Feat>
   | Stored<Spell>
-  | Stored<Species>;
+  | Stored<Species>
+  | Stored<Background>;
 
 type Selection =
   | { readonly kind: "set"; readonly id: string }
@@ -103,7 +109,9 @@ type Selection =
   | { readonly kind: "spell"; readonly id: string }
   | { readonly kind: "new-spell"; readonly template?: Spell }
   | { readonly kind: "species"; readonly id: string }
-  | { readonly kind: "new-species"; readonly template?: Species };
+  | { readonly kind: "new-species"; readonly template?: Species }
+  | { readonly kind: "background"; readonly id: string }
+  | { readonly kind: "new-background"; readonly template?: Background };
 
 export function defineCatalogElement(generation?: string): string {
   const tag = generation ? `${catalogElementTag}-${generation}` : catalogElementTag;
@@ -265,7 +273,7 @@ export function defineCatalogElement(generation?: string): string {
           "p",
           "",
           t(
-            "Create items, item sets, subclasses, feats, spells and species, then publish them to use them on character sheets.",
+            "Create items, item sets, subclasses, feats, spells, species and backgrounds, then publish them to use them on character sheets.",
           ),
         ),
       );
@@ -359,6 +367,7 @@ export function defineCatalogElement(generation?: string): string {
         ["Feat", { kind: "new-feat" }],
         ["Spell", { kind: "new-spell" }],
         ["Species", { kind: "new-species" }],
+        ["Background", { kind: "new-background" }],
       ];
       for (const [label, selection] of kinds)
         panel.append(
@@ -426,13 +435,17 @@ export function defineCatalogElement(generation?: string): string {
       const species = [...this.#drafts.species].sort((a, b) =>
         compare(fold(a.value.name), fold(b.value.name)),
       );
+      const backgrounds = [...this.#drafts.backgrounds].sort((a, b) =>
+        compare(fold(a.value.name), fold(b.value.name)),
+      );
       if (
         sets.length === 0 &&
         items.length === 0 &&
         subclasses.length === 0 &&
         feats.length === 0 &&
         spells.length === 0 &&
-        species.length === 0
+        species.length === 0 &&
+        backgrounds.length === 0
       ) {
         groups.append(
           element(
@@ -440,7 +453,7 @@ export function defineCatalogElement(generation?: string): string {
             "p",
             "hb-hint",
             t(
-              "Nothing yet. Create an item, a set, a subclass, a feat, a spell or a species, or import a file to begin.",
+              "Nothing yet. Create an item, a set, a subclass, a feat, a spell, a species or a background, or import a file to begin.",
             ),
           ),
         );
@@ -508,7 +521,7 @@ export function defineCatalogElement(generation?: string): string {
           item.value.setId === "" || !sets.some((entry) => entry.value.id === item.value.setId),
       );
       if (loose.length > 0) group(t("Items without a set"), undefined, loose);
-      // Subclasses, feats, spells and species: each draft with a detail badge and its publish state.
+      // Subclasses, feats, spells, species and backgrounds: each draft with a detail badge and its publish state.
       const kind = <T extends { readonly id: string; readonly name: string }>(
         label: string,
         drafts: readonly Stored<T>[],
@@ -580,23 +593,47 @@ export function defineCatalogElement(generation?: string): string {
         (entry) =>
           stateOf(this.#published?.species.get(`hb.${entry.id}`), () => flattenSpecies(entry)),
       );
+      kind(
+        t("Backgrounds"),
+        backgrounds,
+        (id) => ({ kind: "background", id }),
+        (entry) => (entry.originFeat ? this.#featName(entry.originFeat) : t("No origin feat")),
+        (entry) =>
+          stateOf(this.#published?.backgrounds.get(`hb.${entry.id}`), () =>
+            flattenBackground(entry),
+          ),
+      );
     }
     /**
      * The rules data grants pick from, with this campaign's spells added:
      * grants and item spells name them by `hb.<id>`.
      */
     #grantReferences(): References | undefined {
-      const references = this.#references,
-        own = (this.#drafts?.spells ?? []).flatMap(
+      const references = this.#references;
+      if (!references || !this.#drafts) return references;
+      const byName = (left: { readonly name: string }, right: { readonly name: string }) =>
+        left.name.localeCompare(right.name);
+      const spells = this.#drafts.spells.flatMap(
           (entry) => optionOf("spell", flattenSpell(entry.value).record) ?? [],
-        );
-      if (!references || own.length === 0) return references;
+        ),
+        feats = this.#drafts.feats.map((entry): FeatOption => ({
+          id: `hb.${entry.value.id}`,
+          name: entry.value.name,
+          detail: entry.value.category,
+          category: entry.value.category,
+        }));
       return {
         ...references,
-        spells: [...references.spells, ...own].sort((left, right) =>
-          left.name.localeCompare(right.name),
-        ),
+        spells: [...references.spells, ...spells].sort(byName),
+        feats: [...references.feats, ...feats].sort(byName),
       };
+    }
+    /** A feat's name from the rules data or this campaign, or its id in words. */
+    #featName(featId: string): string {
+      return (
+        this.#grantReferences()?.feats.find((feat) => feat.id === featId)?.name ??
+        titleOf(featId.replace(/^hb\./u, ""))
+      );
     }
     /** A class's name from the rules data, or its id in words. */
     #className(classId: string): string {
@@ -653,6 +690,8 @@ export function defineCatalogElement(generation?: string): string {
         this.#published.spells,
         this.#drafts.species.map((entry) => entry.value),
         this.#published.species,
+        this.#drafts.backgrounds.map((entry) => entry.value),
+        this.#published.backgrounds,
       );
       // A published draft with a problem would also be withdrawn; count it once.
       return new Set([
@@ -676,6 +715,8 @@ export function defineCatalogElement(generation?: string): string {
         return this.#drafts.spells.find((entry) => entry.value.id === selection.id);
       if (selection.kind === "species")
         return this.#drafts.species.find((entry) => entry.value.id === selection.id);
+      if (selection.kind === "background")
+        return this.#drafts.backgrounds.find((entry) => entry.value.id === selection.id);
       return undefined;
     }
     #currentSetId(): string {
@@ -760,6 +801,10 @@ export function defineCatalogElement(generation?: string): string {
             "Species",
             "A species for character creation, with its size, speeds and traits, and lineages to choose from.",
           ],
+          [
+            "Background",
+            "A background for character creation: the abilities it raises, its origin feat, skills, tools and equipment.",
+          ],
         ] as const)
           kinds.append(element(document, "dt", "", t(name)), element(document, "dd", "", t(about)));
         start.append(
@@ -776,7 +821,18 @@ export function defineCatalogElement(generation?: string): string {
         this.#editor.replaceChildren(start);
         return;
       }
-      if (selection.kind === "species" || selection.kind === "new-species") {
+      if (selection.kind === "background" || selection.kind === "new-background") {
+        const stored =
+          selection.kind === "background"
+            ? this.#drafts.backgrounds.find((entry) => entry.value.id === selection.id)
+            : undefined;
+        this.#editor.replaceChildren(
+          this.#backgroundForm(
+            stored,
+            selection.kind === "new-background" ? selection.template : undefined,
+          ),
+        );
+      } else if (selection.kind === "species" || selection.kind === "new-species") {
         const stored =
           selection.kind === "species"
             ? this.#drafts.species.find((entry) => entry.value.id === selection.id)
@@ -876,6 +932,15 @@ export function defineCatalogElement(generation?: string): string {
       return new Set([
         ...(this.#drafts?.spells.map((entry) => entry.value.id) ?? []),
         ...[...(this.#published?.spells.values() ?? [])].map((entry) => entry.value.spellId),
+      ]);
+    }
+    /** Background ids in use, including published backgrounds whose draft was deleted. */
+    #backgroundIds(): ReadonlySet<string> {
+      return new Set([
+        ...(this.#drafts?.backgrounds.map((entry) => entry.value.id) ?? []),
+        ...[...(this.#published?.backgrounds.values() ?? [])].map(
+          (entry) => entry.value.backgroundId,
+        ),
       ]);
     }
     /** Species ids in use, including published species whose draft was deleted. */
@@ -1640,6 +1705,95 @@ export function defineCatalogElement(generation?: string): string {
           : undefined,
       );
     }
+    #backgroundForm(
+      stored: Stored<Background> | undefined,
+      template?: Background,
+    ): HTMLFormElement {
+      const t = this.#t;
+      const value = stored?.value ?? template ?? newBackground("", "", Date.now());
+      const { form, main } = this.#form(stored ? value.name : t("New background"));
+      const editor = backgroundEditor(
+        {
+          document,
+          t,
+          references: this.#grantReferences(),
+          takenIds: () => this.#backgroundIds(),
+          changed: () => this.#setDirty(true),
+          restructured: () => this.#controls?.refresh(),
+        },
+        form,
+        main,
+        value,
+        stored !== undefined,
+      );
+      const actions = element(document, "div", "hb-editor-actions");
+      actions.dataset["uiActions"] = "";
+      const save = actionButton(
+        document,
+        t("Save"),
+        () => void this.#saveBackground(editor, stored),
+        "primary",
+      );
+      save.type = "submit";
+      actions.append(save);
+      if (stored)
+        actions.append(
+          actionButton(
+            document,
+            t("Duplicate"),
+            () =>
+              void this.#select({
+                kind: "new-background",
+                template: {
+                  ...stored.value,
+                  id: "",
+                  name: t("{name} (copy)", { name: stored.value.name }),
+                },
+              }),
+          ),
+          actionButton(document, t("Delete"), () => void this.#deleteBackground(stored), "danger"),
+        );
+      main.append(actions);
+      form.addEventListener("submit", (event) => event.preventDefault());
+      return form;
+    }
+    async #saveBackground(
+      editor: BackgroundEditor,
+      stored: Stored<Background> | undefined,
+    ): Promise<void> {
+      const value = editor.read();
+      const named =
+        !stored && formText(new FormData(this.#editor.querySelector("form")!), "id").trim() === "";
+      if (!stored && this.#backgroundIds().has(value.id))
+        return this.#editorProblem({ text: "This id is already in use. Choose another id." });
+      const failure = backgroundProblem(value);
+      if (failure) return this.#editorProblem(failure);
+      await this.#save(
+        collections.backgrounds,
+        value,
+        stored,
+        (saved) => ({ kind: "background", id: saved.id }),
+        named
+          ? (failed) => ({
+              ...value,
+              id: freeId(value.name, new Set([...this.#backgroundIds(), ...failed])),
+            })
+          : undefined,
+      );
+    }
+    async #deleteBackground(stored: Stored<Background>): Promise<void> {
+      const t = this.#t;
+      const published = this.#published?.backgrounds.get(`hb.${stored.value.id}`);
+      const question =
+        published && !published.value.withdrawn
+          ? t(
+              "Deleting a published background withdraws it at the next publish; characters with it then show a missing-source problem. Delete {name}?",
+              { name: stored.value.name },
+            )
+          : t("Delete {name}?", { name: stored.value.name });
+      if (!(await confirmDialog(this, t, question, t("Delete")))) return;
+      await this.#remove(collections.backgrounds, stored);
+    }
     #speciesForm(stored: Stored<Species> | undefined, template?: Species): HTMLFormElement {
       const t = this.#t;
       const value = stored?.value ?? template ?? newSpecies("", "", Date.now());
@@ -1775,7 +1929,7 @@ export function defineCatalogElement(generation?: string): string {
      * came from its name can still meet a deleted draft's key, which the
      * browser cannot reuse; `rename` then gives the next free id.
      */
-    async #save<T extends ItemSet | Item | Subclass | Feat | Spell | Species>(
+    async #save<T extends ItemSet | Item | Subclass | Feat | Spell | Species | Background>(
       collection: DraftCollection,
       value: T,
       stored: Stored<T> | undefined,
@@ -1994,6 +2148,8 @@ export function defineCatalogElement(generation?: string): string {
           published.spells,
           drafts.species.map((entry) => entry.value),
           published.species,
+          drafts.backgrounds.map((entry) => entry.value),
+          published.backgrounds,
         );
         const body = element(document, "div", "hb-dialog-body");
         let confirmable = plan.problems.length === 0 && plan.mutations.length > 0;
@@ -2008,6 +2164,8 @@ export function defineCatalogElement(generation?: string): string {
               drafts.feats.find((feat) => feat.value.id === entry.itemId)?.value.name ??
               drafts.spells.find((spell) => spell.value.id === entry.itemId)?.value.name ??
               drafts.species.find((species) => species.value.id === entry.itemId)?.value.name ??
+              drafts.backgrounds.find((background) => background.value.id === entry.itemId)?.value
+                .name ??
               entry.itemId;
             list.append(element(document, "li", "", `${name}: ${problemText(t, entry.problem)}`));
           }
@@ -2052,7 +2210,7 @@ export function defineCatalogElement(generation?: string): string {
               messageBlock(
                 document,
                 t(
-                  "Characters with a withdrawn item, subclass, feat, spell or species show a missing-source problem until it is removed from them.",
+                  "Characters with a withdrawn item, subclass, feat, spell, species or background show a missing-source problem until it is removed from them.",
                 ),
                 "alert",
               ),
@@ -2110,6 +2268,7 @@ export function defineCatalogElement(generation?: string): string {
           new Map(this.#drafts.feats.map((entry) => [entry.value.id, entry])),
           new Map(this.#drafts.spells.map((entry) => [entry.value.id, entry])),
           new Map(this.#drafts.species.map((entry) => [entry.value.id, entry])),
+          new Map(this.#drafts.backgrounds.map((entry) => [entry.value.id, entry])),
         );
       } catch (error) {
         return error instanceof HomebrewError
@@ -2169,6 +2328,7 @@ export function defineCatalogElement(generation?: string): string {
           [collections.feats]: t("feat"),
           [collections.spells]: t("spell"),
           [collections.species]: t("species"),
+          [collections.backgrounds]: t("background"),
         };
         for (const [operation, label] of [
           ["create", "Created"],
@@ -2230,6 +2390,7 @@ export function defineCatalogElement(generation?: string): string {
         this.#drafts.feats.map((entry) => entry.value),
         this.#drafts.spells.map((entry) => entry.value),
         this.#drafts.species.map((entry) => entry.value),
+        this.#drafts.backgrounds.map((entry) => entry.value),
       );
       downloadFile(
         document,

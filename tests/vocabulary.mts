@@ -18,7 +18,7 @@ const fixture = JSON.parse(
 ) as { valid: Subclass[] };
 
 void test("the editor's groups list every grant of the vocabulary once, for each subject", () => {
-  for (const subject of ["subclass", "feat", "species", "lineage"] as const) {
+  for (const subject of ["subclass", "feat", "species", "lineage", "background"] as const) {
     const grouped = grantGroups(subject).flatMap((group) => group.fields);
     assert.deepEqual(
       [...grouped, ...refusedGrants(subject)].sort(),

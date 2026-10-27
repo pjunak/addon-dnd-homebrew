@@ -1,0 +1,96 @@
+{
+  "valid": [
+    {
+      "id": "lamplighter",
+      "schemaVersion": 1,
+      "name": "Lamplighter",
+      "abilityScores": ["WIS", "DEX", "INT"],
+      "originFeat": "magic-initiate",
+      "originFeatChoices": { "spell-list": "wizard" },
+      "skillProficiencies": ["perception", "investigation"],
+      "tools": ["tinkers-tools"],
+      "toolPicks": 1,
+      "equipment": "Lantern, Oil (2 flasks), Tinker's Tools, Traveler's Clothes, 12 GP",
+      "grants": { "languages": ["elvish"] },
+      "text": "You kept a city's lamps burning through the long nights.",
+      "updatedAt": 1
+    },
+    {
+      "id": "hedge-scholar",
+      "schemaVersion": 1,
+      "name": "Hedge Scholar",
+      "abilityScores": ["INT", "WIS", "CHA"],
+      "originFeat": "hb.storm-touched",
+      "skillProficiencies": ["arcana", "sleightOfHand"],
+      "tools": ["calligraphers-supplies", "cartographers-tools", "painters-supplies"],
+      "toolPicks": 1,
+      "equipment": "",
+      "text": "",
+      "updatedAt": 2
+    },
+    {
+      "id": "wanderer",
+      "schemaVersion": 1,
+      "name": "Wanderer",
+      "abilityScores": ["STR", "DEX", "CON"],
+      "originFeat": "",
+      "skillProficiencies": [],
+      "tools": [],
+      "toolPicks": 1,
+      "equipment": "",
+      "text": "",
+      "updatedAt": 3
+    }
+  ],
+  "invalid": [
+    { "name": "two abilities", "change": { "abilityScores": ["STR", "DEX"] } },
+    { "name": "an ability twice", "change": { "abilityScores": ["STR", "STR", "DEX"] } },
+    { "name": "abilities in lowercase", "change": { "abilityScores": ["str", "dex", "con"] } },
+    { "name": "five skills", "change": { "skillProficiencies": ["arcana", "history", "insight", "nature", "religion"] } },
+    { "name": "a skill by its name", "change": { "skillProficiencies": ["Arcana"] } },
+    { "name": "a feat id with capitals", "change": { "originFeat": "Magic-Initiate" } },
+    { "name": "feat choices without a feat", "change": { "originFeat": "" } },
+    { "name": "no feat choice", "change": { "originFeatChoices": {} } },
+    { "name": "a feat choice on two lines", "change": { "originFeatChoices": { "spell-list": "wizard\ncleric" } } },
+    { "name": "a tool twice", "change": { "tools": ["tinkers-tools", "tinkers-tools"] } },
+    { "name": "picking every listed tool", "change": { "tools": ["tinkers-tools", "smiths-tools"], "toolPicks": 2 } },
+    { "name": "picking two of one tool", "change": { "toolPicks": 2 } },
+    { "name": "equipment on two lines", "change": { "equipment": "Lantern\n12 GP" } },
+    { "name": "an AC bonus", "change": { "grants": { "acBonus": 1 } } },
+    { "name": "a choice named like the tool choice", "change": { "grants": { "choices": [{ "id": "tool", "type": "toolProficiency", "count": 1, "from": ["smiths-tools"] }] } } },
+    { "name": "grants outside the vocabulary", "change": { "grants": { "flySpeed": 30 } } }
+  ],
+  "published": {
+    "id": "hb.lamplighter",
+    "schemaVersion": 1,
+    "backgroundId": "lamplighter",
+    "withdrawn": false,
+    "record": {
+      "kind": "background",
+      "id": "hb.lamplighter",
+      "name": "Lamplighter",
+      "edition": "2024",
+      "book": "homebrew",
+      "abilityScores": [
+        "DEX",
+        "INT",
+        "WIS"
+      ],
+      "originFeat": "magic-initiate",
+      "originFeatChoices": {
+        "spell-list": "wizard"
+      },
+      "skillProficiencies": [
+        "investigation",
+        "perception"
+      ],
+      "toolProficiency": "tinkers-tools",
+      "grants": {
+        "languages": [
+          "elvish"
+        ]
+      },
+      "text": "**Ability Scores:** Dexterity, Intelligence, Wisdom  \n**Feat:** Magic Initiate (Wizard)  \n**Skill Proficiencies:** Investigation and Perception  \n**Tool Proficiency:** Tinker's Tools  \n**Equipment:** Lantern, Oil (2 flasks), Tinker's Tools, Traveler's Clothes, 12 GP\n\nYou kept a city's lamps burning through the long nights."
+    }
+  }
+}

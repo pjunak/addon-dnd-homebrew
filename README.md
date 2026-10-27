@@ -1,7 +1,7 @@
 # D&D Homebrew
 
 D&D Homebrew lets the DM create and import custom magic items, **item
-sets**, **subclasses**, **feats**, **spells** and **species** for TTRPG Codex, then use them
+sets**, **subclasses**, **feats**, **spells**, **species** and **backgrounds** for TTRPG Codex, then use them
 on character sheets. A set holds what its items share: item type, rarity, attunement, body placements, a
 shared description, a curse and optionally a condition every item gives. Each
 item adds its own description and, where the D&D Engine can apply them,
@@ -13,7 +13,8 @@ printed subclass feature can: the editor covers the D&D Engine's whole grants
 vocabulary. A feat has a category, a prerequisite and the same grants, such as
 an ability score increase or spells. A spell has its level, school, stat block
 and text, and joins the spell lists of the classes it names. A species has
-its size, speeds, senses, traits and lineages, with the same grants. More kinds of
+its size, speeds, senses, traits and lineages, with the same grants, and a
+background its ability scores, origin feat, proficiencies and equipment. More kinds of
 homebrew will join this add-on, published together and imported from the same
 file format.
 
@@ -22,7 +23,7 @@ English and Czech controls follow the host language.
 ## How it fits together
 
 ```text
-Homebrew (DM)                    drafts: sets, items, subclasses, feats, spells, species; DM-only
+Homebrew (DM)                    drafts of every kind, DM-only
         │ Publish
         ▼
 homebrew_published               one flattened magic-item record per item
@@ -30,6 +31,7 @@ homebrew_published_subclasses    a subclass record and its feature records
 homebrew_published_feats         one feat record per feat
 homebrew_published_spells        one spell record per spell
 homebrew_published_species       one species record per species
+homebrew_published_backgrounds   one background record per background
         │                        (all readable by players)
         │ dnd5e.rules-data (worker)
         ▼
@@ -43,7 +45,7 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
   subclasses appear in the Builder next to the class's own, and their features
   apply from their levels. Published feats join the Builder's feat choices of
   their category, published spells the spell lists of their classes, and
-  published species the Builder's species.
+  published species and backgrounds the Builder's.
   Neither the Engine nor Character Sheets changes.
 - The add-on also provides a `magic-item` wiki provider: a sheet's rule details
   for a homebrew item show its text, and `[[Runestone: Ward]]` links in
@@ -54,7 +56,7 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 ## Use it
 
 1. **Homebrew** (DM sidebar): create an item, a set, a subclass, a feat, a
-   spell or a species, or import a file. Drafts are private to the DM and never touch character sheets. A
+   spell, a species or a background, or import a file. Drafts are private to the DM and never touch character sheets. A
    new item can **start from** a common kind: a +1 weapon, armor or shield, a
    bonus to a statistic, an ability score item, a spell cast from the item, a
    resistance, a container or a potion. The preview beside the form shows the
@@ -92,6 +94,9 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 9. **New species** creates a species: its creature type, size (or sizes the
    player picks from), speeds, darkvision and resistances, its printed traits,
    lineages a player picks one of, and what it grants on the sheet.
+10. **New background** creates a background: the three abilities it raises,
+    its origin feat (the Compendium's or this campaign's), skill and tool
+    proficiencies, equipment, and anything else it grants.
 
 ### What the Engine can apply
 
@@ -194,6 +199,18 @@ lineages. The [sample species](docs/examples/sample-species.json) show a
 species with a size choice, lineages and a tool choice, and one with a use and
 a toggle.
 
+### Backgrounds
+
+A background names the three abilities a player raises, an **origin feat**
+picked among the Compendium's and this campaign's origin feats (with any of
+its choices the background makes, such as Magic Initiate's spell list), up to
+four skills, and one tool or several for the player to pick from. Its
+equipment is printed text. Anything else, such as a language, goes in its
+grants. The published text opens with the ability scores, feat, skill, tool
+and equipment lines as the books print them. The
+[sample backgrounds](docs/examples/sample-backgrounds.json) show one with a
+preset feat choice and one with this campaign's feat and a tool choice.
+
 ### Change and remove published items
 
 - Editing an item changes its record at the next publish; characters keep the
@@ -205,9 +222,9 @@ a toggle.
 - The id of a set or item is permanent: saved characters refer to
   `hb.<item id>`. The same holds for a subclass (`hb.<subclass id>`), its
   features (`hb.<subclass id>.<feature id>`), a feat (`hb.<feat id>`), a
-  spell (`hb.<spell id>`), a species (`hb.<species id>`) and its lineages.
-  Deleting a published subclass, feat, spell or species withdraws it like an
-  item.
+  spell (`hb.<spell id>`), a species (`hb.<species id>`) and its lineages,
+  and a background (`hb.<background id>`). Deleting a published subclass,
+  feat, spell, species or background withdraws it like an item.
 
 ## Import and export
 
@@ -228,7 +245,8 @@ only the sample files ([items](docs/examples/sample-items.json),
 [subclass](docs/examples/sample-subclass.json),
 [feats](docs/examples/sample-feats.json),
 [spells](docs/examples/sample-spells.json),
-[species](docs/examples/sample-species.json)); keep your own import files
+[species](docs/examples/sample-species.json),
+[backgrounds](docs/examples/sample-backgrounds.json)); keep your own import files
 outside it, and use **Export** to take a copy of a campaign's drafts.
 
 The permanent add-on namespace is `dnd-homebrew`.
@@ -247,6 +265,8 @@ The permanent add-on namespace is `dnd-homebrew`.
 | `homebrew_published_spells` | public | Each spell's record the worker serves |
 | `homebrew_species` | DM | Species drafts with their lineages |
 | `homebrew_published_species` | public | Each species' record the worker serves |
+| `homebrew_backgrounds` | DM | Background drafts |
+| `homebrew_published_backgrounds` | public | Each background's record the worker serves |
 
 Published records must be player-readable because each player's sheet evaluates
 them with that player's authority. *Visible to players* only controls the
@@ -262,7 +282,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.7.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.8.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["id", "schemaVersion", "backgroundId", "withdrawn", "record"],
+  "properties": {
+    "id": { "$ref": "#/$defs/recordId" },
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "backgroundId": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+    "withdrawn": { "type": "boolean" },
+    "record": { "$ref": "#/$defs/backgroundRecord" }
+  },
+  "$defs": {
+    "recordId": { "type": "string", "maxLength": 67, "pattern": "^hb\\.[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "backgroundRecord": {
+      "$comment": "The Compendium's background record: one tool as toolProficiency, or the player's pick as toolProficiencyChoice.",
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "name", "edition", "book", "abilityScores", "skillProficiencies", "text"],
+      "properties": {
+        "kind": { "const": "background" },
+        "id": { "$ref": "#/$defs/recordId" },
+        "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+        "edition": { "const": "2024" },
+        "book": { "const": "homebrew" },
+        "abilityScores": { "$ref": "homebrew-background.schema.json#/$defs/abilityScores" },
+        "originFeat": { "$ref": "homebrew-background.schema.json#/$defs/featRef" },
+        "originFeatChoices": { "$ref": "homebrew-background.schema.json#/$defs/featChoices" },
+        "skillProficiencies": { "$ref": "homebrew-background.schema.json#/$defs/skills" },
+        "toolProficiency": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+        "toolProficiencyChoice": {
+          "type": "object", "additionalProperties": false, "required": ["count", "from"],
+          "properties": {
+            "count": { "type": "integer", "minimum": 1, "maximum": 3 },
+            "from": { "type": "array", "minItems": 2, "maxItems": 40, "uniqueItems": true, "items": { "$ref": "homebrew-common.schema.json#/$defs/id" } }
+          }
+        },
+        "grants": { "$ref": "homebrew-background.schema.json#/$defs/backgroundGrants" },
+        "text": { "type": "string", "maxLength": 22000 }
+      },
+      "allOf": [
+        { "not": { "required": ["toolProficiency", "toolProficiencyChoice"] } },
+        { "if": { "required": ["originFeatChoices"] }, "then": { "required": ["originFeat"] } }
+      ]
+    }
+  }
+}

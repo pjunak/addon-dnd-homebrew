@@ -60,17 +60,18 @@ type stored struct {
 
 // drafts is the stored drafts of each kind with the revisions they were read at.
 type drafts struct {
-	sets       map[string]stored
-	items      map[string]stored
-	subclasses map[string]stored
-	feats      map[string]stored
-	spells     map[string]stored
-	species    map[string]stored
-	revisions  []workerrpc.AddonDataSetRevision
+	sets        map[string]stored
+	items       map[string]stored
+	subclasses  map[string]stored
+	feats       map[string]stored
+	spells      map[string]stored
+	species     map[string]stored
+	backgrounds map[string]stored
+	revisions   []workerrpc.AddonDataSetRevision
 }
 
 func noDrafts() drafts {
-	return drafts{sets: map[string]stored{}, items: map[string]stored{}, subclasses: map[string]stored{}, feats: map[string]stored{}, spells: map[string]stored{}, species: map[string]stored{}}
+	return drafts{sets: map[string]stored{}, items: map[string]stored{}, subclasses: map[string]stored{}, feats: map[string]stored{}, spells: map[string]stored{}, species: map[string]stored{}, backgrounds: map[string]stored{}}
 }
 
 // draftKind is what normalize needs to know about one kind of draft: the
@@ -109,6 +110,10 @@ var (
 		defaults: map[string]json.RawMessage{"creatureType": json.RawMessage(`"Humanoid"`), "sizes": json.RawMessage(`["Medium"]`), "speed": json.RawMessage(`30`), "speeds": json.RawMessage(`{}`), "darkvision": json.RawMessage(`0`), "resistances": json.RawMessage(`[]`), "traits": json.RawMessage(`[]`), "lineages": json.RawMessage(`[]`), "text": json.RawMessage(`""`)},
 		optional: []string{"grants"},
 	}
+	backgroundKind = draftKind{
+		defaults: map[string]json.RawMessage{"originFeat": json.RawMessage(`""`), "skillProficiencies": json.RawMessage(`[]`), "tools": json.RawMessage(`[]`), "toolPicks": json.RawMessage(`1`), "equipment": json.RawMessage(`""`), "text": json.RawMessage(`""`)},
+		optional: []string{"grants", "originFeatChoices"},
+	}
 )
 
 type document struct {
@@ -122,6 +127,7 @@ type document struct {
 	Feats         []json.RawMessage `json:"feats,omitempty"`
 	Spells        []json.RawMessage `json:"spells,omitempty"`
 	Species       []json.RawMessage `json:"species,omitempty"`
+	Backgrounds   []json.RawMessage `json:"backgrounds,omitempty"`
 }
 
 type summary struct {
@@ -160,7 +166,7 @@ func (handler *Handler) HandleRPC(ctx context.Context, request workerrpc.Request
 		return map[string]any{
 			"contractVersion": "import-adapter-description.v1", "id": "dnd-homebrew",
 			"label":       "D&D homebrew",
-			"description": "Custom item sets, items, subclasses, feats, spells and species as drafts; publish them from Homebrew to use them on character sheets.",
+			"description": "Custom item sets, items, subclasses, feats, spells, species and backgrounds as drafts; publish them from Homebrew to use them on character sheets.",
 			"formats":     []string{Format},
 		}, nil
 	case MethodPrefix + "preview":
@@ -354,6 +360,22 @@ func buildPlan(body json.RawMessage, current drafts, now int64) (importPlan, err
 		seen["species:"+species.ID] = true
 		plan.add(homebrew.SpeciesCollection, species.ID, species.Name, normalized, existing, exists)
 	}
+	for index, raw := range doc.Backgrounds {
+		existing, exists := current.backgrounds[idOf(raw)]
+		normalized, err := normalize(raw, existing.body, exists, backgroundKind, now)
+		if err != nil {
+			return importPlan{}, fmt.Errorf("backgrounds[%d]: %w", index, err)
+		}
+		background, err := homebrew.DecodeBackground(normalized)
+		if err != nil {
+			return importPlan{}, fmt.Errorf("backgrounds[%d]: %w", index, err)
+		}
+		if seen["background:"+background.ID] {
+			return importPlan{}, fmt.Errorf("backgrounds[%d]: background %s appears twice", index, background.ID)
+		}
+		seen["background:"+background.ID] = true
+		plan.add(homebrew.BackgroundsCollection, background.ID, background.Name, normalized, existing, exists)
+	}
 	if doc.Mode == "replace" {
 		plan.deleteMissing(homebrew.SetsCollection, storedSets, seen, "set:")
 		plan.deleteMissing(homebrew.ItemsCollection, storedItems, seen, "item:")
@@ -361,6 +383,7 @@ func buildPlan(body json.RawMessage, current drafts, now int64) (importPlan, err
 		plan.deleteMissing(homebrew.FeatsCollection, current.feats, seen, "feat:")
 		plan.deleteMissing(homebrew.SpellsCollection, current.spells, seen, "spell:")
 		plan.deleteMissing(homebrew.SpeciesCollection, current.species, seen, "species:")
+		plan.deleteMissing(homebrew.BackgroundsCollection, current.backgrounds, seen, "background:")
 		if plan.Summary.Deletes > 0 {
 			plan.Warnings = append(plan.Warnings, "Replacing removes drafts that are not in this file. Their published records stay on character sheets until the next publish, which removes them and blocks characters that still hold them.")
 		}
@@ -371,7 +394,7 @@ func buildPlan(body json.RawMessage, current drafts, now int64) (importPlan, err
 	if plan.Summary.Creates+plan.Summary.Updates > 0 {
 		plan.Warnings = append(plan.Warnings, "Imports write drafts. Publish them from Homebrew to use them on character sheets.")
 	}
-	// Sets, their items, subclasses, feats, spells, then species; each collection by id.
+	// Sets, their items, subclasses, feats, spells, species, then backgrounds; each by id.
 	sort.Slice(plan.Changes, func(i, j int) bool {
 		left, right := collectionOrder[plan.Changes[i].Collection], collectionOrder[plan.Changes[j].Collection]
 		if left != right {
@@ -406,7 +429,7 @@ func Check(document, current []byte, now int64) (Report, error) {
 			raw    []json.RawMessage
 			target map[string]stored
 			label  string
-		}{{export.Sets, drafts.sets, "sets"}, {export.Items, drafts.items, "items"}, {export.Subclasses, drafts.subclasses, "subclasses"}, {export.Feats, drafts.feats, "feats"}, {export.Spells, drafts.spells, "spells"}, {export.Species, drafts.species, "species"}} {
+		}{{export.Sets, drafts.sets, "sets"}, {export.Items, drafts.items, "items"}, {export.Subclasses, drafts.subclasses, "subclasses"}, {export.Feats, drafts.feats, "feats"}, {export.Spells, drafts.spells, "spells"}, {export.Species, drafts.species, "species"}, {export.Backgrounds, drafts.backgrounds, "backgrounds"}} {
 			for index, raw := range list.raw {
 				id := idOf(raw)
 				if id == "" {
@@ -423,7 +446,7 @@ func Check(document, current []byte, now int64) (Report, error) {
 	return Report{Mode: plan.Mode, Summary: plan.Summary, Warnings: plan.Warnings, Changes: plan.Changes}, nil
 }
 
-var collectionOrder = map[string]int{homebrew.SetsCollection: 0, homebrew.ItemsCollection: 1, homebrew.SubclassesCollection: 2, homebrew.FeatsCollection: 3, homebrew.SpellsCollection: 4, homebrew.SpeciesCollection: 5}
+var collectionOrder = map[string]int{homebrew.SetsCollection: 0, homebrew.ItemsCollection: 1, homebrew.SubclassesCollection: 2, homebrew.FeatsCollection: 3, homebrew.SpellsCollection: 4, homebrew.SpeciesCollection: 5, homebrew.BackgroundsCollection: 6}
 
 func (plan *importPlan) add(collection, id, name string, normalized json.RawMessage, existing stored, exists bool) {
 	if exists && equivalent(existing.body, normalized) {
@@ -481,7 +504,7 @@ func decodeDocument(body json.RawMessage) (document, error) {
 	if doc.Mode != "merge" && doc.Mode != "replace" {
 		return document{}, errors.New("mode must be merge or replace")
 	}
-	if len(doc.Sets)+len(doc.Items)+len(doc.Subclasses)+len(doc.Feats)+len(doc.Spells)+len(doc.Species) > 2000 {
+	if len(doc.Sets)+len(doc.Items)+len(doc.Subclasses)+len(doc.Feats)+len(doc.Spells)+len(doc.Species)+len(doc.Backgrounds) > 2000 {
 		return document{}, errors.New("an import holds at most 2000 entries")
 	}
 	return doc, nil
@@ -591,7 +614,7 @@ func (handler *Handler) read(ctx context.Context, meta *workerrpc.Meta) (drafts,
 	for _, source := range []struct {
 		collection string
 		target     map[string]stored
-	}{{homebrew.SetsCollection, current.sets}, {homebrew.ItemsCollection, current.items}, {homebrew.SubclassesCollection, current.subclasses}, {homebrew.FeatsCollection, current.feats}, {homebrew.SpellsCollection, current.spells}, {homebrew.SpeciesCollection, current.species}} {
+	}{{homebrew.SetsCollection, current.sets}, {homebrew.ItemsCollection, current.items}, {homebrew.SubclassesCollection, current.subclasses}, {homebrew.FeatsCollection, current.feats}, {homebrew.SpellsCollection, current.spells}, {homebrew.SpeciesCollection, current.species}, {homebrew.BackgroundsCollection, current.backgrounds}} {
 		collection, target := source.collection, source.target
 		cursor := ""
 		var revision *int64

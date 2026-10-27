@@ -1,5 +1,5 @@
 // Stored shapes and rules for item sets, items, subclasses, feats, spells,
-// species and their published records.
+// species, backgrounds and their published records.
 // internal/homebrew (Go) enforces the same rules for imports and serving; the
 // shared fixtures in tests/fixtures keep the two in step.
 
@@ -162,6 +162,8 @@ export const collections = {
   publishedSpells: "homebrew_published_spells",
   species: "homebrew_species",
   publishedSpecies: "homebrew_published_species",
+  backgrounds: "homebrew_backgrounds",
+  publishedBackgrounds: "homebrew_published_backgrounds",
 } as const;
 export const metaKey = "publish";
 export const idPrefix = "hb.";
@@ -930,6 +932,12 @@ export function requirementProblem(value: unknown): Problem | undefined {
 }
 
 /** A class or spell id as words: cure-wounds reads "Cure Wounds". */
+/** A skill as printed: "Sleight of Hand". */
+export function skillName(skill: string): string {
+  if (skill === "sleightOfHand") return "Sleight of Hand";
+  if (skill === "animalHandling") return "Animal Handling";
+  return skill.charAt(0).toUpperCase() + skill.slice(1);
+}
 export function titleOf(id: string): string {
   return id
     .split("-")
@@ -2769,6 +2777,311 @@ export function parsePublishedSpecies(value: unknown): PublishedSpecies {
   return published;
 }
 
+// --- Backgrounds ---------------------------------------------------------------
+
+// internal/homebrew/background.go enforces the same rules through the
+// contracts; the shared fixture tests/fixtures/backgrounds.json keeps the two in
+// step. A background is the Compendium's background record: three abilities to
+// raise, an origin feat, skill and tool proficiencies, and the Engine's grants.
+
+export const maxBackgroundSkills = 4;
+export const maxBackgroundTools = 40;
+export const maxEquipmentLine = 1000;
+export interface Background {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly name: string;
+  /** The three abilities the player raises by +2/+1 or +1/+1/+1. */
+  readonly abilityScores: readonly Ability[];
+  /** A feat id, `hb.<id>` for this campaign's own, or "" for none. */
+  readonly originFeat: string;
+  /** Choices of the origin feat the background makes, such as `{ "spell-list": "wizard" }`. */
+  readonly originFeatChoices?: Readonly<Record<string, string>>;
+  readonly skillProficiencies: readonly Skill[];
+  /** One tool given outright, or two or more the player picks `toolPicks` of. */
+  readonly tools: readonly string[];
+  readonly toolPicks: number;
+  /** The printed equipment line, or "". */
+  readonly equipment: string;
+  readonly grants?: VocabularyValue;
+  readonly text: string;
+  readonly updatedAt: number;
+}
+/** One served background; withdrawn like an item when its draft is deleted. */
+export interface PublishedBackground {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly backgroundId: string;
+  readonly withdrawn: boolean;
+  readonly record: VocabularyValue;
+}
+const backgroundFields = [
+  "id",
+  "schemaVersion",
+  "name",
+  "abilityScores",
+  "originFeat",
+  "skillProficiencies",
+  "tools",
+  "toolPicks",
+  "equipment",
+  "text",
+  "updatedAt",
+] as const;
+/** A feat from the rules data, or this campaign's own as hb.<id>: the shape of a spell's id. */
+const validFeatRef = (value: unknown): value is string => validSpellRef(value);
+const validFeatChoiceKey = (value: string): boolean =>
+  value.length <= 100 && /^[a-z0-9]+(?:[-_.][a-z0-9]+)*$/u.test(value);
+
+function featChoicesProblem(value: unknown): Problem | undefined {
+  return isRecord(value) &&
+    Object.keys(value).length >= 1 &&
+    Object.keys(value).length <= 10 &&
+    Object.entries(value).every(
+      ([key, choice]) => validFeatChoiceKey(key) && validName(choice, 100),
+    )
+    ? undefined
+    : problem("Preset at most 10 of the feat's choices, each a choice id and its value.");
+}
+/** Background grants: the Engine's vocabulary, without acBonus or a choice named like the tool choice. */
+function backgroundGrantsProblem(value: unknown, path: string): Problem | undefined {
+  const failure = vocabularyProblem(grantsSchema, value, path);
+  if (failure) return failure;
+  const grants = value as Json;
+  if ("acBonus" in grants)
+    return problem(
+      "{path}: a background cannot give an AC bonus; the Engine reads it only from a species.",
+      {
+        path,
+      },
+    );
+  const choices = grants["choices"];
+  return Array.isArray(choices) &&
+    choices.some((choice) => isRecord(choice) && choice["id"] === "tool")
+    ? problem("{path}: the choice id tool is the background's own tool choice.", { path })
+    : undefined;
+}
+/** Abilities, skills and tools, as a draft and its record share them. */
+function backgroundRulesProblem(value: Json): Problem | undefined {
+  const scores = value["abilityScores"];
+  if (
+    !Array.isArray(scores) ||
+    scores.length !== 3 ||
+    !scores.every((ability) => oneOf(abilities, ability)) ||
+    !distinct(scores)
+  )
+    return problem("Choose three different abilities for the player to raise.");
+  const skillList = value["skillProficiencies"];
+  if (
+    !Array.isArray(skillList) ||
+    skillList.length > maxBackgroundSkills ||
+    !skillList.every((skill) => oneOf(skills, skill)) ||
+    !distinct(skillList)
+  )
+    return problem("List at most {count} different skills.", { count: maxBackgroundSkills });
+  if (value["originFeatChoices"] !== undefined) {
+    const failure = featChoicesProblem(value["originFeatChoices"]);
+    if (failure) return failure;
+    if (!validFeatRef(value["originFeat"]))
+      return problem("Preset feat choices need an origin feat.");
+  }
+  return value["grants"] === undefined
+    ? undefined
+    : backgroundGrantsProblem(value["grants"], "grants");
+}
+
+export function backgroundProblem(value: Background): Problem | undefined {
+  if (value.schemaVersion !== 1) return problem("Unsupported background version.");
+  if (!validId(value.id)) return problem("The id must be lowercase words joined by hyphens.");
+  if (!validName(value.name))
+    return problem("Give the background a one-line name of at most 120 characters.");
+  if (value.originFeat !== "" && !validFeatRef(value.originFeat))
+    return problem("Choose the origin feat by its id.");
+  const tools: unknown = value.tools;
+  if (
+    !Array.isArray(tools) ||
+    tools.length > maxBackgroundTools ||
+    !tools.every(validId) ||
+    !distinct(tools)
+  )
+    return problem("List each tool at most once, by its id.");
+  if (
+    !isInteger(value.toolPicks, 1, 3) ||
+    (tools.length < 2 ? value.toolPicks !== 1 : value.toolPicks >= tools.length)
+  )
+    return problem("The player picks fewer tools than the background lists.");
+  if (value.equipment !== "" && !validName(value.equipment, maxEquipmentLine))
+    return problem("Give the equipment on one line of at most {count} characters.", {
+      count: maxEquipmentLine,
+    });
+  if (!validMarkdown(value.text))
+    return problem("Descriptions are limited to {count} characters.", { count: maxMarkdown });
+  if (!Number.isSafeInteger(value.updatedAt) || value.updatedAt < 0)
+    return problem("The background is malformed.");
+  return backgroundRulesProblem(value as unknown as Json);
+}
+
+/** Checks an untrusted value as a stored background draft and returns it. */
+export function parseBackground(value: unknown): Background {
+  const failure =
+    exactFields(value, backgroundFields, ["originFeatChoices", "grants"]) ??
+    backgroundProblem(value as unknown as Background);
+  if (failure) throw new HomebrewError(failure.text, failure.params);
+  return value as unknown as Background;
+}
+
+export function newBackground(name: string, id: string, now: number): Background {
+  return {
+    id,
+    schemaVersion: 1,
+    name,
+    abilityScores: ["STR", "DEX", "CON"],
+    originFeat: "",
+    skillProficiencies: [],
+    tools: [],
+    toolPicks: 1,
+    equipment: "",
+    text: "",
+    updatedAt: now,
+  };
+}
+
+/** A tool id as printed: smiths-tools reads "Smith's Tools", thieves-tools "Thieves' Tools". */
+export function toolWords(id: string): string {
+  return titleOf(id)
+    .replace(/^Thieves /u, "Thieves' ")
+    .replace(/^(\S+?)s (Tools|Supplies|Utensils|Kit)$/u, "$1's $2");
+}
+const countWords = ["", "one", "two", "three"] as const;
+
+/**
+ * The lines under a background's name, as printed: ability scores, feat,
+ * skills, tools and equipment, each when it has them.
+ */
+export function backgroundBlock(
+  background: Pick<
+    Background,
+    | "abilityScores"
+    | "originFeat"
+    | "originFeatChoices"
+    | "skillProficiencies"
+    | "tools"
+    | "toolPicks"
+    | "equipment"
+  >,
+): string {
+  const choices = Object.values(background.originFeatChoices ?? {}).map((value) => titleOf(value));
+  const tools = background.tools.map(toolWords);
+  return [
+    `**Ability Scores:** ${background.abilityScores.map((ability) => abilityWords[ability] ?? ability).join(", ")}`,
+    ...(background.originFeat
+      ? [
+          `**Feat:** ${recordName(background.originFeat)}${choices.length > 0 ? ` (${choices.join(", ")})` : ""}`,
+        ]
+      : []),
+    ...(background.skillProficiencies.length > 0
+      ? [
+          `**Skill Proficiencies:** ${listWords(background.skillProficiencies.map(skillName), "and")}`,
+        ]
+      : []),
+    ...(tools.length === 1 ? [`**Tool Proficiency:** ${tools[0]}`] : []),
+    ...(tools.length > 1
+      ? [
+          `**Tool Proficiency:** Choose ${countWords[background.toolPicks] ?? background.toolPicks} of ${listWords(tools, "or")}`,
+        ]
+      : []),
+    ...(background.equipment ? [`**Equipment:** ${background.equipment}`] : []),
+  ].join("  \n");
+}
+
+/**
+ * The background record the Engine reads, its text opening with the printed
+ * block. Abilities, skills and tools take a fixed order, so a form's order
+ * never changes the record.
+ */
+export function flattenBackground(background: Background): PublishedBackground {
+  const id = idPrefix + background.id;
+  const ordered = {
+    ...background,
+    abilityScores: abilities.filter((ability) => background.abilityScores.includes(ability)),
+    skillProficiencies: skills.filter((skill) => background.skillProficiencies.includes(skill)),
+    tools: [...background.tools].sort(compare),
+  };
+  return {
+    id,
+    schemaVersion: 1,
+    backgroundId: background.id,
+    withdrawn: false,
+    record: {
+      kind: "background",
+      id,
+      name: background.name,
+      edition: "2024",
+      book: "homebrew",
+      abilityScores: ordered.abilityScores,
+      ...(background.originFeat ? { originFeat: background.originFeat } : {}),
+      ...(background.originFeatChoices
+        ? { originFeatChoices: copy(background.originFeatChoices) }
+        : {}),
+      skillProficiencies: ordered.skillProficiencies,
+      ...(ordered.tools.length === 1 ? { toolProficiency: ordered.tools[0] } : {}),
+      ...(ordered.tools.length > 1
+        ? { toolProficiencyChoice: { count: background.toolPicks, from: ordered.tools } }
+        : {}),
+      ...(background.grants ? { grants: copy(background.grants) } : {}),
+      text: [backgroundBlock(ordered), background.text.trim()]
+        .filter((part) => part !== "")
+        .join("\n\n"),
+    },
+  };
+}
+
+/** Checks an untrusted value as a published background and returns it. */
+export function parsePublishedBackground(value: unknown): PublishedBackground {
+  const shape = exactFields(value, ["id", "schemaVersion", "backgroundId", "withdrawn", "record"]);
+  if (shape) throw new HomebrewError(shape.text, shape.params);
+  const published = value as PublishedBackground;
+  const record = published.record as unknown;
+  const recordShape = exactFields(
+    record,
+    ["kind", "id", "name", "edition", "book", "abilityScores", "skillProficiencies", "text"],
+    ["originFeat", "originFeatChoices", "toolProficiency", "toolProficiencyChoice", "grants"],
+  );
+  const served = record as Json;
+  const tool = served["toolProficiency"],
+    choice = served["toolProficiencyChoice"];
+  const picked = isRecord(choice) ? choice : {},
+    from = picked["from"];
+  const toolsValid =
+    tool === undefined
+      ? choice === undefined ||
+        (exactFields(choice, ["count", "from"]) === undefined &&
+          Array.isArray(from) &&
+          from.length >= 2 &&
+          from.length <= maxBackgroundTools &&
+          from.every(validId) &&
+          distinct(from) &&
+          isInteger(picked["count"], 1, Math.min(3, from.length - 1)))
+      : validId(tool) && choice === undefined;
+  const valid =
+    recordShape === undefined &&
+    published.schemaVersion === 1 &&
+    validId(published.backgroundId) &&
+    published.id === idPrefix + published.backgroundId &&
+    typeof published.withdrawn === "boolean" &&
+    served["kind"] === "background" &&
+    served["id"] === published.id &&
+    validName(served["name"]) &&
+    served["edition"] === "2024" &&
+    served["book"] === "homebrew" &&
+    (served["originFeat"] === undefined || validFeatRef(served["originFeat"])) &&
+    toolsValid &&
+    typeof served["text"] === "string" &&
+    backgroundRulesProblem(served) === undefined;
+  if (!valid) throw new HomebrewError("A published background is invalid.");
+  return published;
+}
+
 // --- Publishing ------------------------------------------------------------
 
 /** Set defaults, per-item overrides and the item's own text, as one record. */
@@ -2925,7 +3238,7 @@ export function draftDeletes(
 }
 
 export interface PublishPlan {
-  /** `itemId` names the draft: an item, a subclass, a feat, a spell or a species. */
+  /** `itemId` names the draft: an item, a subclass, a feat, a spell, a species or a background. */
   readonly problems: readonly { readonly itemId: string; readonly problem: Problem }[];
   readonly changes: readonly PublishChange[];
   readonly mutations: readonly CollectionMutation[];
@@ -2951,6 +3264,8 @@ export function planPublish(
   publishedSpells: ReadonlyMap<string, Stored<PublishedSpell>> = new Map(),
   species: readonly Species[] = [],
   publishedSpecies: ReadonlyMap<string, Stored<PublishedSpecies>> = new Map(),
+  backgrounds: readonly Background[] = [],
+  publishedBackgrounds: ReadonlyMap<string, Stored<PublishedBackground>> = new Map(),
 ): PublishPlan {
   const bySet = new Map(sets.map((entry) => [entry.id, entry]));
   const problems: { itemId: string; problem: Problem }[] = [];
@@ -3097,6 +3412,13 @@ export function planPublish(
       collections.publishedSpecies,
       speciesProblem,
       flattenSpecies,
+    ) +
+    planRecords(
+      backgrounds,
+      publishedBackgrounds,
+      collections.publishedBackgrounds,
+      backgroundProblem,
+      flattenBackground,
     );
   if (mutations.length > 0)
     mutations.push({
@@ -3177,6 +3499,14 @@ const speciesDefaults: Record<string, unknown> = {
   lineages: [],
   text: "",
 };
+const backgroundDefaults: Record<string, unknown> = {
+  originFeat: "",
+  skillProficiencies: [],
+  tools: [],
+  toolPicks: 1,
+  equipment: "",
+  text: "",
+};
 const subclassDefaults: Record<string, unknown> = {
   text: "",
   excerpt: "",
@@ -3185,7 +3515,7 @@ const subclassDefaults: Record<string, unknown> = {
   tableColumns: [],
   features: [],
 };
-type DraftKind = "set" | "item" | "subclass" | "feat" | "spell" | "species";
+type DraftKind = "set" | "item" | "subclass" | "feat" | "spell" | "species" | "background";
 /** Optional objects `{}` clears in an import; a cleared field takes its partner. */
 const clearable: Readonly<Record<DraftKind, readonly string[]>> = {
   set: ["condition"],
@@ -3194,6 +3524,7 @@ const clearable: Readonly<Record<DraftKind, readonly string[]>> = {
   feat: ["grants"],
   spell: [],
   species: ["grants"],
+  background: ["grants", "originFeatChoices"],
 };
 const partners: Readonly<Record<string, string>> = { spellcasting: "progression" };
 
@@ -3211,11 +3542,12 @@ export function planImport(
   storedFeats: ReadonlyMap<string, Stored<unknown>> = new Map(),
   storedSpells: ReadonlyMap<string, Stored<unknown>> = new Map(),
   storedSpecies: ReadonlyMap<string, Stored<unknown>> = new Map(),
+  storedBackgrounds: ReadonlyMap<string, Stored<unknown>> = new Map(),
 ): ImportPlan {
   const unknownField = exactFields(
     document,
     ["format", "schemaVersion", "sets", "items"],
-    ["generatedAt", "mode", "subclasses", "feats", "spells", "species"],
+    ["generatedAt", "mode", "subclasses", "feats", "spells", "species", "backgrounds"],
   );
   if (unknownField)
     throw new HomebrewError("The document is invalid: {problem}", {
@@ -3234,14 +3566,16 @@ export function planImport(
     incomingSubclasses = source["subclasses"] ?? [],
     incomingFeats = source["feats"] ?? [],
     incomingSpells = source["spells"] ?? [],
-    incomingSpecies = source["species"] ?? [];
+    incomingSpecies = source["species"] ?? [],
+    incomingBackgrounds = source["backgrounds"] ?? [];
   if (
     !Array.isArray(incomingSets) ||
     !Array.isArray(incomingItems) ||
     !Array.isArray(incomingSubclasses) ||
     !Array.isArray(incomingFeats) ||
     !Array.isArray(incomingSpells) ||
-    !Array.isArray(incomingSpecies)
+    !Array.isArray(incomingSpecies) ||
+    !Array.isArray(incomingBackgrounds)
   )
     throw new HomebrewError("The document needs sets and items lists.");
   if (
@@ -3250,7 +3584,8 @@ export function planImport(
       incomingSubclasses.length +
       incomingFeats.length +
       incomingSpells.length +
-      incomingSpecies.length >
+      incomingSpecies.length +
+      incomingBackgrounds.length >
     2000
   )
     throw new HomebrewError("An import holds at most 2000 entries.");
@@ -3362,6 +3697,17 @@ export function planImport(
     seen.add(`species:${value.id}`);
     add(collections.species, value.id, value.name, value, existing);
   }
+  for (const [index, raw] of incomingBackgrounds.entries()) {
+    const at = `backgrounds[${index}]`;
+    const existing = storedBackgrounds.get(entryId(raw));
+    const value = guarded(at, () =>
+      parseBackground(normalize(raw, existing, backgroundDefaults, "background", now)),
+    );
+    if (seen.has(`background:${value.id}`))
+      throw new HomebrewError("{at}: background {id} appears twice.", { at, id: value.id });
+    seen.add(`background:${value.id}`);
+    add(collections.backgrounds, value.id, value.name, value, existing);
+  }
   if (mode === "replace")
     for (const [collection, stored, prefix] of [
       [collections.sets, storedSets, "set:"],
@@ -3370,6 +3716,7 @@ export function planImport(
       [collections.feats, storedFeats, "feat:"],
       [collections.spells, storedSpells, "spell:"],
       [collections.species, storedSpecies, "species:"],
+      [collections.backgrounds, storedBackgrounds, "background:"],
     ] as const)
       for (const id of [...stored.keys()].sort(compare)) {
         if (seen.has(prefix + id)) continue;
@@ -3395,7 +3742,7 @@ export function planImport(
         count: mutations.length,
       },
     );
-  // Sets, their items, subclasses, feats, spells, then species; each collection by id.
+  // Sets, their items, subclasses, feats, spells, species, then backgrounds; each by id.
   const order: readonly string[] = [
     collections.sets,
     collections.items,
@@ -3403,6 +3750,7 @@ export function planImport(
     collections.feats,
     collections.spells,
     collections.species,
+    collections.backgrounds,
   ];
   const rank = (change: ImportChange): number => order.indexOf(change.collection);
   changes.sort((left, right) => rank(left) - rank(right) || compare(left.id, right.id));
@@ -3463,6 +3811,7 @@ export function exportDocument(
   feats: readonly Feat[] = [],
   spells: readonly Spell[] = [],
   species: readonly Species[] = [],
+  backgrounds: readonly Background[] = [],
 ): unknown {
   return {
     format: importFormat,
@@ -3475,6 +3824,7 @@ export function exportDocument(
     feats: [...feats].sort((left, right) => compare(left.id, right.id)),
     spells: [...spells].sort((left, right) => compare(left.id, right.id)),
     species: [...species].sort((left, right) => compare(left.id, right.id)),
+    backgrounds: [...backgrounds].sort((left, right) => compare(left.id, right.id)),
   };
 }
 
