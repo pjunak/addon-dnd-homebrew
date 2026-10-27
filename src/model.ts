@@ -553,13 +553,22 @@ function choices(value: unknown, vocabulary: readonly string[]): boolean {
     value.every((entry) => oneOf(vocabulary, entry))
   );
 }
+/** A spell from the rules data, or this campaign's own as `hb.<id>`. */
+export function validSpellRef(value: unknown): value is string {
+  return (
+    validId(value) ||
+    (typeof value === "string" &&
+      value.startsWith(idPrefix) &&
+      validId(value.slice(idPrefix.length)))
+  );
+}
 function spellIds(value: unknown, limit: number): boolean {
   return (
     Array.isArray(value) &&
     value.length > 0 &&
     value.length <= limit &&
     distinct(value) &&
-    value.every(validId)
+    value.every(validSpellRef)
   );
 }
 

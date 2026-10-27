@@ -810,10 +810,10 @@ globalThis.runRenderingContract = () => {
     (root) => root.querySelectorAll('option[value="hb.ember-lance"]').length > 0,
   );
   check(
-    "feat grants offer homebrew spells, which item spells cannot use",
-    JSON.stringify(homebrewSpellOffered) === JSON.stringify([true, false]),
+    "feat grants and item spells offer this campaign's spells",
+    JSON.stringify(homebrewSpellOffered) === JSON.stringify([true, true]),
     homebrewSpellOffered,
-    [true, false],
+    [true, true],
   );
   const features = subclassCatalog.querySelectorAll(".hb-feature").length;
   check("the subclass editor shows one panel per feature", features === 4, features, 4);

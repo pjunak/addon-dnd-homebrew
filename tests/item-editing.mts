@@ -12,6 +12,8 @@ import {
   type Item,
   type ItemSet,
 } from "#web/model";
+import { translator } from "#web/catalogs";
+import { describeGrants } from "#web/grants";
 import { fromTemplate, itemTemplates } from "#web/templates";
 
 const english = (text: string): string => text;
@@ -144,4 +146,24 @@ void test("bulk changes write only what changed, guarded by each draft's revisio
       expectedRevision: 5,
     },
   ]);
+});
+
+void test("an item casts this campaign's spells by hb. id and names them in words", () => {
+  const grants = {
+    castingAbility: { fixed: "INT" as const },
+    resources: [{ key: "uses", name: "Ember Wand", fixed: 3, recharge: "long" as const }],
+    spells: [{ ids: ["hb.ember-lance", "fire-bolt"], resource: "uses" }],
+  };
+  const item: Item = {
+    ...newItem("Ember Wand", "ember-wand", "", 1),
+    characterMechanics: "complete",
+    grants,
+  };
+  assert.equal(itemProblem(item), undefined);
+  assert.equal(
+    describeGrants(grants, translator("en"))[1],
+    "Cast Ember Lance, Fire Bolt with a use of Ember Wand",
+  );
+  const foreign = { ...grants, spells: [{ ids: ["xx.ember-lance"], resource: "uses" }] };
+  assert.notEqual(itemProblem({ ...item, grants: foreign }), undefined);
 });

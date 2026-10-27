@@ -130,6 +130,8 @@
     },
     "abilityList": { "type": "array", "minItems": 1, "maxItems": 6, "uniqueItems": true, "items": { "$ref": "#/$defs/ability" } },
     "idList": { "type": "array", "minItems": 1, "maxItems": 20, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+    "spellRef": { "$comment": "A spell from the rules data, or this campaign's own as hb.<id>.", "type": "string", "minLength": 1, "maxLength": 67, "pattern": "^(?:hb\\.)?[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "spellRefList": { "type": "array", "minItems": 1, "maxItems": 20, "uniqueItems": true, "items": { "$ref": "#/$defs/spellRef" } },
     "advantageFields": {
       "properties": {
         "on": { "enum": ["save", "check", "attack", "initiative", "concentration", "deathSave"] },
@@ -166,7 +168,7 @@
       "oneOf": [
         {
           "type": "object", "additionalProperties": false, "required": ["ids"],
-          "properties": { "ids": { "$ref": "#/$defs/idList" }, "resource": { "$ref": "#/$defs/spellResource" }, "atWill": { "const": true } },
+          "properties": { "ids": { "$ref": "#/$defs/spellRefList" }, "resource": { "$ref": "#/$defs/spellResource" }, "atWill": { "const": true } },
           "not": { "required": ["resource", "atWill"] }
         },
         {
@@ -179,7 +181,7 @@
               "properties": {
                 "class": { "$ref": "#/$defs/idList" },
                 "school": { "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": { "enum": ["abjuration", "conjuration", "divination", "enchantment", "evocation", "illusion", "necromancy", "transmutation"] } },
-                "ids": { "$ref": "#/$defs/idList" },
+                "ids": { "$ref": "#/$defs/spellRefList" },
                 "ritual": { "const": true }
               }
             },

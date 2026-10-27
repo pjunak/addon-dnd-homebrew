@@ -121,10 +121,8 @@ collections untouched.
   an optional consumer that excludes this add-on's own records. Without a
   Compendium they are typed as ids. Either way the Engine checks them: an
   unknown spell is unavailable on the sheet, and a leveled spell without a use
-  or `atWill` is refused there, not here. Subclass and feat grants also offer
-  this campaign's spell drafts as `hb.<id>`; an item's spell ids hold no dot
-  (`homebrew-common.schema.json`), so an item cannot cast a homebrew spell
-  until that schema changes, which needs a reviewed migration.
+  or `atWill` is refused there, not here. Items, subclass and feat grants
+  also offer this campaign's spell drafts as `hb.<id>`.
 - A set condition only counts levels. What each level does stays text in
   its summary, and conditional rules beyond toggles stay in the description;
   the DM can add a linked adjustment on a character instead.

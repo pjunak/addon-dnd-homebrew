@@ -236,7 +236,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.5.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.6.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are

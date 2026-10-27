@@ -119,6 +119,8 @@ const mentalAbilities = ["INT", "WIS", "CHA"] as const;
 // --- Plain words -------------------------------------------------------------
 
 const list = (values: readonly string[]): string => values.join(", ");
+/** A spell id in words; this campaign's own drop their hb. prefix. */
+const spellWords = (id: string): string => titleOf(id.replace(/^hb\./u, ""));
 const abilityList = (values: readonly string[], t: Translator): string =>
   list(values.map((value) => t(abilityNames[value] ?? value)));
 const senseName = (key: string, t: Translator): string =>
@@ -179,7 +181,7 @@ export function describeSpell(
 ): string {
   const cast = castText(spell, uses, t);
   if (spell.ids) {
-    const spells = list(spell.ids.map(titleOf));
+    const spells = list(spell.ids.map(spellWords));
     return cast ? `${t("Cast {spells}", { spells })} ${cast}` : t("Learn {spells}", { spells });
   }
   const count = spell.choose ?? 1,
@@ -202,7 +204,7 @@ export function describeSpell(
     ? list([
         ...(from.class ?? []).map(titleOf),
         ...(from.school ?? []).map(titleOf),
-        ...(from.ids ?? []).map(titleOf),
+        ...(from.ids ?? []).map(spellWords),
         ...(from.ritual ? [t("rituals")] : []),
       ])
     : "";

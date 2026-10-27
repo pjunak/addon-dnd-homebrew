@@ -514,8 +514,8 @@ export function defineCatalogElement(generation?: string): string {
       );
     }
     /**
-     * The rules data subclass and feat grants pick from, with this campaign's
-     * spells added: grants name them by `hb.<id>`. Item spells cannot.
+     * The rules data grants pick from, with this campaign's spells added:
+     * grants and item spells name them by `hb.<id>`.
      */
     #grantReferences(): References | undefined {
       const references = this.#references,
@@ -1113,7 +1113,7 @@ export function defineCatalogElement(generation?: string): string {
         {
           document,
           t,
-          references: this.#references,
+          references: this.#grantReferences(),
           sets,
           takenIds: () => this.#itemIds(),
           changed: () => this.#setDirty(true),

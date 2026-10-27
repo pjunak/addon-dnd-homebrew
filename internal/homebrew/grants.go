@@ -6,6 +6,7 @@ import (
 	"math"
 	"slices"
 	"sort"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -268,7 +269,7 @@ func validSpell(raw any, resources map[string]int) (string, error) {
 		if _, err := fields(entry, []string{"ids", "resource", "atWill"}, []string{"ids"}); err != nil {
 			return "", err
 		}
-		if err := validIDs(entry["ids"], 20); err != nil {
+		if err := validSpellRefs(entry["ids"], 20); err != nil {
 			return "", fmt.Errorf("ids: %w", err)
 		}
 	} else {
@@ -364,7 +365,7 @@ func validSpellFilter(raw any) error {
 		}
 	}
 	if value, exists := entry["ids"]; exists {
-		if err := validIDs(value, 20); err != nil {
+		if err := validSpellRefs(value, 20); err != nil {
 			return fmt.Errorf("ids: %w", err)
 		}
 	}
@@ -514,6 +515,28 @@ func validIDs(raw any, limit int) error {
 		id, _ := value.(string)
 		if !ValidID(id) || seen[id] {
 			return fmt.Errorf("id %v is invalid or repeated", value)
+		}
+		seen[id] = true
+	}
+	return nil
+}
+
+// ValidSpellRef reports a spell from the rules data, or this campaign's own as
+// hb.<id>.
+func ValidSpellRef(id string) bool {
+	return ValidID(id) || strings.HasPrefix(id, IDPrefix) && ValidID(strings.TrimPrefix(id, IDPrefix))
+}
+
+func validSpellRefs(raw any, limit int) error {
+	list, ok := raw.([]any)
+	if !ok || len(list) == 0 || len(list) > limit {
+		return fmt.Errorf("list 1 to %d spell ids", limit)
+	}
+	seen := map[string]bool{}
+	for _, value := range list {
+		id, _ := value.(string)
+		if !ValidSpellRef(id) || seen[id] {
+			return fmt.Errorf("spell id %v is invalid or repeated", value)
 		}
 		seen[id] = true
 	}

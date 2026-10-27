@@ -160,7 +160,7 @@ not be empty: leave it out instead. Any other field or value is refused.
 | --- | --- | --- |
 | `advantages` | 1–20 | `on`: `save`, `check`, `attack`, `initiative`, `concentration` or `deathSave`. Optional `mode` (`"disadvantage"`; Advantage by default), `abilities` (saves and checks only), `skills` (checks only) and `when`, one line of at most 200 characters. An entry with `when` is listed on the sheet without marking the rolls. |
 | `resources` | 1–10 | Limited uses: `key` (lowercase words joined by hyphens, distinct), `name`, `fixed` (1–100) and `recharge` (`"short"` or `"long"`), all required. The sheet tracks them for the item, even while it is unequipped. |
-| `spells` | 1–20 | Named spells `{ "ids": [...] }`, or the player's pick `{ "id", "choose": 1–10, "spellLevel" or "maxSpellLevel": 0–9, "from"? }`. `from` narrows a pick by `class`, `school` (lowercase), `ids` or `"ritual": true`. A spell is cast with one of the item's uses (`"resource": "<key>"`, or `{ "key", "cost" }`), `"atWill": true`, or neither for a cantrip. Item spells never use spell slots. |
+| `spells` | 1–20 | Named spells `{ "ids": [...] }` (rules-data ids, or this campaign's own as `hb.<id>`), or the player's pick `{ "id", "choose": 1–10, "spellLevel" or "maxSpellLevel": 0–9, "from"? }`. `from` narrows a pick by `class`, `school` (lowercase), `ids` or `"ritual": true`. A spell is cast with one of the item's uses (`"resource": "<key>"`, or `{ "key", "cost" }`), `"atWill": true`, or neither for a cantrip. Item spells never use spell slots. |
 | `castingAbility` | — | `{ "fixed": "WIS" }`, or `{ "id": "casting", "choose": ["INT", "WIS", "CHA"] }` for the player to pick once per item. Allowed only with `spells`. |
 | `activations` | 1–10 | Toggles the player switches on the sheet: `id` (distinct), `name`, optional `condition` (one line, when it applies) and 1–20 `modifiers`. |
 | `resistances`, `damageImmunities` | — | Damage types: `acid`, `bludgeoning`, `cold`, `fire`, `force`, `lightning`, `necrotic`, `piercing`, `poison`, `psychic`, `radiant`, `slashing`, `thunder`. |
@@ -459,9 +459,8 @@ and casting time.
 
 A homebrew spell joins a class's spell list through `classes`, so the
 Builder offers it to that class and grants that pick from a class list,
-school, casting time or rituals include it. Subclass and feat grants can name
-it by id, `hb.ember-lance`. An item's `spells` accept only rules-data spell ids
-without a dot, so an item cannot cast a homebrew spell yet.
+school, casting time or rituals include it. Subclass and feat grants and an
+item's `spells` name it by id, `hb.ember-lance`.
 
 ### Published spell
 
