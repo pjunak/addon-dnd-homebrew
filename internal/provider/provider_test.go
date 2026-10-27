@@ -537,3 +537,42 @@ func TestServesPublishedSpells(t *testing.T) {
 		t.Fatalf("a withdrawn spell must not be served: %v", failure)
 	}
 }
+
+func TestServesPublishedSpecies(t *testing.T) {
+	data := newFakeData()
+	body, err := os.ReadFile("../../tests/fixtures/species.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		Published json.RawMessage `json:"published"`
+	}
+	if err := json.Unmarshal(body, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	species := string(fixture.Published)
+	broken := json.RawMessage(strings.ReplaceAll(strings.Replace(species, `"size": "Small or Medium"`, `"size": "Medium"`, 1), "emberkin", "broken-species"))
+	withdrawn := json.RawMessage(strings.Replace(strings.ReplaceAll(species, "emberkin", "old-species"), `"withdrawn": false`, `"withdrawn": true`, 1))
+	publish(t, data, fixtureRecords(t)[:1])
+	data.put(homebrew.PublishedSpeciesCollection, "hb.emberkin", fixture.Published)
+	data.put(homebrew.PublishedSpeciesCollection, "hb.broken-species", broken)
+	data.put(homebrew.PublishedSpeciesCollection, "hb.old-species", withdrawn)
+	var log bytes.Buffer
+	handler, _ := New(data, &log)
+	set := catalogSet(t, handler)
+	assertEngineCatalog(t, set)
+	if kinds := set["kinds"].(map[string]any); kinds["species"].(float64) != 1 {
+		t.Fatalf("kinds %v", kinds)
+	}
+	if !strings.Contains(log.String(), "published species \"hb.broken-species\"") {
+		t.Fatalf("an invalid species must be reported: %q", log.String())
+	}
+	got := call(t, handler, "get", `{"setId":"rules","kind":"species","id":"hb.emberkin"}`)["record"].(map[string]any)
+	value := got["value"].(map[string]any)
+	if value["size"] != "Small or Medium" || len(value["sizeOptions"].([]any)) != 2 || len(value["lineages"].([]any)) != 2 {
+		t.Fatalf("species %v", got)
+	}
+	if failure := callError(t, handler, "get", `{"setId":"rules","kind":"species","id":"hb.old-species"}`); failure.Data.Kind != workerrpc.KindNotFound {
+		t.Fatalf("a withdrawn species must not be served: %v", failure)
+	}
+}

@@ -31,6 +31,7 @@ import {
   isProse,
   keyOffer,
   mapLabels,
+  refusedGrants,
   switchOf,
   template,
   type GrantSubject,
@@ -931,8 +932,10 @@ function group(
           rebuild({ ...next, ...decider.start(chosen) });
         });
     }
+    const refused = owner === "Grants" ? refusedGrants(context.subject) : [];
     const absent = order.filter(
-      (field) => !present.has(field) && (!applies || applies.includes(field)),
+      (field) =>
+        !present.has(field) && (!applies || applies.includes(field)) && !refused.includes(field),
     );
     if (absent.length > 0)
       body.append(

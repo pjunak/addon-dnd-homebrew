@@ -1,4 +1,5 @@
-// Stored shapes and rules for item sets, items, subclasses and published records.
+// Stored shapes and rules for item sets, items, subclasses, feats, spells,
+// species and their published records.
 // internal/homebrew (Go) enforces the same rules for imports and serving; the
 // shared fixtures in tests/fixtures keep the two in step.
 
@@ -159,6 +160,8 @@ export const collections = {
   publishedFeats: "homebrew_published_feats",
   spells: "homebrew_spells",
   publishedSpells: "homebrew_published_spells",
+  species: "homebrew_species",
+  publishedSpecies: "homebrew_published_species",
 } as const;
 export const metaKey = "publish";
 export const idPrefix = "hb.";
@@ -2387,6 +2390,385 @@ export function parsePublishedSpell(value: unknown): PublishedSpell {
   return published;
 }
 
+// --- Species -----------------------------------------------------------------
+
+// internal/homebrew/species.go enforces the same rules through the contracts;
+// the shared fixture tests/fixtures/species.json keeps the two in step. A
+// species is the Compendium's species record: size, speeds, darkvision and
+// resistances are fields of their own, everything else the Engine's grants,
+// and lineages the variants a player picks one of.
+
+export const creatureTypes = [
+  "Aberration",
+  "Beast",
+  "Celestial",
+  "Construct",
+  "Dragon",
+  "Elemental",
+  "Fey",
+  "Fiend",
+  "Giant",
+  "Humanoid",
+  "Monstrosity",
+  "Ooze",
+  "Plant",
+  "Undead",
+] as const;
+export type CreatureType = (typeof creatureTypes)[number];
+export const creatureSizes = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"] as const;
+export type CreatureSize = (typeof creatureSizes)[number];
+export const movementModes = ["fly", "swim", "climb", "burrow"] as const;
+export type MovementMode = (typeof movementModes)[number];
+/** Feet, or "speed" for equal to the walking speed. */
+export type Movement = number | "speed";
+export const maxTraits = 20;
+export const maxTraitText = 2000;
+export const maxLineages = 10;
+export const maxLineageText = 4000;
+export interface SpeciesTrait {
+  readonly name: string;
+  readonly text: string;
+}
+export interface Lineage {
+  readonly id: string;
+  readonly name: string;
+  readonly text: string;
+  /** Added to the species' grants; the Engine reads no choices or acBonus here. */
+  readonly grants?: VocabularyValue;
+}
+export interface Species {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly name: string;
+  readonly creatureType: CreatureType;
+  /** One fixed size, or two or more the player picks from. */
+  readonly sizes: readonly CreatureSize[];
+  /** Walking speed in feet. */
+  readonly speed: number;
+  readonly speeds: Readonly<Partial<Record<MovementMode, Movement>>>;
+  /** Feet, or 0 for none. */
+  readonly darkvision: number;
+  readonly resistances: readonly DamageType[];
+  readonly traits: readonly SpeciesTrait[];
+  readonly lineages: readonly Lineage[];
+  readonly grants?: VocabularyValue;
+  readonly text: string;
+  readonly updatedAt: number;
+}
+/** One served species; withdrawn like an item when its draft is deleted. */
+export interface PublishedSpecies {
+  readonly id: string;
+  readonly schemaVersion: 1;
+  readonly speciesId: string;
+  readonly withdrawn: boolean;
+  readonly record: VocabularyValue;
+}
+const speciesFields = [
+  "id",
+  "schemaVersion",
+  "name",
+  "creatureType",
+  "sizes",
+  "speed",
+  "speeds",
+  "darkvision",
+  "resistances",
+  "traits",
+  "lineages",
+  "text",
+  "updatedAt",
+] as const;
+const isDistance = (value: unknown): value is number => isInteger(value, 5, 300);
+
+/** Species grants: the Engine's vocabulary, without a choice named like its size choice. */
+function speciesGrantsProblem(value: unknown, path: string): Problem | undefined {
+  const failure = vocabularyProblem(grantsSchema, value, path);
+  if (failure) return failure;
+  const choices = (value as Json)["choices"];
+  return Array.isArray(choices) &&
+    choices.some((choice) => isRecord(choice) && choice["id"] === "size")
+    ? problem("{path}: the choice id size is the Engine's own size choice.", { path })
+    : undefined;
+}
+/** Lineage grants add to the species'; the Engine reads choices and acBonus only from the species. */
+function lineageGrantsProblem(value: unknown, path: string): Problem | undefined {
+  const failure = vocabularyProblem(grantsSchema, value, path);
+  if (failure) return failure;
+  return "choices" in (value as Json) || "acBonus" in (value as Json)
+    ? problem("{path}: a lineage cannot offer choices or an AC bonus; give them to the species.", {
+        path,
+      })
+    : undefined;
+}
+function traitProblem(value: unknown, path: string): Problem | undefined {
+  const shape = exactFields(value, ["name", "text"]);
+  if (shape) return problem("{path}: {problem}", { path, problem: fill(shape.text, shape.params) });
+  const trait = value as Json;
+  if (!validName(trait["name"]))
+    return problem("{path}: give the trait a one-line name of at most 120 characters.", { path });
+  return typeof trait["text"] === "string" && length(trait["text"]) <= maxTraitText
+    ? undefined
+    : problem("{path}: a trait's text is limited to {count} characters.", {
+        path,
+        count: maxTraitText,
+      });
+}
+function speedsProblem(value: unknown): Problem | undefined {
+  return isRecord(value) &&
+    Object.entries(value).every(
+      ([mode, movement]) =>
+        oneOf(movementModes, mode) && (isDistance(movement) || movement === "speed"),
+    )
+    ? undefined
+    : problem("Each special speed is 5 to 300 feet, or equal to the walking speed.");
+}
+const resistancesValid = (value: unknown): boolean =>
+  Array.isArray(value) && value.every((entry) => oneOf(damageTypes, entry)) && distinct(value);
+const lineageIdsDistinct = (lineages: readonly unknown[]): boolean =>
+  distinct(lineages.map((lineage) => (isRecord(lineage) ? lineage["id"] : undefined)));
+/** A drafted lineage has its text; a served one leaves it to the species' text. */
+function lineageProblem(value: unknown, path: string, drafted = true): Problem | undefined {
+  const shape = exactFields(value, drafted ? ["id", "name", "text"] : ["id", "name"], ["grants"]);
+  if (shape) return problem("{path}: {problem}", { path, problem: fill(shape.text, shape.params) });
+  const lineage = value as Json;
+  if (!validId(lineage["id"]))
+    return problem("{path}: the id must be lowercase words joined by hyphens.", { path });
+  if (!validName(lineage["name"]))
+    return problem("{path}: give the lineage a one-line name of at most 120 characters.", {
+      path,
+    });
+  if (drafted && (typeof lineage["text"] !== "string" || length(lineage["text"]) > maxLineageText))
+    return problem("{path}: a lineage's text is limited to {count} characters.", {
+      path,
+      count: maxLineageText,
+    });
+  return lineage["grants"] === undefined
+    ? undefined
+    : lineageGrantsProblem(lineage["grants"], `${path}.grants`);
+}
+
+export function speciesProblem(value: Species): Problem | undefined {
+  if (value.schemaVersion !== 1) return problem("Unsupported species version.");
+  if (!validId(value.id)) return problem("The id must be lowercase words joined by hyphens.");
+  if (!validName(value.name))
+    return problem("Give the species a one-line name of at most 120 characters.");
+  if (!oneOf(creatureTypes, value.creatureType)) return problem("Choose the creature type.");
+  const sizes: unknown = value.sizes;
+  if (
+    !Array.isArray(sizes) ||
+    sizes.length === 0 ||
+    !sizes.every((size) => oneOf(creatureSizes, size)) ||
+    !distinct(sizes)
+  )
+    return problem("Choose one size, or several for the player to pick from.");
+  if (!isDistance(value.speed)) return problem("The walking speed is 5 to 300 feet.");
+  if (value.darkvision !== 0 && !isDistance(value.darkvision))
+    return problem("Darkvision is 5 to 300 feet, or 0 for none.");
+  if (!resistancesValid(value.resistances))
+    return problem("List each damage resistance at most once.");
+  if (!validMarkdown(value.text))
+    return problem("Descriptions are limited to {count} characters.", { count: maxMarkdown });
+  if (!Number.isSafeInteger(value.updatedAt) || value.updatedAt < 0)
+    return problem("The species is malformed.");
+  const lineages: unknown = value.lineages;
+  if (Array.isArray(lineages) && !lineageIdsDistinct(lineages))
+    return problem("Each lineage needs its own id.");
+  return (
+    speedsProblem(value.speeds) ??
+    listProblem(value.traits, maxTraits, "traits", traitProblem) ??
+    listProblem(lineages, maxLineages, "lineages", (entry, path) => lineageProblem(entry, path)) ??
+    (value.grants === undefined ? undefined : speciesGrantsProblem(value.grants, "grants"))
+  );
+}
+
+/** Checks an untrusted value as a stored species draft and returns it. */
+export function parseSpecies(value: unknown): Species {
+  const failure =
+    exactFields(value, speciesFields, ["grants"]) ?? speciesProblem(value as unknown as Species);
+  if (failure) throw new HomebrewError(failure.text, failure.params);
+  return value as unknown as Species;
+}
+
+export function newSpecies(name: string, id: string, now: number): Species {
+  return {
+    id,
+    schemaVersion: 1,
+    name,
+    creatureType: "Humanoid",
+    sizes: ["Medium"],
+    speed: 30,
+    speeds: {},
+    darkvision: 0,
+    resistances: [],
+    traits: [],
+    lineages: [],
+    text: "",
+    updatedAt: now,
+  };
+}
+
+/** A speed as printed: "30 feet", or "equal to your Speed". */
+const movementWords = (movement: Movement): string =>
+  movement === "speed" ? "equal to your Speed" : `${movement} feet`;
+/** The record's size: one fixed size, or the sizes a player picks from, "Small or Medium". */
+export const speciesSize = (sizes: readonly string[]): string => sizes.join(" or ");
+
+/**
+ * The lines under a species' name, as printed: creature type, size and speed,
+ * then darkvision and resistances when it has them.
+ */
+export function speciesBlock(
+  species: Pick<
+    Species,
+    "creatureType" | "sizes" | "speed" | "speeds" | "darkvision" | "resistances"
+  >,
+): string {
+  const movement = movementModes
+    .filter((mode) => species.speeds[mode] !== undefined)
+    .map((mode) => `${mode} ${movementWords(species.speeds[mode]!)}`);
+  return [
+    `**Creature Type:** ${species.creatureType}`,
+    `**Size:** ${speciesSize(species.sizes)}`,
+    `**Speed:** ${[`${species.speed} feet`, ...movement].join(", ")}`,
+    ...(species.darkvision > 0 ? [`**Darkvision:** ${species.darkvision} feet`] : []),
+    ...(species.resistances.length > 0
+      ? [`**Resistances:** ${species.resistances.map((type) => titleOf(type)).join(", ")}`]
+      : []),
+  ].join("  \n");
+}
+
+/**
+ * The species record the Engine reads. Its text is the stat block, the
+ * description, each trait and each lineage, as the books print them; special
+ * speeds, sizes and resistances take a fixed order, so a form's order never changes
+ * the record.
+ */
+export function flattenSpecies(species: Species): PublishedSpecies {
+  const id = idPrefix + species.id;
+  const speeds: Record<string, Movement> = { walk: species.speed };
+  for (const mode of movementModes) {
+    const movement = species.speeds[mode];
+    if (movement !== undefined) speeds[mode] = movement;
+  }
+  const resistances = damageTypes.filter((type) => species.resistances.includes(type));
+  const sizes = creatureSizes.filter((size) => species.sizes.includes(size));
+  const entry = (name: string, text: string): string =>
+    `**${name}.**${text.trim() === "" ? "" : ` ${text.trim()}`}`;
+  const text = [
+    speciesBlock({ ...species, sizes, resistances }),
+    species.text.trim(),
+    ...species.traits.map((trait) => entry(trait.name, trait.text)),
+    ...(species.lineages.length > 0
+      ? ["#### Lineages", ...species.lineages.map((lineage) => entry(lineage.name, lineage.text))]
+      : []),
+  ].filter((part) => part !== "");
+  return {
+    id,
+    schemaVersion: 1,
+    speciesId: species.id,
+    withdrawn: false,
+    record: {
+      kind: "species",
+      id,
+      name: species.name,
+      edition: "2024",
+      book: "homebrew",
+      creatureType: species.creatureType,
+      size: speciesSize(sizes),
+      ...(sizes.length > 1 ? { sizeOptions: sizes } : {}),
+      speeds,
+      ...(species.darkvision > 0 ? { senses: { darkvision: species.darkvision } } : {}),
+      resistances,
+      traits: copy(species.traits),
+      ...(species.lineages.length > 0
+        ? {
+            lineages: species.lineages.map((lineage) => ({
+              id: lineage.id,
+              name: lineage.name,
+              ...(lineage.grants ? { grants: copy(lineage.grants) } : {}),
+            })),
+          }
+        : {}),
+      ...(species.grants ? { grants: copy(species.grants) } : {}),
+      text: text.join("\n\n"),
+    },
+  };
+}
+
+/** Checks an untrusted value as a published species and returns it. */
+export function parsePublishedSpecies(value: unknown): PublishedSpecies {
+  const shape = exactFields(value, ["id", "schemaVersion", "speciesId", "withdrawn", "record"]);
+  if (shape) throw new HomebrewError(shape.text, shape.params);
+  const published = value as PublishedSpecies;
+  const record = published.record as unknown;
+  const recordShape = exactFields(
+    record,
+    [
+      "kind",
+      "id",
+      "name",
+      "edition",
+      "book",
+      "creatureType",
+      "size",
+      "speeds",
+      "resistances",
+      "traits",
+      "text",
+    ],
+    ["sizeOptions", "senses", "lineages", "grants"],
+  );
+  const served = record as Json;
+  const options = served["sizeOptions"],
+    speeds = served["speeds"],
+    senses = served["senses"],
+    lineages = served["lineages"];
+  // The Engine reads size only without options: alone it is one size label.
+  const sizeValid =
+    options === undefined
+      ? oneOf(creatureSizes, served["size"])
+      : Array.isArray(options) &&
+        options.length >= 2 &&
+        options.every((size) => oneOf(creatureSizes, size)) &&
+        distinct(options) &&
+        served["size"] === speciesSize(options as string[]);
+  const valid =
+    recordShape === undefined &&
+    published.schemaVersion === 1 &&
+    validId(published.speciesId) &&
+    published.id === idPrefix + published.speciesId &&
+    typeof published.withdrawn === "boolean" &&
+    served["kind"] === "species" &&
+    served["id"] === published.id &&
+    validName(served["name"]) &&
+    served["edition"] === "2024" &&
+    served["book"] === "homebrew" &&
+    oneOf(creatureTypes, served["creatureType"]) &&
+    sizeValid &&
+    isRecord(speeds) &&
+    isDistance(speeds["walk"]) &&
+    speedsProblem(
+      Object.fromEntries(Object.entries(speeds).filter(([mode]) => mode !== "walk")),
+    ) === undefined &&
+    (senses === undefined ||
+      (exactFields(senses, ["darkvision"]) === undefined &&
+        isDistance((senses as Json)["darkvision"]))) &&
+    resistancesValid(served["resistances"]) &&
+    listProblem(served["traits"], maxTraits, "traits", traitProblem) === undefined &&
+    (lineages === undefined ||
+      (Array.isArray(lineages) &&
+        lineages.length > 0 &&
+        lineageIdsDistinct(lineages) &&
+        listProblem(lineages, maxLineages, "lineages", (entry, path) =>
+          lineageProblem(entry, path, false),
+        ) === undefined)) &&
+    (served["grants"] === undefined ||
+      speciesGrantsProblem(served["grants"], "grants") === undefined) &&
+    typeof served["text"] === "string";
+  if (!valid) throw new HomebrewError("A published species is invalid.");
+  return published;
+}
+
 // --- Publishing ------------------------------------------------------------
 
 /** Set defaults, per-item overrides and the item's own text, as one record. */
@@ -2543,7 +2925,7 @@ export function draftDeletes(
 }
 
 export interface PublishPlan {
-  /** `itemId` names the draft: an item, a subclass, a feat or a spell. */
+  /** `itemId` names the draft: an item, a subclass, a feat, a spell or a species. */
   readonly problems: readonly { readonly itemId: string; readonly problem: Problem }[];
   readonly changes: readonly PublishChange[];
   readonly mutations: readonly CollectionMutation[];
@@ -2567,6 +2949,8 @@ export function planPublish(
   publishedFeats: ReadonlyMap<string, Stored<PublishedFeat>> = new Map(),
   spells: readonly Spell[] = [],
   publishedSpells: ReadonlyMap<string, Stored<PublishedSpell>> = new Map(),
+  species: readonly Species[] = [],
+  publishedSpecies: ReadonlyMap<string, Stored<PublishedSpecies>> = new Map(),
 ): PublishPlan {
   const bySet = new Map(sets.map((entry) => [entry.id, entry]));
   const problems: { itemId: string; problem: Problem }[] = [];
@@ -2706,7 +3090,14 @@ export function planPublish(
     desired.size +
     [...desiredSubclasses.values()].reduce((total, value) => total + value.records.length, 0) +
     planRecords(feats, publishedFeats, collections.publishedFeats, featProblem, flattenFeat) +
-    planRecords(spells, publishedSpells, collections.publishedSpells, spellProblem, flattenSpell);
+    planRecords(spells, publishedSpells, collections.publishedSpells, spellProblem, flattenSpell) +
+    planRecords(
+      species,
+      publishedSpecies,
+      collections.publishedSpecies,
+      speciesProblem,
+      flattenSpecies,
+    );
   if (mutations.length > 0)
     mutations.push({
       operation: "put",
@@ -2775,6 +3166,17 @@ const spellDefaults: Record<string, unknown> = {
   material: "",
   text: "",
 };
+const speciesDefaults: Record<string, unknown> = {
+  creatureType: "Humanoid",
+  sizes: ["Medium"],
+  speed: 30,
+  speeds: {},
+  darkvision: 0,
+  resistances: [],
+  traits: [],
+  lineages: [],
+  text: "",
+};
 const subclassDefaults: Record<string, unknown> = {
   text: "",
   excerpt: "",
@@ -2783,7 +3185,7 @@ const subclassDefaults: Record<string, unknown> = {
   tableColumns: [],
   features: [],
 };
-type DraftKind = "set" | "item" | "subclass" | "feat" | "spell";
+type DraftKind = "set" | "item" | "subclass" | "feat" | "spell" | "species";
 /** Optional objects `{}` clears in an import; a cleared field takes its partner. */
 const clearable: Readonly<Record<DraftKind, readonly string[]>> = {
   set: ["condition"],
@@ -2791,6 +3193,7 @@ const clearable: Readonly<Record<DraftKind, readonly string[]>> = {
   subclass: ["grants", "spellcasting"],
   feat: ["grants"],
   spell: [],
+  species: ["grants"],
 };
 const partners: Readonly<Record<string, string>> = { spellcasting: "progression" };
 
@@ -2807,11 +3210,12 @@ export function planImport(
   storedSubclasses: ReadonlyMap<string, Stored<unknown>> = new Map(),
   storedFeats: ReadonlyMap<string, Stored<unknown>> = new Map(),
   storedSpells: ReadonlyMap<string, Stored<unknown>> = new Map(),
+  storedSpecies: ReadonlyMap<string, Stored<unknown>> = new Map(),
 ): ImportPlan {
   const unknownField = exactFields(
     document,
     ["format", "schemaVersion", "sets", "items"],
-    ["generatedAt", "mode", "subclasses", "feats", "spells"],
+    ["generatedAt", "mode", "subclasses", "feats", "spells", "species"],
   );
   if (unknownField)
     throw new HomebrewError("The document is invalid: {problem}", {
@@ -2829,13 +3233,15 @@ export function planImport(
     incomingItems = source["items"],
     incomingSubclasses = source["subclasses"] ?? [],
     incomingFeats = source["feats"] ?? [],
-    incomingSpells = source["spells"] ?? [];
+    incomingSpells = source["spells"] ?? [],
+    incomingSpecies = source["species"] ?? [];
   if (
     !Array.isArray(incomingSets) ||
     !Array.isArray(incomingItems) ||
     !Array.isArray(incomingSubclasses) ||
     !Array.isArray(incomingFeats) ||
-    !Array.isArray(incomingSpells)
+    !Array.isArray(incomingSpells) ||
+    !Array.isArray(incomingSpecies)
   )
     throw new HomebrewError("The document needs sets and items lists.");
   if (
@@ -2843,7 +3249,8 @@ export function planImport(
       incomingItems.length +
       incomingSubclasses.length +
       incomingFeats.length +
-      incomingSpells.length >
+      incomingSpells.length +
+      incomingSpecies.length >
     2000
   )
     throw new HomebrewError("An import holds at most 2000 entries.");
@@ -2944,6 +3351,17 @@ export function planImport(
     seen.add(`spell:${value.id}`);
     add(collections.spells, value.id, value.name, value, existing);
   }
+  for (const [index, raw] of incomingSpecies.entries()) {
+    const at = `species[${index}]`;
+    const existing = storedSpecies.get(entryId(raw));
+    const value = guarded(at, () =>
+      parseSpecies(normalize(raw, existing, speciesDefaults, "species", now)),
+    );
+    if (seen.has(`species:${value.id}`))
+      throw new HomebrewError("{at}: species {id} appears twice.", { at, id: value.id });
+    seen.add(`species:${value.id}`);
+    add(collections.species, value.id, value.name, value, existing);
+  }
   if (mode === "replace")
     for (const [collection, stored, prefix] of [
       [collections.sets, storedSets, "set:"],
@@ -2951,6 +3369,7 @@ export function planImport(
       [collections.subclasses, storedSubclasses, "subclass:"],
       [collections.feats, storedFeats, "feat:"],
       [collections.spells, storedSpells, "spell:"],
+      [collections.species, storedSpecies, "species:"],
     ] as const)
       for (const id of [...stored.keys()].sort(compare)) {
         if (seen.has(prefix + id)) continue;
@@ -2976,13 +3395,14 @@ export function planImport(
         count: mutations.length,
       },
     );
-  // Sets, their items, subclasses, feats, then spells; each collection by id.
+  // Sets, their items, subclasses, feats, spells, then species; each collection by id.
   const order: readonly string[] = [
     collections.sets,
     collections.items,
     collections.subclasses,
     collections.feats,
     collections.spells,
+    collections.species,
   ];
   const rank = (change: ImportChange): number => order.indexOf(change.collection);
   changes.sort((left, right) => rank(left) - rank(right) || compare(left.id, right.id));
@@ -3042,6 +3462,7 @@ export function exportDocument(
   subclasses: readonly Subclass[] = [],
   feats: readonly Feat[] = [],
   spells: readonly Spell[] = [],
+  species: readonly Species[] = [],
 ): unknown {
   return {
     format: importFormat,
@@ -3053,6 +3474,7 @@ export function exportDocument(
     subclasses: [...subclasses].sort((left, right) => compare(left.id, right.id)),
     feats: [...feats].sort((left, right) => compare(left.id, right.id)),
     spells: [...spells].sort((left, right) => compare(left.id, right.id)),
+    species: [...species].sort((left, right) => compare(left.id, right.id)),
   };
 }
 

@@ -4,14 +4,17 @@ import { grantsSchema } from "#web/grants-schema";
 import {
   canonical,
   flattenFeat,
+  flattenSpecies,
   flattenSpell,
   flattenSubclass,
   type Feat,
+  type Species,
   type Spell,
   type Subclass,
 } from "#web/model";
 import { deref, typesOf, type SchemaNode } from "#web/schema";
 import { grantsNode, schemaEditor, type FormContext } from "#web/schema-form";
+import { speciesEditor } from "#web/species-editor";
 import { spellEditor } from "#web/spell-editor";
 import { mechanicsEditor } from "#web/subclass-editor";
 import { ReferenceLoader } from "#web/references";
@@ -50,6 +53,8 @@ const subclasses = (
 const feats = ((await (await fetch("../fixtures/feats.json")).json()) as { valid: Feat[] }).valid;
 const spells = ((await (await fetch("../fixtures/spells.json")).json()) as { valid: Spell[] })
   .valid;
+const species = ((await (await fetch("../fixtures/species.json")).json()) as { valid: Species[] })
+  .valid;
 const documents = (values: readonly { id: string }[], key = (value: { id: string }) => value.id) =>
   values.map((value): AddonDocument<unknown> => ({ key: key(value), revision: 1, value }));
 const stored: Record<string, readonly AddonDocument<unknown>[]> = {
@@ -62,6 +67,8 @@ const stored: Record<string, readonly AddonDocument<unknown>[]> = {
   homebrew_published_feats: documents(feats.slice(0, 1).map(flattenFeat)),
   homebrew_spells: documents(spells),
   homebrew_published_spells: documents(spells.slice(0, 1).map(flattenSpell)),
+  homebrew_species: documents(species),
+  homebrew_published_species: documents(species.slice(0, 1).map(flattenSpecies)),
   homebrew_meta: [
     {
       key: "publish",
@@ -180,6 +187,7 @@ const catalog = mount(catalogTag),
   featCatalog = mount(catalogTag),
   importedFeatCatalog = mount(catalogTag),
   spellCatalog = mount(catalogTag),
+  speciesCatalog = mount(catalogTag),
   edgeCatalog = mount(catalogTag),
   newCatalog = mount(catalogTag),
   gallery = mount(galleryTag),
@@ -270,6 +278,7 @@ const openDraft = async (root: HTMLElement, name: string): Promise<void> => {
 await openDraft(featCatalog, "Storm Touched");
 await openDraft(importedFeatCatalog, "Elemental Scholar");
 await openDraft(spellCatalog, "Hearth Ward");
+await openDraft(speciesCatalog, "Emberkin");
 for (
   let attempt = 0;
   attempt < 60 && newCatalog.querySelectorAll(".hb-tree-item").length < 6;
@@ -388,6 +397,31 @@ const spellsBack = spells.map((spell) => {
     ? "unchanged"
     : JSON.stringify(editor.read());
 });
+// Each fixture species in its own form, read back as the editor would save it.
+const speciesBack = species.map((value) => {
+  const form = document.createElement("form"),
+    main = document.createElement("div");
+  form.hidden = true;
+  form.append(main);
+  document.body.append(form);
+  const editor = speciesEditor(
+    {
+      document,
+      t: (english) => english,
+      references: undefined,
+      takenIds: () => new Set(),
+      changed() {},
+      restructured() {},
+    },
+    form,
+    main,
+    value,
+    true,
+  );
+  return canonical(flattenSpecies(editor.read())) === canonical(flattenSpecies(value))
+    ? "unchanged"
+    : JSON.stringify(editor.read());
+});
 
 const lines = (root: Element, selector: string): string[] =>
   [...root.querySelectorAll(`${selector} li`)].map((node) => node.textContent ?? "");
@@ -433,6 +467,8 @@ globalThis.runRenderingContract = () => {
         "Hearth Ward",
         "Storm Ward",
         "Whispered Map",
+        "Emberkin",
+        "Stoneborn",
       ]),
     names,
     [
@@ -454,6 +490,8 @@ globalThis.runRenderingContract = () => {
       "Hearth Ward",
       "Storm Ward",
       "Whispered Map",
+      "Emberkin",
+      "Stoneborn",
     ],
   );
   const trinket = [...catalog.querySelectorAll(".hb-tree-item")].find((node) =>
@@ -468,9 +506,9 @@ globalThis.runRenderingContract = () => {
   const status = catalog.querySelector(".hb-status")?.textContent ?? "";
   check(
     "status counts pending changes",
-    status.includes("Unpublished changes: 9."),
+    status.includes("Unpublished changes: 10."),
     status,
-    "…Unpublished changes: 9.",
+    "…Unpublished changes: 10.",
   );
   const preview = catalog.querySelector(".hb-preview-name")?.textContent;
   check(
@@ -605,9 +643,9 @@ globalThis.runRenderingContract = () => {
   );
   check(
     "the empty editor explains each kind and leaves the buttons to the header",
-    JSON.stringify(startPanel) === JSON.stringify([0, 5]),
+    JSON.stringify(startPanel) === JSON.stringify([0, 6]),
     startPanel,
-    [0, 5],
+    [0, 6],
   );
   check(
     "a new item offers every template",
@@ -806,6 +844,50 @@ globalThis.runRenderingContract = () => {
     spellsBack,
     spells.map(() => "unchanged"),
   );
+  check(
+    "the species editor publishes each fixture species as it was",
+    speciesBack.every((entry) => entry === "unchanged"),
+    speciesBack,
+    species.map(() => "unchanged"),
+  );
+  const speciesHeader = speciesCatalog
+    .querySelector(".hb-preview codex-addon-markdown")
+    ?.textContent?.split("\n")
+    .slice(0, 5)
+    .join("|");
+  const expectedSpeciesHeader =
+    "**Creature Type:** Humanoid  |**Size:** Small or Medium  |**Speed:** 30 feet, climb equal to your Speed  |**Darkvision:** 60 feet  |**Resistances:** Fire, Poison";
+  check(
+    "a species previews the lines the sheet shows, without a problem",
+    speciesHeader === expectedSpeciesHeader &&
+      speciesCatalog.querySelectorAll(".hb-preview .hb-message").length === 0,
+    speciesHeader,
+    expectedSpeciesHeader,
+  );
+  const addable = (name: string): string[] =>
+    [
+      ...(speciesCatalog.querySelector<HTMLSelectElement>(`select[name="${name}"]`)?.options ?? []),
+    ].map((entry) => entry.value);
+  const grantChoices = [
+    addable("lineages[1].grants#add").some((field) => field === "choices" || field === "acBonus"),
+    addable("grants#add").includes("acBonus"),
+  ];
+  check(
+    "a lineage never offers choices or an AC bonus, and a species offers its AC bonus",
+    JSON.stringify(grantChoices) === JSON.stringify([false, true]),
+    grantChoices,
+    [false, true],
+  );
+  const speciesBadges = [...catalog.querySelectorAll(".hb-tree-item")]
+    .filter((node) => /^(Emberkin|Stoneborn)/u.test(node.textContent ?? ""))
+    .map((node) => node.textContent);
+  check(
+    "species in the tree show their creature type and whether they are published",
+    JSON.stringify(speciesBadges) ===
+      JSON.stringify(["EmberkinHumanoid", "StonebornGiantUnpublished"]),
+    speciesBadges,
+    ["EmberkinHumanoid", "StonebornGiantUnpublished"],
+  );
   const homebrewSpellOffered = [featCatalog, ringCatalog].map(
     (root) => root.querySelectorAll('option[value="hb.ember-lance"]').length > 0,
   );
@@ -824,7 +906,7 @@ globalThis.runRenderingContract = () => {
   ];
   const expectedControls = [
     ["New item", "New set", "New…", "Import file", "Export"],
-    ["Subclass", "Feat", "Spell"],
+    ["Subclass", "Feat", "Spell", "Species"],
     true,
   ];
   check(

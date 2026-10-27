@@ -817,7 +817,8 @@ export const cs: Readonly<Record<string, string>> = {
   Rolls: "Hody",
   Defenses: "Obrana",
   "Hit points, speed and senses": "Životy, rychlost a smysly",
-  "Abilities and attunement": "Vlastnosti a sladění",
+  "Ability scores": "Hodnoty vlastností",
+  Attunement: "Sladění",
   "Not applied on subclasses": "U podpovolání se neuplatní",
   "Light armor": "Lehká zbroj",
   "Medium armor": "Střední zbroj",
@@ -1231,12 +1232,12 @@ export const cs: Readonly<Record<string, string>> = {
     "Odbornost původu, obecná odbornost, bojový styl nebo epické dobrodiní.",
   "Open {name}": "Otevřít {name}",
   // Spells
-  "Create items, item sets, subclasses, feats and spells, then publish them to use them on character sheets.":
-    "Vytvářejte předměty, sady předmětů, podpovolání, odbornosti a kouzla a pak je zveřejněte, aby šly použít na denících postav.",
-  "Nothing yet. Create an item, a set, a subclass, a feat or a spell, or import a file to begin.":
-    "Zatím nic. Začněte vytvořením předmětu, sady, podpovolání, odbornosti nebo kouzla, nebo importem souboru.",
-  "Characters with a withdrawn item, subclass, feat or spell show a missing-source problem until it is removed from them.":
-    "Postavy se staženým předmětem, podpovoláním, odborností nebo kouzlem ukazují problém s chybějícím zdrojem, dokud jim ho neodeberete.",
+  "Create items, item sets, subclasses, feats, spells and species, then publish them to use them on character sheets.":
+    "Vytvářejte předměty, sady předmětů, podpovolání, odbornosti, kouzla a druhy a pak je zveřejněte, aby šly použít na denících postav.",
+  "Nothing yet. Create an item, a set, a subclass, a feat, a spell or a species, or import a file to begin.":
+    "Zatím nic. Začněte vytvořením předmětu, sady, podpovolání, odbornosti, kouzla nebo druhu, nebo importem souboru.",
+  "Characters with a withdrawn item, subclass, feat, spell or species show a missing-source problem until it is removed from them.":
+    "Postavy se staženým předmětem, podpovoláním, odborností, kouzlem nebo druhem ukazují problém s chybějícím zdrojem, dokud jim ho neodeberete.",
   "New spell": "Nové kouzlo",
   spell: "kouzlo",
   Spell: "Kouzlo",
@@ -1291,6 +1292,97 @@ export const cs: Readonly<Record<string, string>> = {
   "A published spell is invalid.": "Zveřejněné kouzlo je neplatné.",
   "{at}: spell {id} appears twice.": "{at}: kouzlo {id} je uvedeno dvakrát.",
   "New…": "Nové…",
+  // Species
+  Species: "Druh",
+  species: "druh",
+  "New species": "Nový druh",
+  "A species for character creation, with its size, speeds and traits, and lineages to choose from.":
+    "Druh pro tvorbu postavy s velikostí, rychlostmi a rysy a s rodovými liniemi na výběr.",
+  "Deleting a published species withdraws it at the next publish; characters of it then show a missing-source problem. Delete {name}?":
+    "Smazání zveřejněného druhu ho při příštím zveřejnění stáhne; postavy tohoto druhu pak ukážou problém s chybějícím zdrojem. Smazat {name}?",
+  Size: "Velikost",
+  "One size, or several for the player to choose from.":
+    "Jedna velikost, nebo několik, ze kterých si hráč vybere.",
+  Tiny: "Drobná",
+  Small: "Malá",
+  Large: "Velká",
+  Huge: "Obrovská",
+  Gargantuan: "Gigantická",
+  Aberration: "Zrůda",
+  Beast: "Zvíře",
+  Celestial: "Nebešťan",
+  Construct: "Konstrukt",
+  Dragon: "Drak",
+  Elemental: "Elementál",
+  Fey: "Víla",
+  Fiend: "Běs",
+  Giant: "Obr",
+  Humanoid: "Humanoid",
+  Monstrosity: "Obluda",
+  Ooze: "Sliz",
+  Plant: "Rostlina",
+  Undead: "Nemrtvý",
+  "Speed (feet)": "Rychlost (stopy)",
+  "Darkvision (feet)": "Vidění ve tmě (stopy)",
+  None: "Žádné",
+  Movement: "Pohyb",
+  "Special speeds in feet; leave a speed empty for none.":
+    "Zvláštní rychlosti ve stopách; prázdná rychlost znamená žádnou.",
+  "Fly speed": "Rychlost letu",
+  "Swim speed": "Rychlost plavání",
+  "Climb speed": "Rychlost šplhání",
+  "Burrow speed": "Rychlost hrabání",
+  "Equal to the walking speed": "Stejná jako rychlost chůze",
+  "These follow the walking speed, as printed: equal to your Speed.":
+    "Tyto rychlosti se řídí rychlostí chůze, jak se píše: rovná se tvé Rychlosti.",
+  "Damage resistances": "Odolnosti vůči zranění",
+  "The species as players read it; its size, speed and senses are added when published.":
+    "Druh, tak jak ho čtou hráči; velikost, rychlost a smysly se při zveřejnění doplní.",
+  Traits: "Rysy",
+  "Each trait is printed with its name, as the books do. What a trait does on the sheet goes in the grants below.":
+    "Každý rys se vypíše se svým názvem jako v knihách. Co rys dělá na deníku, patří do udělení níže.",
+  "Add trait": "Přidat rys",
+  "New trait": "Nový rys",
+  "Remove trait": "Odebrat rys",
+  Lineages: "Rodové linie",
+  "Variants a player picks one of, such as High Elf or Drow. A lineage's grants add to the species'.":
+    "Varianty, ze kterých si hráč jednu vybere, například vznešený elf nebo drow. Udělení rodové linie se přičtou k udělením druhu.",
+  "Add lineage": "Přidat rodovou linii",
+  "New lineage": "Nová rodová linie",
+  "Remove lineage": "Odebrat rodovou linii",
+  "Lineage grants": "Udělení rodové linie",
+  "Proficiencies, spells, uses, toggles, choices and more. Add fields from the list.":
+    "Zběhlosti, kouzla, použití, přepínače, volby a další. Pole přidávejte ze seznamu.",
+  "Not applied on species": "Neplatí u druhů",
+  "Not applied on lineages": "Neplatí u rodových linií",
+  "{path}: the choice id size is the Engine's own size choice.":
+    "{path}: identifikátor volby size patří volbě velikosti, kterou vytváří Engine.",
+  "{path}: a lineage cannot offer choices or an AC bonus; give them to the species.":
+    "{path}: rodová linie nemůže nabízet volby ani bonus k OČ; dejte je druhu.",
+  "{path}: give the trait a one-line name of at most 120 characters.":
+    "{path}: dejte rysu jednořádkový název o nejvýše 120 znacích.",
+  "{path}: a trait's text is limited to {count} characters.":
+    "{path}: text rysu má nejvýše {count} znaků.",
+  "Each special speed is 5 to 300 feet, or equal to the walking speed.":
+    "Každá zvláštní rychlost je 5 až 300 stop, nebo stejná jako rychlost chůze.",
+  "{path}: give the lineage a one-line name of at most 120 characters.":
+    "{path}: dejte rodové linii jednořádkový název o nejvýše 120 znacích.",
+  "{path}: a lineage's text is limited to {count} characters.":
+    "{path}: text rodové linie má nejvýše {count} znaků.",
+  "Unsupported species version.": "Nepodporovaná verze druhu.",
+  "Give the species a one-line name of at most 120 characters.":
+    "Dejte druhu jednořádkový název o nejvýše 120 znacích.",
+  "Choose the creature type.": "Zvolte druh tvora.",
+  "Choose one size, or several for the player to pick from.":
+    "Zvolte jednu velikost, nebo několik, ze kterých si hráč vybere.",
+  "The walking speed is 5 to 300 feet.": "Rychlost chůze je 5 až 300 stop.",
+  "Darkvision is 5 to 300 feet, or 0 for none.":
+    "Vidění ve tmě je 5 až 300 stop, nebo 0, pokud žádné není.",
+  "List each damage resistance at most once.": "Uveďte každou odolnost nejvýše jednou.",
+  "The species is malformed.": "Druh je poškozený.",
+  "Each lineage needs its own id.": "Každá rodová linie potřebuje vlastní identifikátor.",
+  "A published species is invalid.": "Zveřejněný druh je neplatný.",
+  "{at}: species {id} appears twice.": "{at}: druh {id} je uveden dvakrát.",
   // Weapons and armor
   "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.":
     "Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá hráče vybrat na deníku.",

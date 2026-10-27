@@ -1,0 +1,70 @@
+{
+  "format": "dnd-homebrew",
+  "schemaVersion": 1,
+  "mode": "merge",
+  "sets": [],
+  "items": [],
+  "species": [
+    {
+      "id": "emberkin",
+      "name": "Emberkin",
+      "sizes": ["Medium", "Small"],
+      "speeds": { "climb": "speed" },
+      "darkvision": 60,
+      "resistances": ["fire"],
+      "traits": [
+        { "name": "Ember Blood", "text": "You have Resistance to Fire damage." },
+        { "name": "Kindled Step", "text": "You have a Climb Speed equal to your Speed." },
+        { "name": "Forge Sense", "text": "You have proficiency in the Perception skill and with one of Smith's Tools or Glassblower's Tools." }
+      ],
+      "lineages": [
+        {
+          "id": "cinder",
+          "name": "Cinder",
+          "text": "You know the Fire Bolt cantrip. Intelligence, Wisdom or Charisma is your spellcasting ability for it (choose when you select this lineage).",
+          "grants": {
+            "castingAbility": { "id": "cinder-casting", "choose": ["INT", "WIS", "CHA"] },
+            "spells": [{ "level": 1, "ids": ["fire-bolt"], "alwaysPrepared": true }]
+          }
+        },
+        {
+          "id": "hearth",
+          "name": "Hearth",
+          "text": "Your Hit Point maximum increases by 1, and it increases by 1 again whenever you gain a level.",
+          "grants": { "hpPerLevel": 1 }
+        }
+      ],
+      "grants": {
+        "skills": ["perception"],
+        "choices": [
+          { "id": "craft", "prompt": "Forge Sense tool", "type": "toolProficiency", "count": 1, "from": ["smiths-tools", "glassblowers-tools"] }
+        ]
+      },
+      "text": "Emberkin carry a spark of the forge in their blood. Their skin is warm to the touch, and their eyes glow like banked coals in the dark."
+    },
+    {
+      "id": "mossfolk",
+      "name": "Mossfolk",
+      "creatureType": "Plant",
+      "sizes": ["Small"],
+      "speed": 25,
+      "resistances": ["poison"],
+      "traits": [
+        { "name": "Rooted", "text": "You have Resistance to Poison damage." },
+        { "name": "Bloom", "text": "As a Bonus Action, you sense through the earth: you gain Tremorsense with a range of 30 feet for 10 minutes. You can use this trait a number of times equal to your Proficiency Bonus, and you regain all expended uses when you finish a Long Rest." }
+      ],
+      "grants": {
+        "resources": [{ "key": "mossfolk-bloom", "name": "Bloom", "proficiencyBonus": true, "recharge": "long" }],
+        "activations": [
+          {
+            "id": "mossfolk-bloom",
+            "name": "Bloom",
+            "resource": { "key": "mossfolk-bloom" },
+            "modifiers": [{ "key": "tremorsense", "target": "sense", "value": 30 }]
+          }
+        ]
+      },
+      "text": "Mossfolk grow from the damp roots of old forests and walk where the moss leads them."
+    }
+  ]
+}

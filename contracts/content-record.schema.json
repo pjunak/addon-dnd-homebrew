@@ -12,7 +12,8 @@
         { "$ref": "published-subclass.schema.json#/$defs/subclassRecord" },
         { "$ref": "published-subclass.schema.json#/$defs/featureRecord" },
         { "$ref": "published-feat.schema.json#/$defs/featRecord" },
-        { "$ref": "published-spell.schema.json#/$defs/spellRecord" }
+        { "$ref": "published-spell.schema.json#/$defs/spellRecord" },
+        { "$ref": "published-species.schema.json#/$defs/speciesRecord" }
       ]
     }
   }

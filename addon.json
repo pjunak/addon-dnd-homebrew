@@ -3,8 +3,8 @@
   "packageFormat": 1,
   "id": "dnd-homebrew",
   "name": "D&D Homebrew",
-  "version": "1.6.0",
-  "description": "DM-authored homebrew (item sets, items, subclasses, feats and spells) served to character sheets as rules data.",
+  "version": "1.7.0",
+  "description": "DM-authored homebrew (item sets, items, subclasses, feats, spells and species) served to character sheets as rules data.",
   "license": "MIT",
   "compatibility": {
     "host": ">=2.0.0 <3.0.0",
@@ -46,7 +46,9 @@
     { "id": "homebrew_feats", "keyed": true, "visibility": "dm", "schema": "contracts/homebrew-feat.schema.json", "schemaVersion": "1.0.0" },
     { "id": "homebrew_published_feats", "keyed": true, "visibility": "public", "schema": "contracts/published-feat.schema.json", "schemaVersion": "1.0.0" },
     { "id": "homebrew_spells", "keyed": true, "visibility": "dm", "schema": "contracts/homebrew-spell.schema.json", "schemaVersion": "1.0.0" },
-    { "id": "homebrew_published_spells", "keyed": true, "visibility": "public", "schema": "contracts/published-spell.schema.json", "schemaVersion": "1.0.0" }
+    { "id": "homebrew_published_spells", "keyed": true, "visibility": "public", "schema": "contracts/published-spell.schema.json", "schemaVersion": "1.0.0" },
+    { "id": "homebrew_species", "keyed": true, "visibility": "dm", "schema": "contracts/homebrew-species.schema.json", "schemaVersion": "1.0.0" },
+    { "id": "homebrew_published_species", "keyed": true, "visibility": "public", "schema": "contracts/published-species.schema.json", "schemaVersion": "1.0.0" }
   ],
   "services": {
     "provides": [

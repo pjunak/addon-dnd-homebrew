@@ -504,7 +504,7 @@ const templates: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
 };
 
 /** Whose grants a form edits: some fields apply only to feats, species or items. */
-export type GrantSubject = "subclass" | "feat";
+export type GrantSubject = "subclass" | "feat" | "species" | "lineage";
 interface GrantGroup {
   readonly label: string;
   readonly fields: readonly string[];
@@ -545,8 +545,11 @@ const sharedGroups: readonly GrantGroup[] = [
       "senseBonuses",
     ],
   },
-  { label: "Abilities and attunement", fields: ["abilityScoreBonus", "attunementLimit"] },
+  { label: "Ability scores", fields: ["abilityScoreBonus"] },
+  { label: "Attunement", fields: ["attunementLimit"] },
 ];
+/** Read only from class and subclass features (internal/rules builder). */
+const featureOnly = ["abilityScoreBonus"] as const;
 /** Fields the Engine reads only from feats (internal/rules hydrate, spell_grants). */
 const featOnly = [
   "abilityScoreIncrease",
@@ -555,22 +558,52 @@ const featOnly = [
   "spellList",
   "prepareSpellListOf",
 ] as const;
-/** Fields the Engine reads only from species or items. */
-const elsewhere = ["acBonus", "conditions", "bonuses", "unquantifiable_modifiers"] as const;
+/** Read only from a species' own grants (internal/rules hydrateArmorClass). */
+const speciesOnly = ["acBonus"] as const;
+/** Fields the Engine reads only from items, or not at all. */
+const elsewhere = ["conditions", "bonuses", "unquantifiable_modifiers"] as const;
+/** A lineage's choices are never offered, and the schema refuses them and acBonus there. */
+const lineageRefused = ["choices", "acBonus"] as const;
+/** The shared groups without `drop`, with `add` appended to the groups it names. */
+const sharedWith = (
+  drop: readonly string[],
+  add: Readonly<Record<string, readonly string[]>> = {},
+): GrantGroup[] =>
+  sharedGroups
+    .map((group) => ({
+      label: group.label,
+      fields: [
+        ...group.fields.filter((field) => !drop.includes(field)),
+        ...(add[group.label] ?? []),
+      ],
+    }))
+    .filter((group) => group.fields.length > 0);
 const subjectGroups: Readonly<Record<GrantSubject, readonly GrantGroup[]>> = {
   subclass: [
     ...sharedGroups,
-    { label: "Not applied on subclasses", fields: [...featOnly, ...elsewhere] },
+    { label: "Not applied on subclasses", fields: [...featOnly, ...speciesOnly, ...elsewhere] },
   ],
   feat: [
     { label: "Feat benefits", fields: featOnly },
-    ...sharedGroups,
-    { label: "Not applied on feats", fields: elsewhere },
+    ...sharedWith(featureOnly),
+    { label: "Not applied on feats", fields: [...featureOnly, ...speciesOnly, ...elsewhere] },
+  ],
+  species: [
+    ...sharedWith(featureOnly, { Combat: speciesOnly }),
+    { label: "Not applied on species", fields: [...featureOnly, ...featOnly, ...elsewhere] },
+  ],
+  lineage: [
+    ...sharedWith([...featureOnly, ...lineageRefused]),
+    { label: "Not applied on lineages", fields: [...featureOnly, ...featOnly, ...elsewhere] },
   ],
 };
 /** Top-level grants in the order and groups the editor offers them. */
 export function grantGroups(subject: GrantSubject): readonly GrantGroup[] {
   return subjectGroups[subject];
+}
+/** Top-level grants the schema refuses for this subject, so the editor never offers them. */
+export function refusedGrants(subject: GrantSubject): readonly string[] {
+  return subject === "lineage" ? lineageRefused : [];
 }
 
 // --- Offered values ------------------------------------------------------------

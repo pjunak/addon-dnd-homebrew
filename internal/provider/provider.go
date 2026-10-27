@@ -1,5 +1,5 @@
 // Package provider serves published homebrew records (magic items, subclasses
-// with their features, feats and spells) as the dnd5e.rules-data v3 content
+// with their features, feats, spells and species) as the dnd5e.rules-data v3 content
 // contract. The D&D Engine merges every compatible provider, so the records
 // appear in character sheets next to the compendium's.
 //
@@ -347,6 +347,10 @@ var singles = []single{
 	}},
 	{homebrew.PublishedSpellsCollection, homebrew.SpellRecordKind, "spell", func(body []byte) (string, bool, json.RawMessage, error) {
 		published, err := homebrew.DecodePublishedSpell(body)
+		return published.ID, published.Withdrawn, published.Record, err
+	}},
+	{homebrew.PublishedSpeciesCollection, homebrew.SpeciesRecordKind, "species", func(body []byte) (string, bool, json.RawMessage, error) {
+		published, err := homebrew.DecodePublishedSpecies(body)
 		return published.ID, published.Withdrawn, published.Record, err
 	}},
 }

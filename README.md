@@ -1,7 +1,7 @@
 # D&D Homebrew
 
 D&D Homebrew lets the DM create and import custom magic items, **item
-sets**, **subclasses**, **feats** and **spells** for TTRPG Codex, then use them
+sets**, **subclasses**, **feats**, **spells** and **species** for TTRPG Codex, then use them
 on character sheets. A set holds what its items share: item type, rarity, attunement, body placements, a
 shared description, a curse and optionally a condition every item gives. Each
 item adds its own description and, where the D&D Engine can apply them,
@@ -12,7 +12,8 @@ A subclass has its features by level, and each feature can grant anything a
 printed subclass feature can: the editor covers the D&D Engine's whole grants
 vocabulary. A feat has a category, a prerequisite and the same grants, such as
 an ability score increase or spells. A spell has its level, school, stat block
-and text, and joins the spell lists of the classes it names. More kinds of
+and text, and joins the spell lists of the classes it names. A species has
+its size, speeds, senses, traits and lineages, with the same grants. More kinds of
 homebrew will join this add-on, published together and imported from the same
 file format.
 
@@ -21,13 +22,14 @@ English and Czech controls follow the host language.
 ## How it fits together
 
 ```text
-Homebrew (DM)                    drafts: sets, items, subclasses, feats and spells, DM-only
+Homebrew (DM)                    drafts: sets, items, subclasses, feats, spells, species; DM-only
         │ Publish
         ▼
 homebrew_published               one flattened magic-item record per item
 homebrew_published_subclasses    a subclass record and its feature records
 homebrew_published_feats         one feat record per feat
 homebrew_published_spells        one spell record per spell
+homebrew_published_species       one species record per species
         │                        (all readable by players)
         │ dnd5e.rules-data (worker)
         ▼
@@ -40,7 +42,8 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
   are equipped (and attuned, when they require attunement). Published
   subclasses appear in the Builder next to the class's own, and their features
   apply from their levels. Published feats join the Builder's feat choices of
-  their category, and published spells the spell lists of their classes.
+  their category, published spells the spell lists of their classes, and
+  published species the Builder's species.
   Neither the Engine nor Character Sheets changes.
 - The add-on also provides a `magic-item` wiki provider: a sheet's rule details
   for a homebrew item show its text, and `[[Runestone: Ward]]` links in
@@ -50,8 +53,8 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 
 ## Use it
 
-1. **Homebrew** (DM sidebar): create an item, a set, a subclass, a feat or a
-   spell, or import a file. Drafts are private to the DM and never touch character sheets. A
+1. **Homebrew** (DM sidebar): create an item, a set, a subclass, a feat, a
+   spell or a species, or import a file. Drafts are private to the DM and never touch character sheets. A
    new item can **start from** a common kind: a +1 weapon, armor or shield, a
    bonus to a statistic, an ability score item, a spell cast from the item, a
    resistance, a container or a potion. The preview beside the form shows the
@@ -86,6 +89,9 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 8. **New spell** creates a spell: its level, school, the classes whose spell
    lists include it, its casting time, range, components and duration, and
    what it does.
+9. **New species** creates a species: its creature type, size (or sizes the
+   player picks from), speeds, darkvision and resistances, its printed traits,
+   lineages a player picks one of, and what it grants on the sheet.
 
 ### What the Engine can apply
 
@@ -164,13 +170,29 @@ needs **Concentration** and whether it can be cast as a **ritual**. Its
 **spell lists** are the classes that can learn or prepare it: a wizard's
 Builder offers a homebrew spell that lists `wizard` beside the Compendium's,
 and grants that let a player pick from a class's list, a school or rituals
-include it. A subclass or feat can also grant it by its id, `hb.<spell id>`;
-an item's spells can name only rules-data spells for now. Spells carry no
+include it. A subclass or feat can also grant it by its id, `hb.<spell id>`,
+and an item can cast it. Spells carry no
 grants: what one does on the table stays in its text. The published text opens
 with the stat block as the books print it, such as *Level 1 Evocation
 (Sorcerer, Wizard)* followed by its casting time, range, components and
 duration. The [sample spells](docs/examples/sample-spells.json) show a leveled
 spell, a concentration cantrip and a ritual.
+
+### Species
+
+A species has a creature type, a size (or several the player picks from in
+the Builder), a walking speed, special speeds in feet or equal to the walking
+speed, darkvision and damage resistances, each a field of its own. Its traits
+are printed with their names, as the books do; what a trait does on the sheet
+goes in the species' **grants**, the same vocabulary as a feat's, such as a
+skill proficiency, a tool choice, a use with a toggle or an AC bonus. A
+**lineage**, such as High Elf or Drow, is a variant the player picks one of;
+its grants add to the species', and it cannot offer choices or an AC bonus,
+which the Engine reads only from the species. The published text opens with
+the creature type, size and speed lines, then the description, traits and
+lineages. The [sample species](docs/examples/sample-species.json) show a
+species with a size choice, lineages and a tool choice, and one with a use and
+a toggle.
 
 ### Change and remove published items
 
@@ -182,9 +204,10 @@ spell, a concentration cantrip and a ritual.
   that still holds it shows a missing-source problem until it is removed.
 - The id of a set or item is permanent: saved characters refer to
   `hb.<item id>`. The same holds for a subclass (`hb.<subclass id>`), its
-  features (`hb.<subclass id>.<feature id>`), a feat (`hb.<feat id>`) and a
-  spell (`hb.<spell id>`). Deleting a published subclass, feat or spell
-  withdraws it like an item.
+  features (`hb.<subclass id>.<feature id>`), a feat (`hb.<feat id>`), a
+  spell (`hb.<spell id>`), a species (`hb.<species id>`) and its lineages.
+  Deleting a published subclass, feat, spell or species withdraws it like an
+  item.
 
 ## Import and export
 
@@ -204,7 +227,8 @@ site backups include them and each campaign has its own. This repository holds
 only the sample files ([items](docs/examples/sample-items.json),
 [subclass](docs/examples/sample-subclass.json),
 [feats](docs/examples/sample-feats.json),
-[spells](docs/examples/sample-spells.json)); keep your own import files
+[spells](docs/examples/sample-spells.json),
+[species](docs/examples/sample-species.json)); keep your own import files
 outside it, and use **Export** to take a copy of a campaign's drafts.
 
 The permanent add-on namespace is `dnd-homebrew`.
@@ -221,6 +245,8 @@ The permanent add-on namespace is `dnd-homebrew`.
 | `homebrew_published_feats` | public | Each feat's record the worker serves |
 | `homebrew_spells` | DM | Spell drafts |
 | `homebrew_published_spells` | public | Each spell's record the worker serves |
+| `homebrew_species` | DM | Species drafts with their lineages |
+| `homebrew_published_species` | public | Each species' record the worker serves |
 
 Published records must be player-readable because each player's sheet evaluates
 them with that player's authority. *Visible to players* only controls the
@@ -236,7 +262,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.6.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.7.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are

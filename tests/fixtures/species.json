@@ -1,0 +1,203 @@
+{
+  "valid": [
+    {
+      "id": "emberkin",
+      "schemaVersion": 1,
+      "name": "Emberkin",
+      "creatureType": "Humanoid",
+      "sizes": ["Medium", "Small"],
+      "speed": 30,
+      "speeds": { "climb": "speed" },
+      "darkvision": 60,
+      "resistances": ["poison", "fire"],
+      "traits": [
+        { "name": "Ember Blood", "text": "You have Resistance to Fire and Poison damage." },
+        { "name": "Kindled Step", "text": "You have a Climb Speed equal to your Speed." }
+      ],
+      "lineages": [
+        {
+          "id": "cinder",
+          "name": "Cinder",
+          "text": "You know the Fire Bolt cantrip. Intelligence, Wisdom or Charisma is your spellcasting ability for it.",
+          "grants": {
+            "castingAbility": { "id": "cinder-casting", "choose": ["INT", "WIS", "CHA"] },
+            "spells": [{ "level": 1, "ids": ["fire-bolt"], "alwaysPrepared": true }]
+          }
+        },
+        {
+          "id": "hearth",
+          "name": "Hearth",
+          "text": "Your Hit Point maximum increases by 1 for each of your levels.",
+          "grants": { "hpPerLevel": 1 }
+        }
+      ],
+      "grants": {
+        "skills": ["perception"],
+        "choices": [
+          {
+            "id": "craft",
+            "prompt": "Ember craft",
+            "type": "toolProficiency",
+            "count": 1,
+            "from": ["smiths-tools", "glassblowers-tools"]
+          }
+        ]
+      },
+      "text": "Emberkin carry a spark of the forge in their blood.",
+      "updatedAt": 1
+    },
+    {
+      "id": "stoneborn",
+      "schemaVersion": 1,
+      "name": "Stoneborn",
+      "creatureType": "Giant",
+      "sizes": ["Large"],
+      "speed": 35,
+      "speeds": {},
+      "darkvision": 0,
+      "resistances": [],
+      "traits": [],
+      "lineages": [],
+      "text": "",
+      "updatedAt": 2
+    }
+  ],
+  "invalid": [
+    { "name": "no size", "change": { "sizes": [] } },
+    { "name": "a size twice", "change": { "sizes": ["Medium", "Medium"] } },
+    { "name": "a size in lowercase", "change": { "sizes": ["medium"] } },
+    { "name": "an unknown creature type", "change": { "creatureType": "Spirit" } },
+    { "name": "a walking speed of 0", "change": { "speed": 0 } },
+    { "name": "a walking speed that is not whole", "change": { "speed": 30.5 } },
+    { "name": "walking as a special speed", "change": { "speeds": { "walk": 30 } } },
+    { "name": "a special speed of 0", "change": { "speeds": { "fly": 0 } } },
+    { "name": "a special speed in words", "change": { "speeds": { "swim": "fast" } } },
+    { "name": "darkvision below 5 feet", "change": { "darkvision": 3 } },
+    { "name": "a resistance twice", "change": { "resistances": ["fire", "fire"] } },
+    { "name": "an unknown resistance", "change": { "resistances": ["sonic"] } },
+    { "name": "a trait without text", "change": { "traits": [{ "name": "Gift" }] } },
+    { "name": "a trait with a two-line name", "change": { "traits": [{ "name": "Gift\nof fire", "text": "" }] } },
+    {
+      "name": "two lineages with one id",
+      "change": {
+        "lineages": [
+          { "id": "cinder", "name": "Cinder", "text": "" },
+          { "id": "cinder", "name": "Ash", "text": "" }
+        ]
+      }
+    },
+    {
+      "name": "a lineage that offers a choice",
+      "change": {
+        "lineages": [
+          {
+            "id": "cinder",
+            "name": "Cinder",
+            "text": "",
+            "grants": { "choices": [{ "id": "skill", "type": "skillProficiency", "count": 1 }] }
+          }
+        ]
+      }
+    },
+    {
+      "name": "a lineage with an AC bonus",
+      "change": { "lineages": [{ "id": "cinder", "name": "Cinder", "text": "", "grants": { "acBonus": 1 } }] }
+    },
+    {
+      "name": "a choice named like the size choice",
+      "change": { "grants": { "choices": [{ "id": "size", "type": "enumerated", "count": 1, "from": ["a"] }] } }
+    },
+    { "name": "grants outside the vocabulary", "change": { "grants": { "flySpeed": 30 } } },
+    { "name": "a lineage id with capitals", "change": { "lineages": [{ "id": "Cinder", "name": "Cinder", "text": "" }] } }
+  ],
+  "published": {
+    "id": "hb.emberkin",
+    "schemaVersion": 1,
+    "speciesId": "emberkin",
+    "withdrawn": false,
+    "record": {
+      "kind": "species",
+      "id": "hb.emberkin",
+      "name": "Emberkin",
+      "edition": "2024",
+      "book": "homebrew",
+      "creatureType": "Humanoid",
+      "size": "Small or Medium",
+      "sizeOptions": [
+        "Small",
+        "Medium"
+      ],
+      "speeds": {
+        "walk": 30,
+        "climb": "speed"
+      },
+      "senses": {
+        "darkvision": 60
+      },
+      "resistances": [
+        "fire",
+        "poison"
+      ],
+      "traits": [
+        {
+          "name": "Ember Blood",
+          "text": "You have Resistance to Fire and Poison damage."
+        },
+        {
+          "name": "Kindled Step",
+          "text": "You have a Climb Speed equal to your Speed."
+        }
+      ],
+      "lineages": [
+        {
+          "id": "cinder",
+          "name": "Cinder",
+          "grants": {
+            "castingAbility": {
+              "id": "cinder-casting",
+              "choose": [
+                "INT",
+                "WIS",
+                "CHA"
+              ]
+            },
+            "spells": [
+              {
+                "level": 1,
+                "ids": [
+                  "fire-bolt"
+                ],
+                "alwaysPrepared": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "hearth",
+          "name": "Hearth",
+          "grants": {
+            "hpPerLevel": 1
+          }
+        }
+      ],
+      "grants": {
+        "skills": [
+          "perception"
+        ],
+        "choices": [
+          {
+            "id": "craft",
+            "prompt": "Ember craft",
+            "type": "toolProficiency",
+            "count": 1,
+            "from": [
+              "smiths-tools",
+              "glassblowers-tools"
+            ]
+          }
+        ]
+      },
+      "text": "**Creature Type:** Humanoid  \n**Size:** Small or Medium  \n**Speed:** 30 feet, climb equal to your Speed  \n**Darkvision:** 60 feet  \n**Resistances:** Fire, Poison\n\nEmberkin carry a spark of the forge in their blood.\n\n**Ember Blood.** You have Resistance to Fire and Poison damage.\n\n**Kindled Step.** You have a Climb Speed equal to your Speed.\n\n#### Lineages\n\n**Cinder.** You know the Fire Bolt cantrip. Intelligence, Wisdom or Charisma is your spellcasting ability for it.\n\n**Hearth.** Your Hit Point maximum increases by 1 for each of your levels."
+    }
+  }
+}

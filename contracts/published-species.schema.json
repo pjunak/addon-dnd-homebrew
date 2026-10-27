@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["id", "schemaVersion", "speciesId", "withdrawn", "record"],
+  "properties": {
+    "id": { "$ref": "#/$defs/recordId" },
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "speciesId": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+    "withdrawn": { "type": "boolean" },
+    "record": { "$ref": "#/$defs/speciesRecord" }
+  },
+  "$defs": {
+    "recordId": { "type": "string", "maxLength": 67, "pattern": "^hb\\.[a-z0-9]+(?:-[a-z0-9]+)*$" },
+    "speciesRecord": {
+      "$comment": "The Compendium's species record. A player picks among sizeOptions; size alone is one fixed size, otherwise their summary.",
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "id", "name", "edition", "book", "creatureType", "size", "speeds", "resistances", "traits", "text"],
+      "properties": {
+        "kind": { "const": "species" },
+        "id": { "$ref": "#/$defs/recordId" },
+        "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+        "edition": { "const": "2024" },
+        "book": { "const": "homebrew" },
+        "creatureType": { "$ref": "homebrew-species.schema.json#/$defs/creatureType" },
+        "size": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "sizeOptions": {
+          "type": "array", "minItems": 2, "maxItems": 6, "uniqueItems": true,
+          "items": { "$ref": "homebrew-species.schema.json#/$defs/size" }
+        },
+        "speeds": {
+          "type": "object", "required": ["walk"],
+          "propertyNames": { "enum": ["walk", "fly", "swim", "climb", "burrow"] },
+          "properties": { "walk": { "$ref": "homebrew-species.schema.json#/$defs/distance" } },
+          "additionalProperties": { "anyOf": [{ "$ref": "homebrew-species.schema.json#/$defs/distance" }, { "const": "speed" }] }
+        },
+        "senses": {
+          "type": "object", "additionalProperties": false, "required": ["darkvision"],
+          "properties": { "darkvision": { "$ref": "homebrew-species.schema.json#/$defs/distance" } }
+        },
+        "resistances": { "$ref": "homebrew-species.schema.json#/$defs/resistances" },
+        "traits": { "type": "array", "maxItems": 20, "items": { "$ref": "homebrew-species.schema.json#/$defs/trait" } },
+        "lineages": {
+          "type": "array", "minItems": 1, "maxItems": 10,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["id", "name"],
+            "properties": {
+              "id": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+              "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+              "grants": { "$ref": "homebrew-species.schema.json#/$defs/lineageGrants" }
+            }
+          }
+        },
+        "grants": { "$ref": "homebrew-species.schema.json#/$defs/speciesGrants" },
+        "text": { "type": "string", "maxLength": 110000 }
+      }
+    }
+  }
+}

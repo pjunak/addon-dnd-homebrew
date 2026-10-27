@@ -4,20 +4,37 @@ import { readFile } from "node:fs/promises";
 import { grantsSchema } from "#web/grants-schema";
 import { subclassProblem, type Subclass } from "#web/model";
 import { declaredKeys, thirdCasterTable } from "#web/subclass-editor";
-import { fieldLabel, fieldOffer, grantGroups, humanize, switchOf } from "#web/vocabulary";
+import {
+  fieldLabel,
+  fieldOffer,
+  grantGroups,
+  humanize,
+  refusedGrants,
+  switchOf,
+} from "#web/vocabulary";
 
 const fixture = JSON.parse(
   await readFile(new URL("./fixtures/subclasses.json", import.meta.url), "utf8"),
 ) as { valid: Subclass[] };
 
 void test("the editor's groups list every grant of the vocabulary once, for each subject", () => {
-  for (const subject of ["subclass", "feat"] as const) {
+  for (const subject of ["subclass", "feat", "species", "lineage"] as const) {
     const grouped = grantGroups(subject).flatMap((group) => group.fields);
-    assert.deepEqual([...grouped].sort(), Object.keys(grantsSchema.properties ?? {}).sort());
+    assert.deepEqual(
+      [...grouped, ...refusedGrants(subject)].sort(),
+      Object.keys(grantsSchema.properties ?? {}).sort(),
+      subject,
+    );
     assert.equal(new Set(grouped).size, grouped.length, subject);
   }
   // A feat's ability score increase is its own benefit, not set aside.
   assert.equal(grantGroups("feat")[0]?.fields.includes("abilityScoreIncrease"), true);
+  // The Engine reads acBonus from a species, and a lineage never offers choices.
+  const combat = (subject: "species" | "lineage") =>
+    grantGroups(subject).find((group) => group.label === "Combat")?.fields ?? [];
+  assert.ok(combat("species").includes("acBonus"));
+  assert.ok(!combat("lineage").includes("acBonus"));
+  assert.deepEqual(refusedGrants("lineage"), ["choices", "acBonus"]);
 });
 
 void test("every field has words, named or made from its name", () => {

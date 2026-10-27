@@ -131,7 +131,11 @@ export function thirdCasterTable(startLevel: number): CastingRow[] {
   return rows;
 }
 
-const grantsOf = (mechanics: Partial<Mechanics>): VocabularyValue[] => [
+/** What declares keys: grants, and parts such as features or lineages with their own. */
+export type KeyHolder = Partial<Pick<Mechanics, "grants" | "classResources" | "tableColumns">> & {
+  readonly features?: readonly { readonly grants?: VocabularyValue }[];
+};
+const grantsOf = (mechanics: KeyHolder): VocabularyValue[] => [
   ...(mechanics.grants ? [mechanics.grants] : []),
   ...(mechanics.features ?? []).flatMap((feature) => (feature.grants ? [feature.grants] : [])),
 ];
@@ -143,8 +147,8 @@ const records = (value: unknown): Record<string, unknown>[] =>
     : [];
 const texts = (values: readonly unknown[]): string[] =>
   values.filter((entry): entry is string => typeof entry === "string" && entry !== "");
-/** Keys the subclass declares, so fields that name one can offer them. */
-export function declaredKeys(mechanics: Partial<Mechanics>, source: KeySource): string[] {
+/** Keys the draft declares, so fields that name one can offer them. */
+export function declaredKeys(mechanics: KeyHolder, source: KeySource): string[] {
   const grants = grantsOf(mechanics);
   const found =
     source === "column"

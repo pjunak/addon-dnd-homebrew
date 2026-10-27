@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "additionalProperties": false,
+  "required": ["id", "schemaVersion", "name", "creatureType", "sizes", "speed", "speeds", "darkvision", "resistances", "traits", "lineages", "text", "updatedAt"],
+  "properties": {
+    "id": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+    "schemaVersion": { "$ref": "homebrew-common.schema.json#/$defs/schemaVersion" },
+    "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+    "creatureType": { "$ref": "#/$defs/creatureType" },
+    "sizes": {
+      "$comment": "One fixed size, or two or more the player picks from.",
+      "type": "array", "minItems": 1, "maxItems": 6, "uniqueItems": true, "items": { "$ref": "#/$defs/size" }
+    },
+    "speed": { "$ref": "#/$defs/distance" },
+    "speeds": { "$ref": "#/$defs/speeds" },
+    "darkvision": { "anyOf": [{ "const": 0 }, { "$ref": "#/$defs/distance" }] },
+    "resistances": { "$ref": "#/$defs/resistances" },
+    "traits": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/trait" } },
+    "lineages": { "type": "array", "maxItems": 10, "items": { "$ref": "#/$defs/lineage" } },
+    "grants": { "$ref": "#/$defs/speciesGrants" },
+    "text": { "$ref": "homebrew-common.schema.json#/$defs/markdown" },
+    "updatedAt": { "$ref": "homebrew-common.schema.json#/$defs/updatedAt" }
+  },
+  "$defs": {
+    "creatureType": { "enum": ["Aberration", "Beast", "Celestial", "Construct", "Dragon", "Elemental", "Fey", "Fiend", "Giant", "Humanoid", "Monstrosity", "Ooze", "Plant", "Undead"] },
+    "size": { "enum": ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"] },
+    "distance": { "type": "integer", "minimum": 5, "maximum": 300 },
+    "speeds": {
+      "$comment": "Special movement in feet, or \"speed\" for equal to the walking speed.",
+      "type": "object",
+      "propertyNames": { "enum": ["fly", "swim", "climb", "burrow"] },
+      "additionalProperties": { "anyOf": [{ "$ref": "#/$defs/distance" }, { "const": "speed" }] }
+    },
+    "resistances": { "type": "array", "maxItems": 13, "uniqueItems": true, "items": { "$ref": "homebrew-common.schema.json#/$defs/damageType" } },
+    "trait": {
+      "type": "object", "additionalProperties": false, "required": ["name", "text"],
+      "properties": { "name": { "$ref": "homebrew-common.schema.json#/$defs/name" }, "text": { "type": "string", "maxLength": 2000 } }
+    },
+    "lineage": {
+      "$comment": "Lineage ids are distinct within a species.",
+      "type": "object", "additionalProperties": false, "required": ["id", "name", "text"],
+      "properties": {
+        "id": { "$ref": "homebrew-common.schema.json#/$defs/id" },
+        "name": { "$ref": "homebrew-common.schema.json#/$defs/name" },
+        "text": { "type": "string", "maxLength": 4000 },
+        "grants": { "$ref": "#/$defs/lineageGrants" }
+      }
+    },
+    "speciesGrants": {
+      "$comment": "The Engine's grants; the size choice is the Engine's own, so no choice may take its id.",
+      "allOf": [
+        { "$ref": "engine-grants.schema.json#/$defs/grants" },
+        { "properties": { "choices": { "items": { "properties": { "id": { "not": { "const": "size" } } } } } } }
+      ]
+    },
+    "lineageGrants": {
+      "$comment": "The Engine reads choices and acBonus only from the species itself.",
+      "allOf": [
+        { "$ref": "engine-grants.schema.json#/$defs/grants" },
+        { "not": { "anyOf": [{ "required": ["choices"] }, { "required": ["acBonus"] }] } }
+      ]
+    }
+  }
+}

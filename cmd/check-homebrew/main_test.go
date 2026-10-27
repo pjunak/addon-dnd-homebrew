@@ -111,3 +111,14 @@ func TestTheSampleSpellsAreValid(t *testing.T) {
 		t.Fatalf("report:\n%s", out.String())
 	}
 }
+
+func TestTheSampleSpeciesAreValid(t *testing.T) {
+	var out bytes.Buffer
+	if err := run([]string{"../../docs/examples/sample-species.json"}, &out); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(out.String(), "VALID: 2 new, 0 changed, 0 unchanged, 0 removed (merge).") ||
+		!strings.Contains(out.String(), "create homebrew_species/emberkin") {
+		t.Fatalf("report:\n%s", out.String())
+	}
+}

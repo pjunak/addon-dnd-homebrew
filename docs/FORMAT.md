@@ -1,6 +1,6 @@
 # Homebrew format
 
-One JSON document holds item sets, items, subclasses, feats and spells. Import it from
+One JSON document holds item sets, items, subclasses, feats, spells and species. Import it from
 **Homebrew → Import file** or from the DM Tools Import Center; **Export**
 writes the same shape. Files are limited to 2 MiB and 256 changes per import.
 
@@ -40,10 +40,10 @@ AI assistant:
    already exist are reused rather than duplicated.
 2. Give the writer this page, the [sample](examples/sample-items.json), the
    export and the source text. Ask for a `merge` file with only the sets,
-   items, subclasses, feats and spells to add or change, effects and grants
+   items, subclasses, feats, spells and species to add or change, effects and grants
    only where the rule matches them exactly, and the rest of the rule in
    `text`.
-   For a subclass or a feat, also give the writer the Compendium's record
+   For a subclass, a feat or a species, also give the writer the Compendium's record
    schema (`addon-dnd-2024-compendium/data/SCHEMA.md`), which explains the
    grants.
 3. Check the file offline from a clone of this repository, and fix every
@@ -70,6 +70,7 @@ AI assistant:
 | `subclasses` | no | A list of [subclasses](#subclass) |
 | `feats` | no | A list of [feats](#feat) |
 | `spells` | no | A list of [spells](#spell) |
+| `species` | no | A list of [species](#species) |
 
 Unknown fields anywhere are refused. In `merge` mode an entry updates the draft
 with the same `id`; a field the entry leaves out keeps its stored value, so
@@ -481,3 +482,77 @@ opening with the stat block as printed:
 Each stat line ends with two spaces, a Markdown line break. A cantrip's first
 line reads *Evocation Cantrip (Sorcerer, Wizard)*. Deleting a spell withdraws
 its document at the next publish, as for items.
+
+## Species
+
+```json
+{ "id": "emberkin", "name": "Emberkin", "sizes": ["Medium", "Small"],
+  "speeds": { "climb": "speed" }, "darkvision": 60, "resistances": ["fire"],
+  "traits": [{ "name": "Ember Blood", "text": "You have Resistance to Fire damage." }],
+  "lineages": [
+    { "id": "hearth", "name": "Hearth", "text": "Your Hit Point maximum increases by 1 ...",
+      "grants": { "hpPerLevel": 1 } }
+  ],
+  "grants": { "skills": ["perception"] },
+  "text": "Emberkin carry a spark of the forge in their blood." }
+```
+
+[`examples/sample-species.json`](examples/sample-species.json) holds a species
+with a size choice, lineages and a tool choice, and one with a use and a
+toggle. The fields follow the Compendium's `species` record
+(`addon-dnd-2024-compendium/data/SCHEMA.md`):
+
+| Field | Required | Default | Meaning |
+| --- | --- | --- | --- |
+| `id` | yes | | Lowercase words joined by hyphens, at most 64 characters; permanent |
+| `name` | yes | | One line, at most 120 characters |
+| `creatureType` | no | `Humanoid` | `Aberration`, `Beast`, `Celestial`, `Construct`, `Dragon`, `Elemental`, `Fey`, `Fiend`, `Giant`, `Humanoid`, `Monstrosity`, `Ooze`, `Plant` or `Undead` |
+| `sizes` | no | `["Medium"]` | One size, or two or more the player picks from: `Tiny`, `Small`, `Medium`, `Large`, `Huge`, `Gargantuan`, each once |
+| `speed` | no | `30` | Walking speed in feet, 5–300 |
+| `speeds` | no | `{}` | `fly`, `swim`, `climb` or `burrow`: feet (5–300), or `"speed"` for equal to the walking speed |
+| `darkvision` | no | `0` | Feet (5–300), or `0` for none |
+| `resistances` | no | `[]` | Damage types, each once |
+| `traits` | no | `[]` | Up to 20 printed traits: `name` and `text` (Markdown, at most 2,000 characters) |
+| `lineages` | no | `[]` | Up to 10 variants a player picks one of, below |
+| `grants` | no | | What the species gives on the sheet, in the Engine's grants vocabulary |
+| `text` | no | `""` | Markdown, at most 20,000 characters: the species as players read it |
+
+A lineage has `id` (distinct within the species and permanent once characters
+use it), `name`, `text` (Markdown, at most 4,000 characters) and optional
+`grants`, which add to the species' grants. A lineage's grants may not hold
+`choices` or `acBonus`: the Engine reads both only from the species itself. A
+lineage that grants spells names its own `castingAbility`.
+
+`grants` is the same vocabulary as a [subclass](#subclass)'s, checked the same
+way. A species adds `acBonus` to what a subclass can use; a choice may not take
+the id `size`, which is the Engine's own size choice. A trait's text is what
+players read; what the trait does goes in `grants`, as in the sample, where
+Forge Sense is the trait and `skills` and a tool `choices` entry are its
+effect. Write a species' darkvision, speeds and resistances in their own fields
+rather than in `grants`, so the sheet and the printed block show them.
+
+### Published species
+
+Publishing writes one document per species to `homebrew_published_species`,
+holding the `species` record the Engine reads: `id` `hb.<id>`, `name`,
+`edition` `2024`, `book` `homebrew`, `creatureType`, `size`, `speeds` with
+`walk` first, `senses` `{ "darkvision" }` when it has darkvision, `resistances`
+in damage-type order, `traits`, `lineages` without their text, `grants` when
+set and `text`. A species with one size has `size` alone, which the Engine
+reads; with several, `sizeOptions` lists them in size order and `size` reads
+`Small or Medium`, and the player picks on the sheet. `text` opens with the
+printed block, followed by the description, each trait as **Name.** text and a
+*Lineages* heading with each lineage the same way:
+
+```text
+**Creature Type:** Humanoid
+**Size:** Small or Medium
+**Speed:** 30 feet, climb equal to your Speed
+**Darkvision:** 60 feet
+**Resistances:** Fire
+```
+
+Each line ends with two spaces, a Markdown line break; darkvision and
+resistances appear only when the species has them. The Builder lists homebrew
+species beside the Compendium's. Deleting a species withdraws its document at
+the next publish, as for items.
