@@ -258,20 +258,14 @@ export function defineCatalogElement(generation?: string): string {
       actions.dataset["uiActions"] = "";
       const ready = this.#drafts !== undefined && !this.#busy;
       const pending = this.#pendingChanges();
+      const others = this.#newMenu(ready);
       const buttons = [
-        actionButton(document, t("New set"), () => void this.#select({ kind: "new-set" })),
         actionButton(
           document,
           t("New item"),
           () => void this.#select({ kind: "new-item", setId: this.#currentSetId() }),
         ),
-        actionButton(
-          document,
-          t("New subclass"),
-          () => void this.#select({ kind: "new-subclass" }),
-        ),
-        actionButton(document, t("New feat"), () => void this.#select({ kind: "new-feat" })),
-        actionButton(document, t("New spell"), () => void this.#select({ kind: "new-spell" })),
+        actionButton(document, t("New set"), () => void this.#select({ kind: "new-set" })),
         actionButton(document, t("Import file"), () => this.#fileInput.click()),
         actionButton(document, t("Export"), () => this.#export()),
       ];
@@ -284,7 +278,7 @@ export function defineCatalogElement(generation?: string): string {
       buttons.push(publish);
       for (const button of buttons) button.disabled = !ready;
       if (pending === 0) publish.disabled = true;
-      actions.append(...buttons);
+      actions.append(buttons[0]!, buttons[1]!, others, ...buttons.slice(2));
       const top = element(document, "header", "hb-header");
       top.append(title, actions);
       this.#header.replaceChildren(top);
@@ -323,6 +317,52 @@ export function defineCatalogElement(generation?: string): string {
         block.append(list);
         this.#header.append(block);
       }
+    }
+    /**
+     * "New…" opens the kinds besides items and sets, so the header stays one
+     * row as kinds are added. It closes on a choice, Escape or leaving it.
+     */
+    #newMenu(ready: boolean): HTMLElement {
+      const t = this.#t;
+      const root = element(document, "div", "hb-new");
+      const panel = element(document, "div", "hb-new-panel");
+      panel.id = `hb-new-${crypto.randomUUID()}`;
+      panel.hidden = true;
+      const toggle = actionButton(document, t("New…"), () =>
+        show(toggle.getAttribute("aria-expanded") !== "true"),
+      );
+      toggle.disabled = !ready;
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.setAttribute("aria-controls", panel.id);
+      const show = (open: boolean): void => {
+        panel.hidden = !open;
+        toggle.setAttribute("aria-expanded", String(open));
+        if (open) panel.querySelector<HTMLButtonElement>("button")?.focus();
+      };
+      const kinds: readonly (readonly [string, Selection])[] = [
+        ["Subclass", { kind: "new-subclass" }],
+        ["Feat", { kind: "new-feat" }],
+        ["Spell", { kind: "new-spell" }],
+      ];
+      for (const [label, selection] of kinds)
+        panel.append(
+          actionButton(document, t(label), () => {
+            show(false);
+            void this.#select(selection);
+          }),
+        );
+      root.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || toggle.getAttribute("aria-expanded") !== "true") return;
+        event.stopPropagation();
+        show(false);
+        toggle.focus();
+      });
+      root.addEventListener("focusout", (event) => {
+        if (!(event.relatedTarget instanceof Node) || !root.contains(event.relatedTarget))
+          show(false);
+      });
+      root.append(toggle, panel);
+      return root;
     }
     #renderTree(): void {
       const t = this.#t;

@@ -815,6 +815,24 @@ globalThis.runRenderingContract = () => {
     homebrewSpellOffered,
     [true, true],
   );
+  const headerControls = [
+    [...catalog.querySelectorAll(".hb-actions > button, .hb-actions > .hb-new > button")]
+      .slice(0, 5)
+      .map((node) => node.textContent),
+    [...catalog.querySelectorAll(".hb-new-panel button")].map((node) => node.textContent),
+    catalog.querySelector<HTMLElement>(".hb-new-panel")?.hidden,
+  ];
+  const expectedControls = [
+    ["New item", "New set", "New…", "Import file", "Export"],
+    ["Subclass", "Feat", "Spell"],
+    true,
+  ];
+  check(
+    "the header offers items and sets, and the other kinds under New…",
+    JSON.stringify(headerControls) === JSON.stringify(expectedControls),
+    headerControls,
+    expectedControls,
+  );
   const features = subclassCatalog.querySelectorAll(".hb-feature").length;
   check("the subclass editor shows one panel per feature", features === 4, features, 4);
   const target = subclassCatalog.querySelector<HTMLSelectElement>(

@@ -1290,6 +1290,7 @@ export const cs: Readonly<Record<string, string>> = {
     "Dejte kouzlu jednořádkový název o nejvýše 120 znacích.",
   "A published spell is invalid.": "Zveřejněné kouzlo je neplatné.",
   "{at}: spell {id} appears twice.": "{at}: kouzlo {id} je uvedeno dvakrát.",
+  "New…": "Nové…",
   // Weapons and armor
   "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.":
     "Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá hráče vybrat na deníku.",

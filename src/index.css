@@ -610,3 +610,25 @@
     bottom: calc(var(--bottom-nav-h, 0px) + env(safe-area-inset-bottom));
   }
 }
+/* "New…" opens a small panel of the other kinds under its button. */
+.hb-new {
+  position: relative;
+}
+.hb-new-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 11rem;
+  padding: 0.4rem;
+  background: var(--bg-raised, #241c0d);
+  border: 1px solid var(--border-subtle, #ffffff12);
+  border-radius: var(--radius, 6px);
+  box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 40%);
+}
+.hb-new-panel button {
+  justify-content: start;
+  text-align: start;
+}
