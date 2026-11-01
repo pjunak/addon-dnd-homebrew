@@ -78,6 +78,27 @@ with the same `id`; a field the entry leaves out keeps its stored value, so
 re-importing a card pack does not reset visibility the DM changed. A new draft
 takes the defaults below. Entries that match what is stored are skipped.
 
+## In a campaign bundle
+
+A host [campaign bundle](https://github.com/pjunak/ttrpg-codex/blob/main/docs/reference/CAMPAIGN_BUNDLES.md)
+can carry homebrew beside its characters and locations. Add one
+`addonImports` entry whose `document` is a homebrew document, for example an
+**Export** file:
+
+~~~json
+{
+  "addonId": "dnd-homebrew",
+  "contributorId": "dnd-homebrew",
+  "document": { "format": "dnd-homebrew", "schemaVersion": 1, "sets": [], "items": [], "spells": [] }
+}
+~~~
+
+The document follows every rule of an import, `mode` included. The bundle's
+review lists the drafts with the campaign records, and one commit writes them
+all; publish the drafts from Homebrew afterwards. The bundle's limit of 256
+writes counts the drafts too. Homebrew never refers to campaign records, so
+the document has no use for the bundle's `{"$ref": ...}`.
+
 ## Set
 
 | Field | Default | Rule |

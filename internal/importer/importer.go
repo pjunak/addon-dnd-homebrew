@@ -3,6 +3,10 @@
 // document and retains the exact guarded mutations behind a single-use token;
 // commit submits only that reviewed plan. Imports write drafts: nothing reaches
 // character sheets until the DM publishes.
+//
+// The same document can ride in a campaign bundle: the
+// codex.campaign-bundle-contributor plans it identically, and the host reviews
+// and commits those writes together with the bundle's campaign records.
 package importer
 
 import (
@@ -27,9 +31,13 @@ const (
 	ContractVersion = "2.0.0"
 	MethodPrefix    = "service/" + Contract + "/"
 	Format          = "dnd-homebrew"
-	maximumPlans    = 128
-	maximumWrites   = 256
-	planLifetime    = 15 * time.Minute
+	// A bundle's addonImports entry names this add-on and Format as its contributorId.
+	ContributorContract = "codex.campaign-bundle-contributor"
+	ContributorVersion  = "1.0.0"
+	ContributorMethod   = "service/" + ContributorContract + "/preview"
+	maximumPlans        = 128
+	maximumWrites       = 256
+	planLifetime        = 15 * time.Minute
 )
 
 type DataStore interface {
@@ -191,6 +199,16 @@ func (handler *Handler) HandleRPC(ctx context.Context, request workerrpc.Request
 			return nil, invalid("homebrew commit requires an idempotency key", nil)
 		}
 		return handler.commit(ctx, request.Meta, input.Token)
+	case ContributorMethod:
+		var input struct {
+			ContractVersion string          `json:"contractVersion"`
+			ContributorID   string          `json:"contributorId"`
+			Document        json.RawMessage `json:"document"`
+		}
+		if jsonexact.Decode(request.Params, &input) != nil || input.ContractVersion != "campaign-contribution.v1" || input.ContributorID != Format {
+			return nil, invalid("homebrew bundle contribution request is invalid", nil)
+		}
+		return handler.contribute(ctx, request.Meta, input.Document)
 	default:
 		return nil, workerrpc.NewRPCError(workerrpc.JSONRPCMethodNotFound, workerrpc.KindNotFound, "Import adapter method not found.", false, nil)
 	}
@@ -207,15 +225,8 @@ type importPlan struct {
 }
 
 func (handler *Handler) preview(ctx context.Context, meta *workerrpc.Meta, body json.RawMessage) (any, error) {
-	current, err := handler.read(ctx, meta)
+	plan, current, err := handler.plan(ctx, meta, body)
 	if err != nil {
-		return nil, err
-	}
-	plan, err := buildPlan(body, current, handler.now().UnixMilli())
-	if err != nil {
-		return nil, invalid("homebrew import document is invalid", map[string]any{"issue": err.Error()})
-	}
-	if err := handler.resolveTombstones(ctx, meta, plan.Mutations); err != nil {
 		return nil, err
 	}
 	token, err := handler.storePlan(storedPlan{mutations: plan.Mutations, revisions: current.revisions, writes: plan.Summary.Creates + plan.Summary.Updates, deletes: plan.Summary.Deletes})
@@ -223,6 +234,40 @@ func (handler *Handler) preview(ctx context.Context, meta *workerrpc.Meta, body 
 		return nil, unavailable("could not retain the reviewed import plan")
 	}
 	return map[string]any{"contractVersion": "import-preview-result.v1", "token": token, "format": Format, "mode": plan.Mode, "summary": plan.Summary, "warnings": plan.Warnings, "changes": plan.Changes}, nil
+}
+
+// contribute plans a bundle's homebrew document like a preview. The host
+// retains the writes and commits them with the bundle, so no token is kept here.
+func (handler *Handler) contribute(ctx context.Context, meta *workerrpc.Meta, body json.RawMessage) (any, error) {
+	plan, current, err := handler.plan(ctx, meta, body)
+	if err != nil {
+		return nil, err
+	}
+	mutations := make([]map[string]any, 0, len(plan.Mutations))
+	for _, mutation := range plan.Mutations {
+		entry := map[string]any{"operation": mutation.Operation, "collection": mutation.Reference.DataID, "key": mutation.Key, "expectedRevision": mutation.ExpectedRevision}
+		if mutation.Operation == "put" {
+			entry["value"] = mutation.Value
+		}
+		mutations = append(mutations, entry)
+	}
+	return map[string]any{"contractVersion": "campaign-contribution-plan.v1", "expectedDataSets": current.revisions, "mutations": mutations}, nil
+}
+
+// plan reads the stored drafts and plans the document against them.
+func (handler *Handler) plan(ctx context.Context, meta *workerrpc.Meta, body json.RawMessage) (importPlan, drafts, error) {
+	current, err := handler.read(ctx, meta)
+	if err != nil {
+		return importPlan{}, drafts{}, err
+	}
+	plan, err := buildPlan(body, current, handler.now().UnixMilli())
+	if err != nil {
+		return importPlan{}, drafts{}, invalid("homebrew import document is invalid", map[string]any{"issue": err.Error()})
+	}
+	if err := handler.resolveTombstones(ctx, meta, plan.Mutations); err != nil {
+		return importPlan{}, drafts{}, err
+	}
+	return plan, current, nil
 }
 
 // buildPlan normalizes an import document against the stored drafts. A field

@@ -24,7 +24,7 @@ const manifest = (await read("addon.json")) as Manifest;
 void test("manifest serves rules data from a worker and keeps drafts DM-only", () => {
   assert.equal(manifest.packageFormat, 1);
   assert.equal(manifest.id, "dnd-homebrew");
-  assert.equal(manifest.version, "1.8.0");
+  assert.equal(manifest.version, "1.9.0");
   assert.equal(manifest.runtime.ui.entry, "web/index.js");
   assert.equal(manifest.runtime.worker.type, "native");
   assert.equal(Object.keys(manifest.runtime.worker.entrypoints).length, 3);
@@ -58,6 +58,7 @@ void test("manifest serves rules data from a worker and keeps drafts DM-only", (
     [
       ["dnd5e.rules-data", "3.0.0", "worker"],
       ["codex.import-adapter", "2.0.0", "worker"],
+      ["codex.campaign-bundle-contributor", "1.0.0", "worker"],
     ],
   );
   // The editor's pickers read the Compendium; the add-on works without it.

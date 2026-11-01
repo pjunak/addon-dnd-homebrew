@@ -25,6 +25,7 @@ func main() {
 			importer.MethodPrefix + "describe": importer.ContractVersion,
 			importer.MethodPrefix + "preview":  importer.ContractVersion,
 			importer.MethodPrefix + "commit":   importer.ContractVersion,
+			importer.ContributorMethod:         importer.ContributorVersion,
 		},
 		HandlerFactory: workerrpc.NativeWorkerHandlerFactoryFunc(newHandler),
 	})

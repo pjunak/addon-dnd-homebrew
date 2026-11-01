@@ -110,7 +110,8 @@ collections untouched.
 
 ## Limits
 
-- Publishing and importing are single transactions of at most 256 changes.
+- Publishing and importing are single transactions of at most 256 changes; in
+  a campaign bundle the 256 also count the bundle's campaign records.
 - The effect and grants vocabularies are the Engine's: `validCharacterEffect`
   and the item grants allowlist (`characterItemGrants`), both in the Engine's
   `internal/rules/character_items.go`, and the full grants vocabulary

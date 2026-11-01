@@ -70,7 +70,9 @@ Tasks for all repositories live in the host's `docs/BACKLOG.md`.
   review a data migration on update. Keep `homebrew-common.schema.json` and
   the stored collections' schemas stable, and give a new kind its own file.
 - Imports write drafts only. Preview retains the exact guarded mutations behind
-  a single-use token; commit submits that plan and nothing else.
+  a single-use token; commit submits that plan and nothing else. A campaign
+  bundle's contribution (`codex.campaign-bundle-contributor`) is planned the
+  same way but retained and committed by the host, never by the worker.
 - UI code validates every response, uses the host's shared controls and design
   tokens, and never inserts HTML; Markdown goes to `codex-addon-markdown`.
 

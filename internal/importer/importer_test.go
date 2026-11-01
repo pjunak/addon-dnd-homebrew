@@ -372,6 +372,71 @@ func TestImportsRequireTheDM(t *testing.T) {
 	}
 }
 
+func TestBundleContributionsPlanWithoutWritingOrKeepingAToken(t *testing.T) {
+	store := newFakeStore()
+	store.revisions[homebrew.SpellsCollection] = 7
+	handler, _ := New(store)
+	contribute := func(meta *workerrpc.Meta, contributor string, document json.RawMessage) ([]byte, error) {
+		body, _ := json.Marshal(map[string]any{"contractVersion": "campaign-contribution.v1", "contributorId": contributor, "document": document})
+		result, err := handler.HandleRPC(context.Background(), workerrpc.Request{Method: ContributorMethod, Params: body, Meta: meta})
+		if err != nil {
+			return nil, err
+		}
+		return json.Marshal(result)
+	}
+	spells, err := os.ReadFile("../../docs/examples/sample-spells.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The host calls with read-only authority and no idempotency key.
+	readOnly := &workerrpc.Meta{Actor: dm.Actor}
+	body, err := contribute(readOnly, Format, spells)
+	if err != nil {
+		t.Fatal(err)
+	}
+	schema := compileSchemas(t, "campaign-contributor.response.schema.json")["campaign-contributor.response.schema.json"]
+	if err := validate(t, schema, "contribution", body); err != nil {
+		t.Fatal(err)
+	}
+	var plan struct {
+		ExpectedDataSets []workerrpc.AddonDataSetRevision `json:"expectedDataSets"`
+		Mutations        []struct {
+			Operation        string          `json:"operation"`
+			Collection       string          `json:"collection"`
+			ExpectedRevision int64           `json:"expectedRevision"`
+			Value            json.RawMessage `json:"value"`
+		} `json:"mutations"`
+	}
+	_ = json.Unmarshal(body, &plan)
+	guarded := map[string]int64{}
+	for _, guard := range plan.ExpectedDataSets {
+		guarded[guard.DataID] = guard.Revision
+	}
+	if len(guarded) != 7 || guarded[homebrew.SpellsCollection] != 7 {
+		t.Fatalf("guards %v", plan.ExpectedDataSets)
+	}
+	if len(plan.Mutations) == 0 || store.commits != 0 || len(handler.plans) != 0 {
+		t.Fatalf("%d mutations, %d commits, %d retained plans", len(plan.Mutations), store.commits, len(handler.plans))
+	}
+	for _, mutation := range plan.Mutations {
+		if mutation.Operation != "put" || mutation.Collection != homebrew.SpellsCollection || mutation.ExpectedRevision != 0 {
+			t.Fatalf("mutation %+v", mutation)
+		}
+		if _, err := homebrew.DecodeSpell(mutation.Value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := contribute(readOnly, "planning-json", spells); kindOf(err) != workerrpc.KindValidationFailed {
+		t.Fatalf("another contributor id: %v", err)
+	}
+	if _, err := contribute(readOnly, Format, json.RawMessage(`{"format":"dnd-homebrew","schemaVersion":1,"sets":[],"items":[{"id":"Bad Id"}]}`)); kindOf(err) != workerrpc.KindValidationFailed {
+		t.Fatalf("an invalid document: %v", err)
+	}
+	if _, err := contribute(&workerrpc.Meta{Actor: &workerrpc.Actor{Role: "player"}}, Format, spells); kindOf(err) != workerrpc.KindUnauthorized {
+		t.Fatalf("a player: %v", err)
+	}
+}
+
 func TestSubclassesImportCreateUpdateClearAndReplace(t *testing.T) {
 	body, err := os.ReadFile("../../tests/fixtures/subclasses.json")
 	if err != nil {

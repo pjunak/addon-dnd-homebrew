@@ -236,6 +236,10 @@ exact entry that is wrong; the worker then shows a review of what will change.
 file (by hand or with an AI assistant) and check it offline with
 `go run ./cmd/check-homebrew`.
 
+A host campaign bundle, imported from the same Import Center, can carry
+homebrew drafts beside new characters and locations: see
+[In a campaign bundle](docs/FORMAT.md#in-a-campaign-bundle).
+
 ## Data
 
 Homebrew content is campaign data, not code. Drafts and published records live
@@ -282,7 +286,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.8.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.9.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are
