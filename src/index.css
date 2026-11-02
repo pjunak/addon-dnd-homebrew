@@ -1,7 +1,7 @@
 .hb-shell {
   display: grid;
   gap: 1rem;
-  color: var(--text-light, #d4c49a);
+  color: var(--text-light);
   font: inherit;
   min-width: 0;
 }
@@ -9,8 +9,8 @@
 .hb-shell h2,
 .hb-shell h3 {
   margin: 0;
-  font-family: var(--font-title, Georgia, serif);
-  color: var(--accent-gold, #c8a040);
+  font-family: var(--font-title);
+  color: var(--accent-gold);
 }
 .hb-header {
   display: flex;
@@ -23,10 +23,10 @@
 .hb-status,
 .hb-hint {
   margin: 0.35rem 0 0;
-  color: var(--text-muted, #9a8660);
+  color: var(--text-muted);
 }
 .hb-hint {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 .hb-actions {
   display: flex;
@@ -50,24 +50,24 @@
   display: grid;
   gap: 0.75rem;
   position: sticky;
-  top: var(--space-4, 1rem);
+  top: var(--space-4);
   max-height: calc(100vh - 8rem);
   overflow: auto;
   padding: 0.75rem;
-  background: var(--bg-raised, #241c0d);
-  border: 1px solid var(--border-subtle, #ffffff12);
-  border-radius: var(--radius-lg, 10px);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 }
 .hb-tree-groups {
   display: grid;
   gap: 0.75rem;
 }
 .hb-group h2.hb-group-head {
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-muted, #9a8660);
-  font-family: var(--font-ui, inherit);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
   padding: 0.25rem 0.5rem;
 }
 .hb-group ul {
@@ -89,23 +89,23 @@
   color: inherit;
   background: none;
   border: 1px solid transparent;
-  border-radius: var(--radius, 6px);
+  border-radius: var(--radius);
   cursor: pointer;
 }
 .hb-tree-item.hb-group-head {
   font-weight: 700;
-  color: var(--text-parchment, #f5edd8);
+  color: var(--text-parchment);
 }
 .hb-tree-item:hover {
-  background: var(--bg-surface, #1a1409);
+  background: var(--bg-surface);
 }
 .hb-tree-item:focus-visible {
-  outline: 2px solid var(--accent-gold, #c8a040);
+  outline: 2px solid var(--accent-gold);
   outline-offset: 1px;
 }
 .hb-tree-item[aria-current="true"] {
-  border-color: var(--accent-gold-dim, #8a6f2e);
-  background: rgba(var(--accent-gold-rgb, 200, 160, 64), 0.12);
+  border-color: var(--accent-gold-dim);
+  background: rgba(var(--accent-gold-rgb), 0.12);
 }
 /* The name has its own line; badges follow on the next. */
 .hb-tree-name {
@@ -125,17 +125,17 @@
   min-height: 2.4rem;
   padding: 0;
   font: inherit;
-  color: var(--text-muted, #9a8660);
+  color: var(--text-muted);
   background: none;
   border: 1px solid transparent;
-  border-radius: var(--radius, 6px);
+  border-radius: var(--radius);
   cursor: pointer;
 }
 .hb-tree-toggle:hover {
-  background: var(--bg-surface, #1a1409);
+  background: var(--bg-surface);
 }
 .hb-tree-toggle:focus-visible {
-  outline: 2px solid var(--accent-gold, #c8a040);
+  outline: 2px solid var(--accent-gold);
   outline-offset: 1px;
 }
 .hb-start {
@@ -149,23 +149,23 @@
 .hb-badge {
   display: inline-block;
   padding: 0 0.4rem;
-  font-size: 0.7rem;
+  font-size: var(--text-xs);
   line-height: 1.5;
   border-radius: 999px;
-  border: 1px solid var(--border-subtle, #ffffff12);
-  color: var(--text-light, #d4c49a);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-light);
   white-space: nowrap;
 }
 .hb-badge.muted {
-  color: var(--text-muted, #9a8660);
+  color: var(--text-muted);
 }
 .hb-badge.accent {
-  color: var(--accent-gold, #c8a040);
-  border-color: var(--accent-gold-dim, #8a6f2e);
+  color: var(--accent-gold);
+  border-color: var(--accent-gold-dim);
 }
 .hb-badge.warn {
-  color: var(--color-danger, #d07a5a);
-  border-color: var(--color-danger, #d07a5a);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
 }
 /* Classes below set display, which would otherwise show hidden controls. */
 .hb-shell [hidden] {
@@ -197,7 +197,7 @@
   }
   .hb-form > .hb-preview {
     position: sticky;
-    top: var(--space-4, 1rem);
+    top: var(--space-4);
     max-height: calc(100vh - 2rem);
     overflow: auto;
   }
@@ -230,7 +230,7 @@
 /* Who can attune reads as part of the attunement choice above it. */
 .hb-attunement {
   padding-left: 0.75rem;
-  border-left: 2px solid var(--border-subtle, #ffffff12);
+  border-left: 2px solid var(--border-subtle);
 }
 .hb-templates,
 .hb-adders,
@@ -242,18 +242,18 @@
 }
 .hb-templates-label {
   margin-right: 0.25rem;
-  color: var(--text-muted, #9a8660);
-  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
 }
 .hb-set-items {
   display: grid;
   gap: 0.5rem;
   padding: 0.75rem;
-  border: 1px solid var(--border-subtle, #ffffff12);
-  border-radius: var(--radius, 6px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
 }
 .hb-set-items h3 {
-  font-size: 1rem;
+  font-size: var(--text-base);
 }
 .hb-set-items ul {
   display: grid;
@@ -280,9 +280,9 @@
   gap: 0.75rem;
   margin: 0;
   padding: 0.75rem;
-  border: 1px solid var(--border-subtle, #ffffff12);
-  border-radius: var(--radius, 6px);
-  background: var(--bg-surface, #1a1409);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
   /* Fieldsets default to min-inline-size: min-content and refuse to shrink,
      which overflows the form wherever fonts render wider (CI Chromium). */
   min-width: 0;
@@ -293,11 +293,11 @@
 }
 .hb-effects-fieldset legend {
   padding: 0 0.35rem;
-  color: var(--accent-gold, #c8a040);
+  color: var(--accent-gold);
 }
 .hb-defaults summary {
   cursor: pointer;
-  color: var(--accent-gold, #c8a040);
+  color: var(--accent-gold);
 }
 .hb-effects {
   display: grid;
@@ -316,7 +316,7 @@
   align-items: end;
   gap: 0.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px dashed var(--border-subtle, #ffffff12);
+  border-bottom: 1px dashed var(--border-subtle);
 }
 .hb-effect-row > [data-ui-field] {
   flex: 1 1 9rem;
@@ -338,8 +338,8 @@
 }
 .hb-grants-heading {
   margin: 0;
-  font-size: 0.95rem;
-  color: var(--text-parchment, #f5edd8);
+  font-size: var(--text-md);
+  color: var(--text-parchment);
 }
 /* A list shows its heading once it holds a row. */
 .hb-grants-section:not(:has(.hb-effect-list > li)) > .hb-grants-heading {
@@ -356,7 +356,7 @@
   flex: 1 1 100%;
   min-width: 0;
   padding-left: 0.75rem;
-  border-left: 2px solid var(--border-subtle, #ffffff12);
+  border-left: 2px solid var(--border-subtle);
 }
 .hb-toggle-change:last-child {
   border-bottom: 0;
@@ -382,8 +382,8 @@
   gap: 0.6rem;
   margin: 0;
   padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border-subtle, #ffffff12);
-  border-radius: var(--radius, 6px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
   min-width: 0;
 }
 .hb-schema-group .hb-schema-group {
@@ -394,7 +394,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0 0.35rem;
-  color: var(--accent-gold, #c8a040);
+  color: var(--accent-gold);
 }
 .hb-schema-group > .hb-hint {
   margin: 0;
@@ -415,7 +415,7 @@
   flex: none;
   min-height: 1.5rem;
   padding: 0 0.4rem;
-  font-size: 0.8rem;
+  font-size: var(--text-sm);
   white-space: nowrap;
 }
 .hb-schema-field {
@@ -452,7 +452,7 @@
 }
 .hb-schema-table th {
   padding: 0 0.4rem 0.25rem 0;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-weight: 600;
   text-align: left;
 }
@@ -479,7 +479,7 @@
 .hb-preview-name {
   margin: 0;
   font-weight: 700;
-  color: var(--text-parchment, #f5edd8);
+  color: var(--text-parchment);
 }
 .hb-effect-summary,
 .hb-card-effects ul,
@@ -499,18 +499,18 @@
   bottom: 0;
   z-index: 1;
   padding: 0.6rem 0;
-  background: var(--bg-base, #120d05);
-  border-top: 1px solid var(--border-subtle, #ffffff12);
+  background: var(--bg-base);
+  border-top: 1px solid var(--border-subtle);
 }
 .hb-dialog {
   width: min(40rem, calc(100vw - 2rem));
   max-height: calc(100vh - 4rem);
   overflow: auto;
-  padding: var(--space-5, 1.25rem);
-  color: var(--text-light, #d4c49a);
-  background: var(--bg-base, #120d05);
-  border: 1px solid var(--border-subtle, #ffffff12);
-  border-radius: var(--radius-lg, 10px);
+  padding: var(--space-5);
+  color: var(--text-light);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 }
 .hb-dialog-header {
   display: flex;
@@ -549,32 +549,32 @@
   gap: 0.5rem;
   align-content: start;
   padding: 0.85rem;
-  background: var(--bg-raised, #241c0d);
-  border: 1px solid var(--border-subtle, #ffffff12);
-  border-radius: var(--radius-lg, 10px);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   min-width: 0;
   overflow-wrap: anywhere;
 }
 .hb-card.focused {
-  border-color: var(--accent-gold, #c8a040);
-  box-shadow: 0 0 0 1px var(--accent-gold, #c8a040);
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 1px var(--accent-gold);
 }
 .hb-card h2 {
-  font-size: 1.1rem;
+  font-size: var(--text-lg);
 }
 .hb-card-meta {
   margin: 0;
-  font-size: 0.8rem;
-  color: var(--text-muted, #9a8660);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
 }
 .hb-card-effects {
   padding-top: 0.5rem;
-  border-top: 1px solid var(--border-subtle, #ffffff12);
-  font-size: 0.9rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-md);
 }
 .hb-card-effects p {
   margin: 0 0 0.25rem;
-  color: var(--accent-gold, #c8a040);
+  color: var(--accent-gold);
 }
 @media (max-width: 48rem) {
   .hb-layout {
@@ -597,17 +597,17 @@
 }
 .hb-kinds dt {
   font-weight: 700;
-  color: var(--text-parchment, #f5edd8);
+  color: var(--text-parchment);
 }
 .hb-kinds dd {
   margin: 0;
-  color: var(--text-muted, #9a8660);
+  color: var(--text-muted);
 }
 /* On phones the host's bottom navigation covers the screen's bottom edge, so
    the save bar stops above it (the host's breakpoint and token). */
 @media (max-width: 768px) {
   .hb-editor-actions {
-    bottom: calc(var(--bottom-nav-h, 0px) + env(safe-area-inset-bottom));
+    bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom));
   }
 }
 /* "New…" opens a small panel of the other kinds under its button. */
@@ -616,16 +616,16 @@
 }
 .hb-new-panel {
   position: absolute;
-  z-index: 20;
+  z-index: var(--z-float);
   top: calc(100% + 0.25rem);
   left: 0;
   display: grid;
   gap: 0.25rem;
   min-width: 11rem;
   padding: 0.4rem;
-  background: var(--bg-raised, #241c0d);
-  border: 1px solid var(--border-subtle, #ffffff12);
-  border-radius: var(--radius, 6px);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
   box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 40%);
 }
 .hb-new-panel button {
