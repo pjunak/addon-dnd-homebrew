@@ -86,8 +86,8 @@ export const cs: Readonly<Record<string, string>> = {
   "Add item to this set": "Přidat předmět do této sady",
   "Saved.": "Uloženo.",
   Condition: "Stav",
-  "Every item of the set gives this condition. Its level on the sheet is the number of the set's items in effect. Leave the name empty for none.":
-    "Každý předmět sady dává tento stav. Jeho úroveň na deníku odpovídá počtu účinných předmětů sady. Bez názvu sada žádný stav nedává.",
+  "Every item of the set gives this condition. Its level is the number of the set's items in effect. Leave the name empty for none.":
+    "Každý předmět sady dává tento stav. Jeho úroveň odpovídá počtu účinných předmětů sady. Bez názvu sada žádný stav nedává.",
   "Condition name": "Název stavu",
   "Condition id": "Identifikátor stavu",
   "Filled from the name when empty.": "Když zůstane prázdný, vytvoří se z názvu.",
@@ -98,8 +98,7 @@ export const cs: Readonly<Record<string, string>> = {
   Set: "Sada",
   "No set": "Bez sady",
   Description: "Popis",
-  "The effect as players read it on their character sheet.":
-    "Účinek tak, jak ho hráči uvidí na deníku postavy.",
+  "The effect as players read it.": "Účinek tak, jak ho čtou hráči.",
   Effects: "Účinky",
   "Remove effect": "Odebrat účinek",
   Properties: "Schopnosti předmětu",
@@ -125,12 +124,12 @@ export const cs: Readonly<Record<string, string>> = {
   "Its contents weigh nothing": "Obsah nic neváží",
   "Lists the item in the player gallery when its set is visible too.":
     "Zobrazí předmět v galerii pro hráče, pokud je viditelná i jeho sada.",
-  "Retired items stay usable on character sheets but leave the player gallery.":
-    "Vyřazené předměty zůstanou použitelné na denících postav, ale zmizí z galerie pro hráče.",
+  "Retired items stay usable by characters but leave the player gallery.":
+    "Vyřazené předměty zůstanou postavám použitelné, ale zmizí z galerie pro hráče.",
   Preview: "Náhled",
   "As published": "Po zveřejnění",
-  "Deleting a published item withdraws it at the next publish; characters holding it then show a missing-source problem. Retire it instead to keep it on their sheets. Delete {name}?":
-    "Smazání zveřejněného předmětu ho při příštím zveřejnění stáhne; postavy, které ho mají, pak ukážou problém s chybějícím zdrojem. Chcete-li ho na denících zachovat, raději ho vyřaďte. Smazat {name}?",
+  "Deleting a published item withdraws it at the next publish; characters holding it then show a missing-source problem. Retire it instead to keep it usable. Delete {name}?":
+    "Smazání zveřejněného předmětu ho při příštím zveřejnění stáhne; postavy, které ho mají, pak ukážou problém s chybějícím zdrojem. Chcete-li, aby zůstal použitelný, raději ho vyřaďte. Smazat {name}?",
   "Delete {name}?": "Smazat {name}?",
   Duplicate: "Duplikovat",
   "{name} (copy)": "{name} (kopie)",
@@ -366,9 +365,9 @@ export const cs: Readonly<Record<string, string>> = {
   Artifact: "Artefakt",
   "Rarity Varies": "Různá vzácnost",
   // Publish
-  "Publish to character sheets": "Zveřejnit na deníky postav",
-  "Publishing changes the rules data every character uses. Each character sheet asks its owner to adopt the new rules on its next save.":
-    "Zveřejnění změní data pravidel, která používají všechny postavy. Každý deník postavy při příštím uložení požádá svého vlastníka o přijetí nových pravidel.",
+  "Publish changes": "Zveřejnit změny",
+  "Publishing changes the rules data every character uses, so players may be asked to adopt the new rules.":
+    "Zveřejnění změní data pravidel, která používají všechny postavy, takže hráči mohou být požádáni o přijetí nových pravidel.",
   Added: "Přidáno",
   Updated: "Upraveno",
   Withdrawn: "Staženo",
@@ -404,7 +403,7 @@ export const cs: Readonly<Record<string, string>> = {
   "All sets": "Všechny sady",
   "No items have been revealed yet.": "Zatím nebyly odhaleny žádné předměty.",
   "No items match the search.": "Hledání neodpovídá žádný předmět.",
-  "Applied on the character sheet:": "Uplatní se na deníku postavy:",
+  "Effects:": "Účinky:",
   "The linked item is not published.": "Odkazovaný předmět není zveřejněn.",
   // Subclasses and the grants vocabulary
   "Use key": "Klíč použití",
@@ -432,14 +431,14 @@ export const cs: Readonly<Record<string, string>> = {
     "Uložené postavy se na něj odkazují; nelze ho změnit.",
   "Leave it empty to make one from the name.": "Když zůstane prázdný, vytvoří se z názvu.",
   Level: "Úroveň",
-  "One line the sheet shows on the feature: numbers, dice and actions.":
-    "Jeden řádek, který deník ukáže u schopnosti: čísla, kostky a akce.",
+  "A one-line summary of the feature: numbers, dice and actions.":
+    "Jednořádkové shrnutí schopnosti: čísla, kostky a akce.",
   Grants: "Dary",
   "Remove feature": "Odebrat schopnost",
   "Add feature": "Přidat schopnost",
   Features: "Schopnosti",
-  "Each feature arrives at its class level with its text and grants; grants apply on character sheets.":
-    "Každá schopnost přichází na své úrovni povolání se svým textem a dary; dary se uplatní na denících postav.",
+  "Each feature arrives at its class level with its text and grants.":
+    "Každá schopnost přichází na své úrovni povolání se svým textem a dary.",
   "Subclass-wide": "Celé podpovolání",
   "Grants, spells and pools that belong to the subclass itself, from its subclass level.":
     "Dary, kouzla a zásoby, které patří samotnému podpovolání, od jeho úrovně.",
@@ -659,7 +658,7 @@ export const cs: Readonly<Record<string, string>> = {
     "Nahradí počet nebo možnosti jedné z voleb povolání.",
   "Extra grants for each option of an enumerated choice.":
     "Další dary pro každou možnost výčtové volby.",
-  "Picks the player makes in the Builder, such as one skill from a list.":
+  "Picks the player makes, such as one skill from a list.":
     "Výběry, které hráč udělá při tvorbě, například jednu dovednost ze seznamu.",
   "Applies on items only.": "Platí jen u předmětů.",
   "Attacks score a Critical Hit on this roll or higher, such as 19.":
@@ -719,8 +718,8 @@ export const cs: Readonly<Record<string, string>> = {
     "Identifikátory přepínačů: možnost zvolená pokaždé, když se některý z nich zapne.",
   "What the change affects; it decides which fields apply.":
     "Co změna ovlivní; určuje, která pole platí.",
-  "A situation the sheet shows instead of marking the roll.":
-    "Situace, kterou deník ukáže místo označení hodu.",
+  "A situation shown as a reminder instead of marking the roll.":
+    "Situace zobrazená jako připomínka místo označení hodu.",
   "Worn body armor of these types.": "Nošená zbroj těchto druhů.",
   "Dice such as 1d6.": "Kostky, například 1d6.",
   "An attack id from Attacks.": "Identifikátor útoku z Útoků.",
@@ -1067,17 +1066,16 @@ export const cs: Readonly<Record<string, string>> = {
     "Data vlastních předmětů se během načítání změnila. Načtěte stránku znovu.",
   // Item editor
   "Start from": "Začít od",
-  "What it does on the sheet": "Co dělá na deníku",
-  "Applies while the item is equipped, and attuned when it requires attunement. An item without any of these is text only: the sheet shows its description.":
-    "Platí, dokud je předmět vybavený, a sladěný, pokud sladění vyžaduje. Předmět bez čehokoli z toho je pouze textový: deník zobrazí jeho popis.",
+  "What it does": "Co dělá",
+  "Applies while the item is equipped, and attuned when it requires attunement. An item without any of these is text only: players see its description.":
+    "Platí, dokud je předmět vybavený, a sladěný, pokud sladění vyžaduje. Předmět bez čehokoli z toho je pouze textový: hráči uvidí jeho popis.",
   "Bonuses and proficiencies": "Bonusy a zdatnosti",
   "Add bonus or proficiency": "Přidat bonus nebo zdatnost",
   "Add limited use": "Přidat omezené použití",
   "Add use": "Přidat použití",
   "The item's name": "Název předmětu",
   Carrying: "Nošení",
-  "Where the item is worn, for the sheet's equipment slots.":
-    "Kde se předmět nosí, pro pozice vybavení na deníku.",
+  "Where the item is worn, for equipment slots.": "Kde se předmět nosí, pro pozice vybavení.",
   "Use the set's placements ({list})": "Použít umístění sady ({list})",
   none: "žádné",
   "A container's contents count toward its holder's load unless they weigh nothing.":
@@ -1085,12 +1083,11 @@ export const cs: Readonly<Record<string, string>> = {
   "Id and tags": "Identifikátor a štítky",
   // Item templates
   "Magic weapon": "Magická zbraň",
-  "A +1 weapon; the player picks which weapon on the sheet.":
-    "Zbraň +1; hráč vybere zbraň na deníku.",
+  "A +1 weapon; the player picks which weapon.": "Zbraň +1; zbraň vybere hráč.",
   "You have a +1 bonus to attack and damage rolls made with this magic weapon.":
     "Máte bonus +1 k hodům na útok a zranění touto magickou zbraní.",
   "Magic armor": "Magická zbroj",
-  "+1 armor; the player picks which armor on the sheet.": "Zbroj +1; hráč vybere zbroj na deníku.",
+  "+1 armor; the player picks which armor.": "Zbroj +1; zbroj vybere hráč.",
   "You have a +1 bonus to Armor Class while wearing this armor.":
     "Dokud máte tuto zbroj na sobě, máte bonus +1 k obrannému číslu.",
   "Magic shield": "Magický štít",
@@ -1160,8 +1157,8 @@ export const cs: Readonly<Record<string, string>> = {
   feat: "odbornost",
   "Deleting a published feat withdraws it at the next publish; characters with it then show a missing-source problem. Delete {name}?":
     "Smazání zveřejněné odbornosti ji při příštím zveřejnění stáhne; postavy, které ji mají, pak ukážou problém s chybějícím zdrojem. Smazat {name}?",
-  "Where the Builder offers it: backgrounds, ability score levels, fighting styles or level 19.":
-    "Kde ji Tvůrce nabídne: u zázemí, na úrovních se zvýšením vlastností, u bojových stylů nebo na 19. úrovni.",
+  "Where it can be taken: backgrounds, ability score levels, fighting styles or level 19.":
+    "Kde ji lze získat: u zázemí, na úrovních se zvýšením vlastností, u bojových stylů nebo na 19. úrovni.",
   Prerequisite: "Předpoklad",
   "From a file, kept as it is: {words}": "Ze souboru, ponechán beze změny: {words}",
   "Replace with a simple prerequisite": "Nahradit jednoduchým předpokladem",
@@ -1171,8 +1168,8 @@ export const cs: Readonly<Record<string, string>> = {
   "Can cast at least one spell": "Umí seslat alespoň jedno kouzlo",
   "A Spellcasting or Pact Magic feature": "Schopnost Sesílání kouzel nebo Paktová magie",
   "Weapon training": "Výcvik se zbraněmi",
-  "Leave everything empty for a feat anyone can take. Sheets check it in the Builder.":
-    "Nechte vše prázdné pro odbornost, kterou si může vzít kdokoli. Deníky předpoklad kontrolují v Tvůrci.",
+  "Leave everything empty for a feat anyone can take.":
+    "Nechte vše prázdné pro odbornost, kterou si může vzít kdokoli.",
   "In one of these abilities": "V jedné z těchto vlastností",
   "With several, any one of them is enough.": "Při více vlastnostech stačí kterákoli z nich.",
   "Requires a Fighting Style feature": "Vyžaduje schopnost Bojový styl",
@@ -1180,11 +1177,11 @@ export const cs: Readonly<Record<string, string>> = {
   Once: "Jednou",
   "Any number of times": "Opakovaně",
   "Once for each value of {choice}": "Jednou pro každou hodnotu volby {choice}",
-  "What it grants on the sheet": "Co dává na deníku",
+  "What it grants": "Co dává",
   "Anything a printed feat grants: an ability score increase, proficiencies, spells, uses, bonuses and more. Add fields from the list.":
     "Cokoli, co dává tištěná odbornost: zvýšení vlastnosti, zdatnosti, kouzla, použití, bonusy a další. Pole přidávejte ze seznamu.",
-  "One line the sheet shows on the feat: numbers, dice and actions.":
-    "Jeden řádek, který deník ukáže u odbornosti: čísla, kostky a akce.",
+  "A one-line summary of the feat: numbers, dice and actions.":
+    "Jednořádkové shrnutí odbornosti: čísla, kostky a akce.",
   "The feat as players read it.": "Odbornost tak, jak ji čtou hráči.",
   Shields: "Štíty",
   "Simple weapons": "Jednoduché zbraně",
@@ -1192,8 +1189,7 @@ export const cs: Readonly<Record<string, string>> = {
   "{path} needs at least one requirement.": "{path} potřebuje alespoň jeden požadavek.",
   "{path} lists 1 to 20 requirements, nested at most {count} deep.":
     "{path} uvádí 1 až 20 požadavků, vnořených nejvýše do hloubky {count}.",
-  "{path} is not a requirement the Engine can check.":
-    "{path} není požadavek, který dokáže Engine ověřit.",
+  "{path} is not a requirement that can be checked.": "{path} není požadavek, který lze ověřit.",
   "A feat is taken once, any number of times, or once per choice.":
     "Odbornost se bere jednou, opakovaně, nebo jednou pro každou volbu.",
   "Repeating once per choice needs one of the feat's choices, of one listed value.":
@@ -1232,8 +1228,8 @@ export const cs: Readonly<Record<string, string>> = {
     "Odbornost původu, obecná odbornost, bojový styl nebo epické dobrodiní.",
   "Open {name}": "Otevřít {name}",
   // Spells
-  "Create items, item sets, subclasses, feats, spells, species and backgrounds, then publish them to use them on character sheets.":
-    "Vytvářejte předměty, sady předmětů, podpovolání, odbornosti, kouzla, druhy a zázemí a pak je zveřejněte, aby šly použít na denících postav.",
+  "Create items, item sets, subclasses, feats, spells, species and backgrounds, then publish them to put them into play.":
+    "Vytvářejte předměty, sady předmětů, podpovolání, odbornosti, kouzla, druhy a zázemí a pak je zveřejněte, aby šly použít ve hře.",
   "Nothing yet. Create an item, a set, a subclass, a feat, a spell, a species or a background, or import a file to begin.":
     "Zatím nic. Začněte vytvořením předmětu, sady, podpovolání, odbornosti, kouzla, druhu nebo zázemí, nebo importem souboru.",
   "Characters with a withdrawn item, subclass, feat, spell, species or background show a missing-source problem until it is removed from them.":
@@ -1339,8 +1335,8 @@ export const cs: Readonly<Record<string, string>> = {
   "The species as players read it; its size, speed and senses are added when published.":
     "Druh, tak jak ho čtou hráči; velikost, rychlost a smysly se při zveřejnění doplní.",
   Traits: "Rysy",
-  "Each trait is printed with its name, as the books do. What a trait does on the sheet goes in the grants below.":
-    "Každý rys se vypíše se svým názvem jako v knihách. Co rys dělá na deníku, patří do udělení níže.",
+  "Each trait is printed with its name, as the books do. What a trait does in play goes in the grants below.":
+    "Každý rys se vypíše se svým názvem jako v knihách. Co rys dělá ve hře, patří do udělení níže.",
   "Add trait": "Přidat rys",
   "New trait": "Nový rys",
   "Remove trait": "Odebrat rys",
@@ -1355,8 +1351,8 @@ export const cs: Readonly<Record<string, string>> = {
     "Zběhlosti, kouzla, použití, přepínače, volby a další. Pole přidávejte ze seznamu.",
   "Not applied on species": "Neplatí u druhů",
   "Not applied on lineages": "Neplatí u rodových linií",
-  "{path}: the choice id size is the Engine's own size choice.":
-    "{path}: identifikátor volby size patří volbě velikosti, kterou vytváří Engine.",
+  "{path}: the choice id size is reserved for the species size choice.":
+    "{path}: identifikátor volby size je vyhrazený pro volbu velikosti druhu.",
   "{path}: a lineage cannot offer choices or an AC bonus; give them to the species.":
     "{path}: rodová linie nemůže nabízet volby ani bonus k OČ; dejte je druhu.",
   "{path}: give the trait a one-line name of at most 120 characters.":
@@ -1414,8 +1410,8 @@ export const cs: Readonly<Record<string, string>> = {
   "Not applied on backgrounds": "Neplatí u zázemí",
   "Preset at most 10 of the feat's choices, each a choice id and its value.":
     "Přednastavte nejvýše 10 voleb odbornosti, každou jako identifikátor volby a hodnotu.",
-  "{path}: a background cannot give an AC bonus; the Engine reads it only from a species.":
-    "{path}: zázemí nemůže dávat bonus k OČ; Engine ho čte jen u druhu.",
+  "{path}: a background cannot give an AC bonus; only a species can.":
+    "{path}: zázemí nemůže dávat bonus k OČ; může ho dávat jen druh.",
   "{path}: the choice id tool is the background's own tool choice.":
     "{path}: identifikátor volby tool patří volbě nástroje, kterou má zázemí samo.",
   "Choose three different abilities for the player to raise.":
@@ -1436,8 +1432,8 @@ export const cs: Readonly<Record<string, string>> = {
   "A published background is invalid.": "Zveřejněné zázemí je neplatné.",
   "{at}: background {id} appears twice.": "{at}: zázemí {id} je uvedeno dvakrát.",
   // Weapons and armor
-  "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.":
-    "Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá hráče vybrat na deníku.",
+  "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player choose.":
+    "Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá volbu na hráči.",
   "The item is": "Předmět je",
   "Not a weapon or armor": "Není zbraň ani zbroj",
   "A weapon": "Zbraň",

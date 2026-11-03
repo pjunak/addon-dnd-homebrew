@@ -1874,7 +1874,7 @@ export function prerequisiteProblem(
       default:
         return problem("{path} does not take {field}.", { path, field: key });
     }
-    if (!valid) return problem("{path} is not a requirement the Engine can check.", { path: at });
+    if (!valid) return problem("{path} is not a requirement that can be checked.", { path: at });
   }
   return undefined;
 }
@@ -2495,7 +2495,7 @@ function speciesGrantsProblem(value: unknown, path: string): Problem | undefined
   const choices = (value as Json)["choices"];
   return Array.isArray(choices) &&
     choices.some((choice) => isRecord(choice) && choice["id"] === "size")
-    ? problem("{path}: the choice id size is the Engine's own size choice.", { path })
+    ? problem("{path}: the choice id size is reserved for the species size choice.", { path })
     : undefined;
 }
 /** Lineage grants add to the species'; the Engine reads choices and acBonus only from the species. */
@@ -2849,12 +2849,9 @@ function backgroundGrantsProblem(value: unknown, path: string): Problem | undefi
   if (failure) return failure;
   const grants = value as Json;
   if ("acBonus" in grants)
-    return problem(
-      "{path}: a background cannot give an AC bonus; the Engine reads it only from a species.",
-      {
-        path,
-      },
-    );
+    return problem("{path}: a background cannot give an AC bonus; only a species can.", {
+      path,
+    });
   const choices = grants["choices"];
   return Array.isArray(choices) &&
     choices.some((choice) => isRecord(choice) && choice["id"] === "tool")

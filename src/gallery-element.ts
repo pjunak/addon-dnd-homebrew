@@ -224,7 +224,7 @@ export function defineGalleryElement(generation?: string): string {
       ];
       if (lines.length > 0) {
         const effects = element(document, "div", "hb-card-effects");
-        effects.append(element(document, "p", "", t("Applied on the character sheet:")));
+        effects.append(element(document, "p", "", t("Effects:")));
         const list = element(document, "ul");
         for (const line of lines) list.append(element(document, "li", "", line));
         effects.append(list);

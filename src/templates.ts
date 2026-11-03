@@ -16,7 +16,7 @@ export const itemTemplates: readonly ItemTemplate[] = [
   {
     id: "weapon",
     label: "Magic weapon",
-    hint: "A +1 weapon; the player picks which weapon on the sheet.",
+    hint: "A +1 weapon; the player picks which weapon.",
     item: {
       overrides: { itemType: "Weapon", rarity: "Uncommon" },
       baseItem: { kind: "weapon", bonus: 1 },
@@ -26,7 +26,7 @@ export const itemTemplates: readonly ItemTemplate[] = [
   {
     id: "armor",
     label: "Magic armor",
-    hint: "+1 armor; the player picks which armor on the sheet.",
+    hint: "+1 armor; the player picks which armor.",
     item: {
       overrides: { itemType: "Armor", rarity: "Rare" },
       baseItem: { kind: "armor", armorTypes: ["light", "medium", "heavy"], bonus: 1 },

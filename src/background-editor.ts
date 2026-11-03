@@ -163,7 +163,7 @@ export function backgroundEditor(
 
   const mechanics = element(document, "fieldset", "hb-effects-fieldset");
   mechanics.append(
-    element(document, "legend", "", t("What it grants on the sheet")),
+    element(document, "legend", "", t("What it grants")),
     element(
       document,
       "p",

@@ -306,9 +306,7 @@ export function featEditor(
       "category",
       initial.category,
       featCategories.map((category) => [category, t(featCategoryLabels[category])] as const),
-      t(
-        "Where the Builder offers it: backgrounds, ability score levels, fighting styles or level 19.",
-      ),
+      t("Where it can be taken: backgrounds, ability score levels, fighting styles or level 19."),
     ),
   );
 
@@ -365,12 +363,7 @@ export function featEditor(
       ]),
     );
     prerequisite.append(
-      element(
-        document,
-        "p",
-        "hb-hint",
-        t("Leave everything empty for a feat anyone can take. Sheets check it in the Builder."),
-      ),
+      element(document, "p", "hb-hint", t("Leave everything empty for a feat anyone can take.")),
       scores,
       chipsField(
         document,
@@ -408,7 +401,7 @@ export function featEditor(
 
   const mechanics = element(document, "fieldset", "hb-effects-fieldset");
   mechanics.append(
-    element(document, "legend", "", t("What it grants on the sheet")),
+    element(document, "legend", "", t("What it grants")),
     element(
       document,
       "p",
@@ -439,7 +432,7 @@ export function featEditor(
     repeatField,
     textField(document, t("Summary"), "excerpt", initial.excerpt, {
       maxLength: 300,
-      hint: t("One line the sheet shows on the feat: numbers, dice and actions."),
+      hint: t("A one-line summary of the feat: numbers, dice and actions."),
     }),
     textArea(
       document,

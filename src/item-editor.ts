@@ -207,7 +207,7 @@ export function itemEditor(
       "overridePlacements",
       overrides.bodyPlacements ?? inherited?.bodyPlacements ?? [],
       placementOptions,
-      inherited ? undefined : t("Where the item is worn, for the sheet's equipment slots."),
+      inherited ? undefined : t("Where the item is worn, for equipment slots."),
     );
     if (inherited) {
       const list = inherited.bodyPlacements.map((placement) => t(placement)).join(", ");
@@ -279,13 +279,13 @@ export function itemEditor(
 
   const mechanics = element(document, "fieldset", "hb-effects-fieldset");
   mechanics.append(
-    element(document, "legend", "", t("What it does on the sheet")),
+    element(document, "legend", "", t("What it does")),
     element(
       document,
       "p",
       "hb-hint",
       t(
-        "Applies while the item is equipped, and attuned when it requires attunement. An item without any of these is text only: the sheet shows its description.",
+        "Applies while the item is equipped, and attuned when it requires attunement. An item without any of these is text only: players see its description.",
       ),
     ),
     gearFields(document, t, initial, references),
@@ -343,7 +343,7 @@ export function itemEditor(
       initial.text,
       5,
       maxMarkdown,
-      t("The effect as players read it on their character sheet."),
+      t("The effect as players read it."),
     ),
     mechanics,
     carrying,
@@ -362,7 +362,7 @@ export function itemEditor(
         t("Retired"),
         "retired",
         initial.retired,
-        t("Retired items stay usable on character sheets but leave the player gallery."),
+        t("Retired items stay usable by characters but leave the player gallery."),
       ),
     );
   main.append(more);

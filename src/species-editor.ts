@@ -351,7 +351,7 @@ export function speciesEditor(
     ),
     section(
       "Traits",
-      "Each trait is printed with its name, as the books do. What a trait does on the sheet goes in the grants below.",
+      "Each trait is printed with its name, as the books do. What a trait does in play goes in the grants below.",
       traits.root,
     ),
     section(
@@ -360,7 +360,7 @@ export function speciesEditor(
       lineages.root,
     ),
     section(
-      "What it grants on the sheet",
+      "What it grants",
       "Proficiencies, spells, uses, toggles, choices and more. Add fields from the list.",
       grants.root,
     ),

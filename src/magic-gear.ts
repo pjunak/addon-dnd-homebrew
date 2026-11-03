@@ -64,7 +64,7 @@ export function gearFields(
       ["armor", t("Armor or a shield")],
     ],
     t(
-      "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player pick on the sheet.",
+      "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player choose.",
     ),
   );
   const modeField = selectField(document, t("Base"), "baseMode", mode, [

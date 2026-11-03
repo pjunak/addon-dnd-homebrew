@@ -174,7 +174,7 @@ func (handler *Handler) HandleRPC(ctx context.Context, request workerrpc.Request
 		return map[string]any{
 			"contractVersion": "import-adapter-description.v1", "id": "dnd-homebrew",
 			"label":       "D&D homebrew",
-			"description": "Custom item sets, items, subclasses, feats, spells, species and backgrounds as drafts; publish them from Homebrew to use them on character sheets.",
+			"description": "Custom item sets, items, subclasses, feats, spells, species and backgrounds as drafts; publish them from Homebrew to put them into play.",
 			"formats":     []string{Format},
 		}, nil
 	case MethodPrefix + "preview":
@@ -430,14 +430,14 @@ func buildPlan(body json.RawMessage, current drafts, now int64) (importPlan, err
 		plan.deleteMissing(homebrew.SpeciesCollection, current.species, seen, "species:")
 		plan.deleteMissing(homebrew.BackgroundsCollection, current.backgrounds, seen, "background:")
 		if plan.Summary.Deletes > 0 {
-			plan.Warnings = append(plan.Warnings, "Replacing removes drafts that are not in this file. Their published records stay on character sheets until the next publish, which removes them and blocks characters that still hold them.")
+			plan.Warnings = append(plan.Warnings, "Replacing removes drafts that are not in this file. Their published records stay in play until the next publish, which removes them and blocks characters that still hold them.")
 		}
 	}
 	if len(plan.Mutations) > maximumWrites {
 		return importPlan{}, fmt.Errorf("the import changes %d drafts; split it into files of at most %d changes", len(plan.Mutations), maximumWrites)
 	}
 	if plan.Summary.Creates+plan.Summary.Updates > 0 {
-		plan.Warnings = append(plan.Warnings, "Imports write drafts. Publish them from Homebrew to use them on character sheets.")
+		plan.Warnings = append(plan.Warnings, "Imports write drafts. Publish them from Homebrew to put them into play.")
 	}
 	// Sets, their items, subclasses, feats, spells, species, then backgrounds; each by id.
 	sort.Slice(plan.Changes, func(i, j int) bool {

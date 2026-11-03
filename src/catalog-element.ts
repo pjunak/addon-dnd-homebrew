@@ -273,7 +273,7 @@ export function defineCatalogElement(generation?: string): string {
           "p",
           "",
           t(
-            "Create items, item sets, subclasses, feats, spells, species and backgrounds, then publish them to use them on character sheets.",
+            "Create items, item sets, subclasses, feats, spells, species and backgrounds, then publish them to put them into play.",
           ),
         ),
       );
@@ -1070,7 +1070,7 @@ export function defineCatalogElement(generation?: string): string {
           "p",
           "hb-hint",
           t(
-            "Every item of the set gives this condition. Its level on the sheet is the number of the set's items in effect. Leave the name empty for none.",
+            "Every item of the set gives this condition. Its level is the number of the set's items in effect. Leave the name empty for none.",
           ),
         ),
         row(
@@ -2084,7 +2084,7 @@ export function defineCatalogElement(generation?: string): string {
       const question =
         published && !published.value.withdrawn
           ? t(
-              "Deleting a published item withdraws it at the next publish; characters holding it then show a missing-source problem. Retire it instead to keep it on their sheets. Delete {name}?",
+              "Deleting a published item withdraws it at the next publish; characters holding it then show a missing-source problem. Retire it instead to keep it usable. Delete {name}?",
               { name: stored.value.name },
             )
           : t("Delete {name}?", { name: stored.value.name });
@@ -2189,7 +2189,7 @@ export function defineCatalogElement(generation?: string): string {
               "p",
               "",
               t(
-                "Publishing changes the rules data every character uses. Each character sheet asks its owner to adopt the new rules on its next save.",
+                "Publishing changes the rules data every character uses, so players may be asked to adopt the new rules.",
               ),
             ),
           );
@@ -2219,7 +2219,7 @@ export function defineCatalogElement(generation?: string): string {
         const confirmed = await openDialog(
           this,
           t,
-          t("Publish to character sheets"),
+          t("Publish changes"),
           body,
           confirmable ? t("Publish") : undefined,
         );

@@ -208,7 +208,7 @@ function featureEditor(
   });
   const excerpt = textField(document, t("Summary"), `${path}.excerpt`, feature.excerpt, {
     maxLength: 300,
-    hint: t("One line the sheet shows on the feature: numbers, dice and actions."),
+    hint: t("A one-line summary of the feature: numbers, dice and actions."),
   });
   const text = textArea(document, t("Description"), `${path}.text`, feature.text, 5, maxMarkdown);
   const grants = schemaEditor(context, grantsNode, feature.grants, {
@@ -278,7 +278,7 @@ export function mechanicsEditor(
   const features = section(
     hooks,
     "Features",
-    "Each feature arrives at its class level with its text and grants; grants apply on character sheets.",
+    "Each feature arrives at its class level with its text and grants.",
   );
   const featureList = element(document, "div", "hb-feature-list");
   let featureEditors: FeatureEditor[] = [];

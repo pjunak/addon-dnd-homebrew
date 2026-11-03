@@ -4,7 +4,7 @@
   "id": "dnd-homebrew",
   "name": "D&D Homebrew",
   "version": "1.9.0",
-  "description": "DM-authored homebrew (item sets, items, subclasses, feats, spells, species and backgrounds) served to character sheets as rules data.",
+  "description": "DM-authored homebrew (item sets, items, subclasses, feats, spells, species and backgrounds) served as D&D rules data.",
   "license": "MIT",
   "compatibility": {
     "host": ">=2.0.0 <3.0.0",
