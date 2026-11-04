@@ -19,7 +19,7 @@
     },
     "tags": { "$ref": "homebrew-common.schema.json#/$defs/tags" },
     "characterMechanics": { "$ref": "homebrew-common.schema.json#/$defs/mechanics" },
-    "characterEffects": { "$ref": "homebrew-common.schema.json#/$defs/effects" },
+    "characterEffects": { "$ref": "homebrew-effects.schema.json#/$defs/effects" },
     "playerVisible": { "type": "boolean" },
     "retired": { "type": "boolean" },
     "updatedAt": { "$ref": "homebrew-common.schema.json#/$defs/updatedAt" },

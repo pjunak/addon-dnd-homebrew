@@ -95,8 +95,13 @@ export function itemEditor(
     context.changed();
     update();
   };
-  const effects = effectsEditor(document, initial.characterEffects, t, changedRows, () =>
-    context.restructured(),
+  const effects = effectsEditor(
+    document,
+    initial.characterEffects,
+    t,
+    changedRows,
+    () => context.restructured(),
+    references?.classes,
   );
   const grants = grantsEditor(
     document,

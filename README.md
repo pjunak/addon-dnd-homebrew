@@ -106,6 +106,10 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 | Armor Class, initiative, speed, Hit Point maximum, attunement slots | — | +1 Armor Class, +5 Hit Point maximum |
 | Proficiency | skill or saving-throw ability | Insight, Charisma saving throws |
 | Sense range, resource uses | name | darkvision at least 60 |
+| Spell attack bonus, spell save DC | class, or none for every class | +1 to spell attacks; +2 to Warlock spell save DCs |
+
+Spell attack and save DC effects need D&D Engine 6.2.0 or later; an older
+Engine blocks such an item on the sheet.
 
 With D&D Engine 5.4.0 or later, an item's **properties** also apply
 ([format](docs/FORMAT.md#grants)):
@@ -286,7 +290,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.9.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.10.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are

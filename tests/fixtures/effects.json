@@ -13,7 +13,9 @@
     { "target": "proficiency", "key": "CHA", "mode": "set", "value": 1 },
     { "target": "sense", "key": "darkvision", "mode": "minimum", "value": 60 },
     { "target": "resourceMax", "key": "ki-points", "mode": "add", "value": 2 },
-    { "target": "armorClass", "mode": "add", "value": 100000 }
+    { "target": "armorClass", "mode": "add", "value": 100000 },
+    { "target": "spellAttack", "mode": "add", "value": 1 },
+    { "target": "spellSaveDC", "key": "warlock", "mode": "add", "value": 2 }
   ],
   "invalid": [
     { "target": "armorClass", "key": "DEX", "mode": "add", "value": 1 },
@@ -28,7 +30,9 @@
     { "target": "attackBonus", "mode": "add", "value": 1 },
     { "target": "armorClass", "mode": "multiply", "value": 2 },
     { "target": "armorClass", "mode": "add", "value": 100001 },
-    { "target": "maxHp", "mode": "add", "value": -100001 }
+    { "target": "maxHp", "mode": "add", "value": -100001 },
+    { "target": "spellSaveDC", "key": "Warlock", "mode": "add", "value": 1 },
+    { "target": "spellAttack", "key": "INT", "mode": "add", "value": 1 }
   ],
   "invalidSets": [
     [{ "target": "speed", "mode": "set", "value": 30 }, { "target": "speed", "mode": "set", "value": 40 }],
@@ -36,6 +40,7 @@
     [{ "target": "abilityScore", "key": "STR", "mode": "minimum", "value": 19 }, { "target": "abilityScore", "key": "STR", "mode": "maximum", "value": 18 }]
   ],
   "validSets": [
+    [{ "target": "spellAttack", "mode": "add", "value": 1 }, { "target": "spellAttack", "key": "druid", "mode": "add", "value": 1 }, { "target": "spellSaveDC", "key": "druid", "mode": "add", "value": 1 }],
     [{ "target": "abilityScore", "key": "INT", "mode": "add", "value": 1 }, { "target": "abilityScore", "key": "INT", "mode": "maximum", "value": 20 }],
     [{ "target": "proficiency", "key": "stealth", "mode": "set", "value": 1 }, { "target": "proficiency", "key": "DEX", "mode": "set", "value": 1 }]
   ],

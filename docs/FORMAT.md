@@ -148,6 +148,7 @@ Each effect is `{ "target", "key"?, "mode", "value" }`, with `mode` one of
 | `armorClass`, `initiative`, `speed`, `maxHp`, `attunementLimit` | none |
 | `proficiency` | a skill (`insight`, `stealth`, `sleightOfHand`, …) or an ability for its saving throw; always `"mode": "set", "value": 1` |
 | `sense`, `resourceMax` | a name such as `darkvision` |
+| `spellAttack`, `spellSaveDC` | a class id (`warlock`) for that class's spells only, or none for every class; needs D&D Engine 6.2.0 |
 
 An item may not repeat an effect, set the same value twice, or give a minimum
 above its maximum. "+1 Intelligence, up to a maximum of 20" is two effects:

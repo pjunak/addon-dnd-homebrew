@@ -120,7 +120,8 @@ collections untouched.
   sheet's display. Grants need Engine 5.4.0; an older Engine ignores them. A
   weapon or armor base (`baseItem`) follows the Engine's magic weapons and
   armor contract (`internal/rules/magic_gear.go`), with at most 20 ids and
-  bonuses up to +5, and needs Engine 6.1.0.
+  bonuses up to +5, and needs Engine 6.1.0. Spell attack and save DC effects
+  need Engine 6.2.0.
 - Subclass grants are checked for shape, not meaning: an unknown spell or class
   id, a toggle spending a use nobody declares, or a choice id another source
   also uses shows on the character, not in the editor. Some vocabulary fields

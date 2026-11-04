@@ -178,6 +178,14 @@ export const cs: Readonly<Record<string, string>> = {
   "{label} at least {value}": "{label} nejméně {value}",
   "{label} at most {value}": "{label} nejvýše {value}",
   "Uses of {name}": "Použití: {name}",
+  "Spell attack bonus": "Bonus k útoku kouzlem",
+  "{class} spell attack bonus": "Bonus k útoku kouzlem ({class})",
+  "{class} spell save DC": "SO záchranného hodu proti kouzlům ({class})",
+  "Every class": "Všechna povolání",
+  "A class id such as wizard; empty for every class.":
+    "Id povolání, například wizard; prázdné pro všechna povolání.",
+  "Name a class id such as wizard, or leave it empty for every class.":
+    "Zadejte id povolání, například wizard, nebo ho nechte prázdné pro všechna povolání.",
   Acrobatics: "Akrobacie",
   "Animal Handling": "Zacházení se zvířaty",
   Arcana: "Mystika",

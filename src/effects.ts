@@ -3,15 +3,18 @@ import { actionButton, element, numberField, selectField, textField } from "./fi
 import {
   abilities,
   abilityTargets,
+  classTargets,
   effectTargets,
   keyedTargets,
   modes,
   skillName,
   skills,
+  titleOf,
   type Effect,
   type EffectMode,
   type EffectTarget,
 } from "./model.js";
+import type { RuleOption } from "./references.js";
 
 const targetLabels: Readonly<Record<EffectTarget, string>> = {
   abilityScore: "Ability score",
@@ -25,6 +28,8 @@ const targetLabels: Readonly<Record<EffectTarget, string>> = {
   proficiency: "Proficiency",
   sense: "Sense range (ft)",
   resourceMax: "Resource uses",
+  spellAttack: "Spell attack bonus",
+  spellSaveDC: "Spell save DC",
 };
 const modeLabels: Readonly<Record<EffectMode, string>> = {
   add: "Add",
@@ -45,6 +50,8 @@ const isAbilityTarget = (target: string): boolean =>
   (abilityTargets as readonly string[]).includes(target);
 const isKeyedTarget = (target: string): boolean =>
   (keyedTargets as readonly string[]).includes(target);
+const isClassTarget = (target: string): boolean =>
+  (classTargets as readonly string[]).includes(target);
 
 /** One effect in plain words, for lists, previews and the gallery. */
 export function describeEffect(effect: Effect, t: Translator): string {
@@ -64,6 +71,10 @@ export function describeEffect(effect: Effect, t: Translator): string {
     label = t("{ability} saving throws", { ability: t(abilityNames[key] ?? key) });
   else if (effect.target === "sense") label = key.charAt(0).toUpperCase() + key.slice(1);
   else if (effect.target === "resourceMax") label = t("Uses of {name}", { name: key });
+  else if (effect.target === "spellAttack" && key)
+    label = t("{class} spell attack bonus", { class: titleOf(key) });
+  else if (effect.target === "spellSaveDC" && key)
+    label = t("{class} spell save DC", { class: titleOf(key) });
   else label = t(targetLabels[effect.target]);
   const value = effect.value;
   switch (effect.mode) {
@@ -90,7 +101,8 @@ export interface EffectsEditor {
  * Structured effect rows: the target decides which key control appears, and a
  * proficiency locks its mode and value to the only form the Engine accepts.
  * `changed` reports edits; `restructured` asks the owner to refresh enhanced
- * controls after rows are added, removed or retargeted.
+ * controls after rows are added, removed or retargeted. `classes`, from the
+ * installed rules data, turns a spellcasting effect's class into a choice.
  */
 export function effectsEditor(
   document: Document,
@@ -98,6 +110,7 @@ export function effectsEditor(
   t: Translator,
   changed: () => void,
   restructured: () => void,
+  classes?: readonly RuleOption[],
 ): EffectsEditor {
   const root = element(document, "div", "hb-effects");
   const list = element(document, "ol", "hb-effect-list");
@@ -146,6 +159,8 @@ export function effectsEditor(
             placeholder: t("For example darkvision."),
           }),
         );
+      else if (isClassTarget(current.target))
+        node.append(classKeyField(document, t, current.key ?? "", classes));
       if (current.target !== "proficiency") {
         node.append(
           selectField(
@@ -205,6 +220,25 @@ export function effectsEditor(
     restructured();
   });
   return { root, button, read: () => rows.map((row) => row.read()) };
+}
+
+/** A spellcasting effect's class: a choice from the rules data, else an id. */
+function classKeyField(
+  document: Document,
+  t: Translator,
+  key: string,
+  classes: readonly RuleOption[] | undefined,
+): HTMLElement {
+  if (!classes?.length)
+    return textField(document, t("Class"), "effect-key", key, {
+      maxLength: 64,
+      placeholder: "wizard",
+      hint: t("A class id such as wizard; empty for every class."),
+    });
+  const options = classes.map((entry) => [entry.id, entry.name] as const);
+  // A saved class the rules data no longer lists stays selectable.
+  if (key && !classes.some((entry) => entry.id === key)) options.push([key, titleOf(key)]);
+  return selectField(document, t("Class"), "effect-key", key, [["", t("Every class")], ...options]);
 }
 
 function defaultEffect(target: EffectTarget, previous: Effect): Effect {

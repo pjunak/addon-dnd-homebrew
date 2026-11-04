@@ -59,11 +59,14 @@ export const plainTargets = [
   "attunementLimit",
 ] as const;
 export const keyedTargets = ["sense", "resourceMax"] as const;
+/** Spellcasting targets: key is one class's id, or absent for every class. */
+export const classTargets = ["spellAttack", "spellSaveDC"] as const;
 export const effectTargets = [
   ...abilityTargets,
   ...plainTargets,
   "proficiency",
   ...keyedTargets,
+  ...classTargets,
 ] as const;
 
 export const advantageRolls = [
@@ -469,6 +472,9 @@ export function effectProblem(effect: Effect): Problem | undefined {
   } else if (oneOf(keyedTargets, target)) {
     if (!validEffectKey(effect.key))
       return problem("Name the sense or resource, such as darkvision.");
+  } else if (oneOf(classTargets, target)) {
+    if (effect.key !== undefined && effect.key !== "" && !validId(effect.key))
+      return problem("Name a class id such as wizard, or leave it empty for every class.");
   } else {
     return problem("Effect {target} is not supported.", { target });
   }

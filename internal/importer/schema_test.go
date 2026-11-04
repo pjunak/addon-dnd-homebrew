@@ -74,8 +74,9 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 		speciesServe = "published-species.schema.json"
 		bgDraft      = "homebrew-background.schema.json"
 		bgServe      = "published-background.schema.json"
+		itemEffects  = "homebrew-effects.schema.json#/$defs/effects"
 	)
-	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, engineGrants, recordGrants, itemGrants, featSchema, featRecord, spellSchema, spellRecord, speciesDraft, speciesServe, bgDraft, bgServe)
+	schemas := compileSchemas(t, setSchema, itemSchema, recordSchema, servedSchema, engineGrants, recordGrants, itemGrants, featSchema, featRecord, spellSchema, spellRecord, speciesDraft, speciesServe, bgDraft, bgServe, itemEffects)
 	accept := func(name, label string, body []byte) {
 		t.Helper()
 		if err := validate(t, schemas[name], label, body); err != nil {
@@ -201,7 +202,9 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	}
 
 	var effects struct {
-		Grants struct {
+		Valid   []json.RawMessage `json:"valid"`
+		Invalid []json.RawMessage `json:"invalid"`
+		Grants  struct {
 			Valid []struct {
 				Name   string          `json:"name"`
 				Grants json.RawMessage `json:"grants"`
@@ -210,6 +213,14 @@ func TestStoredShapesMatchCollectionSchemas(t *testing.T) {
 	}
 	if body, err := os.ReadFile("../../tests/fixtures/effects.json"); err != nil || json.Unmarshal(body, &effects) != nil {
 		t.Fatalf("effects fixture: %v", err)
+	}
+	for _, effect := range effects.Valid {
+		accept(itemEffects, string(effect), []byte("["+string(effect)+"]"))
+	}
+	for _, effect := range effects.Invalid {
+		if validate(t, schemas[itemEffects], string(effect), []byte("["+string(effect)+"]")) == nil {
+			t.Errorf("the effects schema accepts %s", effect)
+		}
 	}
 	for _, testCase := range effects.Grants.Valid {
 		accept(recordGrants, testCase.Name, testCase.Grants)

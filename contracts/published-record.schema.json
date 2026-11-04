@@ -25,7 +25,7 @@
         "tags": { "type": "array", "maxItems": 42, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 64 } },
         "text": { "type": "string", "maxLength": 61000 },
         "characterMechanics": { "$ref": "homebrew-common.schema.json#/$defs/mechanics" },
-        "characterEffects": { "$ref": "homebrew-common.schema.json#/$defs/effects" },
+        "characterEffects": { "$ref": "homebrew-effects.schema.json#/$defs/effects" },
         "bodyPlacements": { "allOf": [{ "$ref": "homebrew-common.schema.json#/$defs/bodyPlacements" }, { "minItems": 1 }] },
         "grants": { "$ref": "homebrew-common.schema.json#/$defs/recordGrants" },
         "weightLb": { "$ref": "homebrew-common.schema.json#/$defs/weightLb" },

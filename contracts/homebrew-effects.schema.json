@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "An item's effects: the common effects plus spell attack and save DC. Kept out of homebrew-common so collections without effects keep their schema.",
+  "$defs": {
+    "spellEffect": {
+      "type": "object", "additionalProperties": false, "required": ["target", "mode", "value"],
+      "properties": {
+        "target": { "enum": ["spellAttack", "spellSaveDC"] },
+        "key": { "$comment": "One class's spells; absent for every class.", "$ref": "homebrew-common.schema.json#/$defs/id" },
+        "mode": { "$ref": "homebrew-common.schema.json#/$defs/mode" },
+        "value": { "$ref": "homebrew-common.schema.json#/$defs/value" }
+      }
+    },
+    "effects": {
+      "type": "array", "maxItems": 40,
+      "items": { "anyOf": [{ "$ref": "homebrew-common.schema.json#/$defs/effect" }, { "$ref": "#/$defs/spellEffect" }] }
+    }
+  }
+}

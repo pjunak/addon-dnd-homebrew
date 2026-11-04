@@ -443,6 +443,10 @@ func ValidateEffect(effect Effect) error {
 		if !validEffectKey(effect.Key) {
 			return fmt.Errorf("%s needs a key such as darkvision", effect.Target)
 		}
+	case "spellAttack", "spellSaveDC":
+		if effect.Key != "" && !ValidID(effect.Key) {
+			return fmt.Errorf("%s needs a class id such as wizard, or no key for every class", effect.Target)
+		}
 	default:
 		return fmt.Errorf("target %q is not supported", effect.Target)
 	}
