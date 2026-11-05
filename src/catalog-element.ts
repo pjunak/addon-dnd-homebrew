@@ -745,6 +745,8 @@ export function defineCatalogElement(generation?: string): string {
       )
         return;
       this.#selection = selection;
+      // A list unfolded with "All records" folds again once a record is picked.
+      this.classList.remove("hb-browsing");
       this.#setDirty(false);
       this.#editorMessage = undefined;
       // A report of the last action ends when the DM moves on; problems stay.
