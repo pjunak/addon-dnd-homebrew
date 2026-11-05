@@ -1,6 +1,6 @@
 import { attunementFields, containerFields, readCarrying } from "./carrying.js";
 import { problemText, type Translator } from "./catalogs.js";
-import { describeEffect, effectsEditor } from "./effects.js";
+import { describeEffects, effectsEditor } from "./effects.js";
 import {
   checkField,
   chipsField,
@@ -390,8 +390,8 @@ export function itemEditor(
       gearFields(document, t, initial, references),
       effectGroup,
       grants.root,
-      passive,
       adders,
+      passive,
     ),
     carrying,
   );
@@ -421,7 +421,7 @@ export function itemEditor(
     if (failure) preview.append(messageBlock(document, problemText(t, failure), "alert"));
     const lines = [
       ...describeGear(published.record.baseItem, t, references),
-      ...published.record.characterEffects.map((effect) => describeEffect(effect, t)),
+      ...describeEffects(published.record.characterEffects, t),
       ...describeGrants(published.record.grants, t),
     ];
     if (lines.length > 0) {

@@ -181,6 +181,8 @@ export const cs: Readonly<Record<string, string>> = {
   "Spell attack bonus": "Bonus k útoku kouzlem",
   "{class} spell attack bonus": "Bonus k útoku kouzlem ({class})",
   "{class} spell save DC": "SO záchranného hodu proti kouzlům ({class})",
+  "Spell attack bonus and save DC": "Bonus k útoku kouzlem a SO kouzel",
+  "{class} spell attack bonus and save DC": "Bonus k útoku kouzlem a SO kouzel ({class})",
   "Every class": "Všechna povolání",
   "A class id such as wizard; empty for every class.":
     "Id povolání, například wizard; prázdné pro všechna povolání.",

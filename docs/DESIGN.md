@@ -97,6 +97,13 @@ choice reveals. Descriptions use the host's writer (`markdownField`, the
 start chooser first; a wizard was considered and left out, because editing
 an item later would mean stepping through it again.
 
+The item editor's effect rows follow the Engine's vocabulary, with one
+editor-only pairing: a spell attack bonus and a spell save DC bonus with the
+same class, mode `add` and value show — and are added — as one **Spell attack
+bonus and save DC** row, because a focus-style item nearly always raises both
+together. Stored and published records keep the two separate effects, so the
+import format and the Engine see nothing new.
+
 ## Visibility
 
 Character sheets evaluate with the viewer's authority, so `homebrew_published`,

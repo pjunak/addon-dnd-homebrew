@@ -13,6 +13,7 @@ import {
   type ItemSet,
 } from "#web/model";
 import { translator } from "#web/catalogs";
+import { describeEffects } from "#web/effects";
 import { describeGrants } from "#web/grants";
 import { fromTemplate, itemTemplates } from "#web/templates";
 
@@ -73,6 +74,32 @@ void test("automation follows effects, grants and a bonus", () => {
   assert.equal(
     mechanicsOf([{ target: "armorClass", mode: "add", value: 1 }], undefined, undefined),
     "complete",
+  );
+});
+
+void test("a matching spell attack and save DC pair reads as one line", () => {
+  assert.deepEqual(
+    describeEffects(
+      [
+        { target: "spellAttack", mode: "add", value: 1 },
+        { target: "spellSaveDC", mode: "add", value: 1 },
+        { target: "armorClass", mode: "add", value: 1 },
+      ],
+      translator("en"),
+    ),
+    ["Spell attack bonus and save DC +1", "Armor Class +1"],
+  );
+  // A class pairs only with the same class, a value only with the same value.
+  assert.deepEqual(
+    describeEffects(
+      [
+        { target: "spellSaveDC", key: "warlock", mode: "add", value: 2 },
+        { target: "spellAttack", key: "warlock", mode: "add", value: 2 },
+        { target: "spellAttack", mode: "add", value: 1 },
+      ],
+      translator("en"),
+    ),
+    ["Warlock spell attack bonus and save DC +2", "Spell attack bonus +1"],
   );
 });
 
