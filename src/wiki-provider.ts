@@ -27,6 +27,8 @@ interface Match {
   readonly index: number;
   readonly label: string;
   readonly description: string;
+  /** Search only: the exact reference, so a writer links other words to this item. */
+  readonly hint?: string;
   readonly target: {
     readonly route: string;
     readonly query: readonly (readonly [string, string])[];
@@ -76,6 +78,7 @@ export async function provideReferences(
           index,
           label: record.record.name,
           description: [record.setName, record.record.rarity].filter(Boolean).join(" · "),
+          hint: `magic-item:${record.id}`,
           target: target(record),
         })),
     };

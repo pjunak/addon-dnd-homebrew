@@ -29,6 +29,7 @@ type Response = {
     index: number;
     label: string;
     description: string;
+    hint?: string;
     target: { route: string; query: string[][] };
   }[];
 };
@@ -80,8 +81,8 @@ void test("labels and search see only revealed items", async () => {
     signal,
   )) as Response;
   assert.deepEqual(
-    search.matches.map((match) => [match.label, match.description]),
-    [["Cursed Card: Defense", "Cursed Cards · Rare"]],
+    search.matches.map((match) => [match.label, match.description, match.hint]),
+    [["Cursed Card: Defense", "Cursed Cards · Rare", "magic-item:hb.defense"]],
   );
 });
 
