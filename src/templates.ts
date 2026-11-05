@@ -2,7 +2,16 @@ import type { Translator } from "./catalogs.js";
 import { mechanicsOf, moveOverrides, type Item, type ItemSet } from "./model.js";
 
 type TemplateFields = Partial<
-  Pick<Item, "text" | "overrides" | "characterEffects" | "grants" | "baseItem" | "container">
+  Pick<
+    Item,
+    | "text"
+    | "overrides"
+    | "characterEffects"
+    | "grants"
+    | "baseItem"
+    | "container"
+    | "spellcastingFocus"
+  >
 >;
 /** A common kind of magic item a new draft can start from; its words are English. */
 export interface ItemTemplate {
@@ -49,10 +58,7 @@ export const itemTemplates: readonly ItemTemplate[] = [
     hint: "+1 to spell attack rolls and spell save DCs while attuned.",
     item: {
       overrides: { itemType: "Wand", rarity: "Uncommon", attunement: true },
-      characterEffects: [
-        { target: "spellAttack", mode: "add", value: 1 },
-        { target: "spellSaveDC", mode: "add", value: 1 },
-      ],
+      spellcastingFocus: { appliesTo: ["spellAttack", "spellSaveDC"], bonus: 1 },
       text: "While holding this wand, you have a +1 bonus to spell attack rolls and to the saving throw DCs of your spells.",
     },
   },
@@ -142,6 +148,7 @@ export function fromTemplate(
     grants: _grants,
     baseItem: _baseItem,
     container: _container,
+    spellcastingFocus: _focus,
     attunementPrerequisites: _requirement,
     ...rest
   } = draft;
@@ -153,9 +160,15 @@ export function fromTemplate(
     text: draft.text.trim() !== "" ? draft.text : fields.text ? t(fields.text) : "",
     overrides: moveOverrides(fields.overrides ?? {}, undefined, itemSet),
     characterEffects: copy(effects),
-    characterMechanics: mechanicsOf(effects, fields.grants, fields.baseItem),
+    characterMechanics: mechanicsOf(
+      effects,
+      fields.grants,
+      fields.baseItem,
+      fields.spellcastingFocus,
+    ),
     ...(fields.grants ? { grants: copy(fields.grants) } : {}),
     ...(fields.baseItem ? { baseItem: copy(fields.baseItem) } : {}),
     ...(fields.container ? { container: { ...fields.container } } : {}),
+    ...(fields.spellcastingFocus ? { spellcastingFocus: copy(fields.spellcastingFocus) } : {}),
   };
 }

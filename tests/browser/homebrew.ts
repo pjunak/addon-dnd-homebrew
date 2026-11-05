@@ -231,6 +231,7 @@ const catalog = mount(catalogTag),
   speciesCatalog = mount(catalogTag),
   backgroundCatalog = mount(catalogTag),
   edgeCatalog = mount(catalogTag),
+  staffCatalog = mount(catalogTag),
   newCatalog = mount(catalogTag),
   gallery = mount(galleryTag),
   linked = mount(galleryTag, [["id", "hb.ring-of-wit"]]);
@@ -286,6 +287,21 @@ for (
 for (
   let attempt = 0;
   attempt < 60 && edgeCatalog.querySelector(".hb-preview-name")?.textContent !== "Edge";
+  attempt++
+)
+  await frame();
+for (
+  let attempt = 0;
+  attempt < 60 && staffCatalog.querySelectorAll(".hb-tree-item").length < 6;
+  attempt++
+)
+  await frame();
+[...staffCatalog.querySelectorAll<HTMLButtonElement>(".hb-tree-item")]
+  .find((button) => button.textContent?.startsWith("Grove Staff"))
+  ?.click();
+for (
+  let attempt = 0;
+  attempt < 60 && staffCatalog.querySelector(".hb-preview-name")?.textContent !== "Grove Staff";
   attempt++
 )
   await frame();
@@ -497,6 +513,26 @@ const backgroundsBack = backgrounds.map((value) => {
 const lines = (root: Element, selector: string): string[] =>
   [...root.querySelectorAll(`${selector} li`)].map((node) => node.textContent ?? "");
 const fateTouched = "Condition Fate-Touched: one level for each item in effect that gives it";
+
+/** What the staff now is, whether its focus shows its own bonus, and the focus preview line. */
+const focusState = (): [string, boolean, string | undefined] => [
+  [...staffCatalog.querySelectorAll<HTMLInputElement>('input[name="baseKind"]:checked')]
+    .map((input) => input.value)
+    .join(", "),
+  staffCatalog.querySelector('[name="focusBonus"]')?.closest("[hidden]") === null,
+  lines(staffCatalog, ".hb-preview .hb-effect-summary").find((line) =>
+    line.startsWith("Spellcasting focus"),
+  ),
+];
+const kindChoice = (value: string): HTMLInputElement =>
+  staffCatalog.querySelector<HTMLInputElement>(`input[name="baseKind"][value="${value}"]`)!;
+// The weapon or armor choice: picking the picked one clears it, picking the other moves it.
+const staffStates = [focusState()];
+kindChoice("weapon").click();
+staffStates.push(focusState());
+kindChoice("armor").click();
+kindChoice("weapon").click();
+staffStates.push(focusState());
 const ringLines = [
   "Advantage on Intelligence checks (to recall lore)",
   "Ring of Wit: 1 use per Long Rest",
@@ -516,60 +552,38 @@ globalThis.runRenderingContract = () => {
   const columns = getComputedStyle(layout).gridTemplateColumns.split(" ").length;
   check("catalog places the item tree beside the editor", columns === 2, columns, 2);
   const names = [...catalog.querySelectorAll(".hb-tree-name")].map((node) => node.textContent);
+  const expectedNames = [
+    "Cursed Cards",
+    "Defense",
+    "Omens",
+    "Destiny",
+    "Edge",
+    "Grove Staff",
+    "Lantern",
+    "Ring of Wit",
+    "Trinket",
+    "War Wand",
+    "Path of the Storm Drum",
+    "Rune Scribe",
+    "Elemental Scholar",
+    "Lantern Bearer",
+    "Storm Archer",
+    "Storm Touched",
+    "Ember Lance",
+    "Hearth Ward",
+    "Storm Ward",
+    "Whispered Map",
+    "Emberkin",
+    "Stoneborn",
+    "Hedge Scholar",
+    "Lamplighter",
+    "Wanderer",
+  ];
   check(
     "tree lists sets and their items by name",
-    JSON.stringify(names) ===
-      JSON.stringify([
-        "Cursed Cards",
-        "Defense",
-        "Omens",
-        "Destiny",
-        "Edge",
-        "Lantern",
-        "Ring of Wit",
-        "Trinket",
-        "Path of the Storm Drum",
-        "Rune Scribe",
-        "Elemental Scholar",
-        "Lantern Bearer",
-        "Storm Archer",
-        "Storm Touched",
-        "Ember Lance",
-        "Hearth Ward",
-        "Storm Ward",
-        "Whispered Map",
-        "Emberkin",
-        "Stoneborn",
-        "Hedge Scholar",
-        "Lamplighter",
-        "Wanderer",
-      ]),
+    JSON.stringify(names) === JSON.stringify(expectedNames),
     names,
-    [
-      "Cursed Cards",
-      "Defense",
-      "Omens",
-      "Destiny",
-      "Edge",
-      "Lantern",
-      "Ring of Wit",
-      "Trinket",
-      "Path of the Storm Drum",
-      "Rune Scribe",
-      "Elemental Scholar",
-      "Lantern Bearer",
-      "Storm Archer",
-      "Storm Touched",
-      "Ember Lance",
-      "Hearth Ward",
-      "Storm Ward",
-      "Whispered Map",
-      "Emberkin",
-      "Stoneborn",
-      "Hedge Scholar",
-      "Lamplighter",
-      "Wanderer",
-    ],
+    expectedNames,
   );
   const trinket = [...catalog.querySelectorAll(".hb-tree-item")].find((node) =>
     node.textContent?.startsWith("Trinket"),
@@ -583,9 +597,9 @@ globalThis.runRenderingContract = () => {
   const status = catalog.querySelector(".hb-status")?.textContent ?? "";
   check(
     "status counts pending changes",
-    status.includes("Unpublished changes: 12."),
+    status.includes("Unpublished changes: 14."),
     status,
-    "…Unpublished changes: 12.",
+    "…Unpublished changes: 14.",
   );
   const preview = catalog.querySelector(".hb-preview-name")?.textContent;
   check(
@@ -666,6 +680,23 @@ globalThis.runRenderingContract = () => {
     JSON.stringify(gear) === JSON.stringify(expectedGear),
     gear,
     expectedGear,
+  );
+  const focusShared =
+    "Spellcasting focus for Druid, Ranger spells: the same bonus to spell attack rolls and spell save DCs";
+  const expectedStaff = [
+    ["weapon", false, focusShared],
+    [
+      "",
+      true,
+      "Spellcasting focus for Druid, Ranger spells: +2 to spell attack rolls and spell save DCs",
+    ],
+    ["weapon", false, focusShared],
+  ];
+  check(
+    "a weapon focus shares the weapon's bonus, and clearing the weapon gives the focus its own",
+    JSON.stringify(staffStates) === JSON.stringify(expectedStaff),
+    staffStates,
+    expectedStaff,
   );
   const gearLine = lines(edgeCatalog, ".hb-effect-summary")[0];
   check(

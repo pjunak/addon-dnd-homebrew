@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$comment": "An item's effects: the common effects plus spell attack and save DC. Kept out of homebrew-common so collections without effects keep their schema.",
+  "$comment": "An item's effects (the common effects plus spell attack and save DC) and its spellcasting focus. Kept out of homebrew-common so collections without them keep their schema.",
   "$defs": {
     "spellEffect": {
       "type": "object", "additionalProperties": false, "required": ["target", "mode", "value"],
@@ -14,6 +14,28 @@
     "effects": {
       "type": "array", "maxItems": 40,
       "items": { "anyOf": [{ "$ref": "homebrew-common.schema.json#/$defs/effect" }, { "$ref": "#/$defs/spellEffect" }] }
+    },
+    "spellcastingFocus": {
+      "$comment": "The item's magic bonus also raises spell attack rolls, spell save DCs or both, for these classes or every class. Its own bonus only when the item has no baseItem; see focusRules.",
+      "type": "object", "additionalProperties": false, "required": ["appliesTo"],
+      "properties": {
+        "appliesTo": { "type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true, "items": { "enum": ["spellAttack", "spellSaveDC"] } },
+        "classes": { "$ref": "homebrew-common.schema.json#/$defs/idList" },
+        "bonus": { "oneOf": [{ "$ref": "homebrew-common.schema.json#/$defs/bonus" }, { "type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true, "items": { "$ref": "homebrew-common.schema.json#/$defs/bonus" } }] }
+      }
+    },
+    "focusRules": {
+      "$comment": "A focus's bonus comes from exactly one place: a weapon or armor focus uses its baseItem's bonus, any other focus has its own.",
+      "allOf": [
+        {
+          "if": { "required": ["spellcastingFocus", "baseItem"] },
+          "then": { "properties": { "baseItem": { "required": ["bonus"] }, "spellcastingFocus": { "not": { "required": ["bonus"] } } } }
+        },
+        {
+          "if": { "required": ["spellcastingFocus"], "not": { "required": ["baseItem"] } },
+          "then": { "properties": { "spellcastingFocus": { "required": ["bonus"] } } }
+        }
+      ]
     }
   }
 }

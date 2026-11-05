@@ -12,6 +12,7 @@ import {
   grantsProblem,
   HomebrewError,
   itemProblem,
+  mechanicsOf,
   mechanicsProblem,
   parseSet,
   parseItem,
@@ -20,12 +21,14 @@ import {
   planPublish,
   requirementProblem,
   slug,
+  spellcastingFocusProblem,
   weightProblem,
   type BaseItem,
   type Effect,
   type Item,
   type ItemSet,
   type Published,
+  type SpellcastingFocus,
   type Stored,
 } from "#web/model";
 
@@ -44,6 +47,11 @@ interface EffectFixture {
     requirements: { valid: unknown[]; invalid: unknown[] };
   };
   baseItems: { valid: unknown[]; invalid: unknown[] };
+  spellcastingFoci: { valid: FocusCase[]; invalid: FocusCase[] };
+}
+interface FocusCase {
+  focus: unknown;
+  baseItem?: unknown;
 }
 interface GrantsCase {
   name: string;
@@ -102,6 +110,18 @@ void test("weapon and armor bases follow the shared fixture", async () => {
   assert.ok(mechanicsProblem("narrative", [], undefined, bonus));
   assert.equal(mechanicsProblem("complete", [], undefined, bonus), undefined);
   assert.equal(mechanicsProblem("narrative", [], undefined, { kind: "weapon" }), undefined);
+});
+
+void test("spellcasting foci follow the shared fixture, with their base", async () => {
+  const { spellcastingFoci } = await fixture<EffectFixture>("effects.json");
+  for (const { focus, baseItem } of spellcastingFoci.valid)
+    assert.equal(spellcastingFocusProblem(focus, baseItem), undefined, JSON.stringify(focus));
+  for (const { focus, baseItem } of spellcastingFoci.invalid)
+    assert.ok(spellcastingFocusProblem(focus, baseItem), JSON.stringify({ focus, baseItem }));
+  const focus: SpellcastingFocus = { appliesTo: ["spellAttack"], bonus: 1 };
+  assert.ok(mechanicsProblem("narrative", [], undefined, undefined, focus));
+  assert.equal(mechanicsProblem("complete", [], undefined, undefined, focus), undefined);
+  assert.equal(mechanicsOf([], undefined, undefined, focus), "complete");
 });
 
 void test("a requirement reads after 'by' and needs an item that requires attunement", () => {
@@ -284,8 +304,8 @@ void test("publishing writes only changes and always moves the metadata revision
   const items = publish.cases.map((testCase) => testCase.item);
   const first = planPublish(sets, items, new Map(), undefined, 50);
   assert.deepEqual(first.problems, []);
-  assert.equal(first.recordCount, 6);
-  assert.equal(first.mutations.length, 7);
+  assert.equal(first.recordCount, items.length);
+  assert.equal(first.mutations.length, items.length + 1, "a record each, then the metadata");
   const meta = first.mutations.at(-1)!;
   assert.equal(meta.dataId, "homebrew_meta");
   assert.equal(meta.expectedRevision, 0);
@@ -293,7 +313,7 @@ void test("publishing writes only changes and always moves the metadata revision
     schemaVersion: 1,
     revision: 1,
     publishedAt: 50,
-    recordCount: 6,
+    recordCount: items.length,
   });
 
   const stored = new Map<string, Stored<Published>>(
@@ -303,7 +323,7 @@ void test("publishing writes only changes and always moves the metadata revision
     ]),
   );
   const metaStored = {
-    value: { schemaVersion: 1 as const, revision: 1, publishedAt: 50, recordCount: 6 },
+    value: { schemaVersion: 1 as const, revision: 1, publishedAt: 50, recordCount: items.length },
     revision: 7,
   };
   assert.equal(
@@ -350,9 +370,10 @@ void test("an export imports back unchanged", async () => {
   const items = publish.cases.map((testCase) => testCase.item);
   const document = JSON.parse(JSON.stringify(exportDocument(publish.sets, items, 9))) as unknown;
   const fresh = planImport(document, new Map(), new Map(), 10);
-  assert.deepEqual(fresh.summary, { creates: 8, updates: 0, skips: 0, deletes: 0 });
+  const drafts = publish.sets.length + items.length;
+  assert.deepEqual(fresh.summary, { creates: drafts, updates: 0, skips: 0, deletes: 0 });
   const stored = <T extends { id: string }>(values: readonly T[]) =>
     new Map(values.map((value) => [value.id, { value: value as unknown, revision: 1 }]));
   const again = planImport(document, stored(publish.sets), stored(items), 10);
-  assert.deepEqual(again.summary, { creates: 0, updates: 0, skips: 8, deletes: 0 });
+  assert.deepEqual(again.summary, { creates: 0, updates: 0, skips: drafts, deletes: 0 });
 });

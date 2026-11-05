@@ -95,31 +95,33 @@ type Item struct {
 	Grants map[string]any `json:"grants,omitempty"`
 	// AttunementPrerequisites is absent (nil) or who may attune; see
 	// ValidateRequirement.
-	AttunementPrerequisites map[string]any `json:"attunementPrerequisites,omitempty"`
-	Container               *Container     `json:"container,omitempty"`
-	BaseItem                *BaseItem      `json:"baseItem,omitempty"`
+	AttunementPrerequisites map[string]any     `json:"attunementPrerequisites,omitempty"`
+	Container               *Container         `json:"container,omitempty"`
+	BaseItem                *BaseItem          `json:"baseItem,omitempty"`
+	SpellcastingFocus       *SpellcastingFocus `json:"spellcastingFocus,omitempty"`
 }
 
 // Record is the magic-item record served as dnd5e.rules-data.
 type Record struct {
-	Kind                    string         `json:"kind"`
-	ID                      string         `json:"id"`
-	Name                    string         `json:"name"`
-	Edition                 string         `json:"edition"`
-	Book                    string         `json:"book"`
-	ItemType                string         `json:"itemType"`
-	Rarity                  string         `json:"rarity"`
-	Attunement              bool           `json:"attunement"`
-	Tags                    []string       `json:"tags"`
-	Text                    string         `json:"text"`
-	CharacterMechanics      string         `json:"characterMechanics"`
-	CharacterEffects        []Effect       `json:"characterEffects"`
-	BodyPlacements          []string       `json:"bodyPlacements,omitempty"`
-	Grants                  map[string]any `json:"grants,omitempty"`
-	WeightLb                *float64       `json:"weightLb,omitempty"`
-	AttunementPrerequisites map[string]any `json:"attunementPrerequisites,omitempty"`
-	Container               *Container     `json:"container,omitempty"`
-	BaseItem                *BaseItem      `json:"baseItem,omitempty"`
+	Kind                    string             `json:"kind"`
+	ID                      string             `json:"id"`
+	Name                    string             `json:"name"`
+	Edition                 string             `json:"edition"`
+	Book                    string             `json:"book"`
+	ItemType                string             `json:"itemType"`
+	Rarity                  string             `json:"rarity"`
+	Attunement              bool               `json:"attunement"`
+	Tags                    []string           `json:"tags"`
+	Text                    string             `json:"text"`
+	CharacterMechanics      string             `json:"characterMechanics"`
+	CharacterEffects        []Effect           `json:"characterEffects"`
+	BodyPlacements          []string           `json:"bodyPlacements,omitempty"`
+	Grants                  map[string]any     `json:"grants,omitempty"`
+	WeightLb                *float64           `json:"weightLb,omitempty"`
+	AttunementPrerequisites map[string]any     `json:"attunementPrerequisites,omitempty"`
+	Container               *Container         `json:"container,omitempty"`
+	BaseItem                *BaseItem          `json:"baseItem,omitempty"`
+	SpellcastingFocus       *SpellcastingFocus `json:"spellcastingFocus,omitempty"`
 }
 
 // Published is one served record. A removed item is withdrawn rather than
@@ -287,7 +289,12 @@ func ValidateItem(item Item) error {
 			return fmt.Errorf("item %s: %w", item.ID, err)
 		}
 	}
-	if err := ValidateMechanics(item.CharacterMechanics, item.CharacterEffects, item.Grants, item.BaseItem); err != nil {
+	if item.SpellcastingFocus != nil {
+		if err := ValidateSpellcastingFocus(*item.SpellcastingFocus, item.BaseItem); err != nil {
+			return fmt.Errorf("item %s: %w", item.ID, err)
+		}
+	}
+	if err := ValidateMechanics(item.CharacterMechanics, item.CharacterEffects, item.Grants, item.BaseItem, item.SpellcastingFocus); err != nil {
 		return fmt.Errorf("item %s: %w", item.ID, err)
 	}
 	return nil
@@ -342,18 +349,23 @@ func ValidatePublished(published Published) error {
 			return fmt.Errorf("published record %s: %w", published.ID, err)
 		}
 	}
-	if err := ValidateMechanics(record.CharacterMechanics, record.CharacterEffects, record.Grants, record.BaseItem); err != nil {
+	if record.SpellcastingFocus != nil {
+		if err := ValidateSpellcastingFocus(*record.SpellcastingFocus, record.BaseItem); err != nil {
+			return fmt.Errorf("published record %s: %w", published.ID, err)
+		}
+	}
+	if err := ValidateMechanics(record.CharacterMechanics, record.CharacterEffects, record.Grants, record.BaseItem, record.SpellcastingFocus); err != nil {
 		return fmt.Errorf("published record %s: %w", published.ID, err)
 	}
 	return nil
 }
 
 // ValidateMechanics mirrors the Engine's item gate: "complete" needs at least
-// one supported effect, allowlisted grants or a weapon or armor bonus;
-// "narrative" declares none of them, though it may name its base. A nil
-// grants map or base means the field is absent.
-func ValidateMechanics(mechanics string, effects []Effect, grants map[string]any, base *BaseItem) error {
-	bonus := base != nil && base.Bonus != nil
+// one supported effect, allowlisted grants, a weapon or armor bonus or a
+// spellcasting focus; "narrative" declares none of them, though it may name
+// its base. A nil grants map, base or focus means the field is absent.
+func ValidateMechanics(mechanics string, effects []Effect, grants map[string]any, base *BaseItem, focus *SpellcastingFocus) error {
+	bonus := base != nil && base.Bonus != nil || focus != nil
 	switch mechanics {
 	case "narrative":
 		if len(effects) > 0 || grants != nil || bonus {

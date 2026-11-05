@@ -213,11 +213,12 @@ func TestEmptyBeforeFirstPublish(t *testing.T) {
 
 func TestServesPublishedRecordsLikeTheEngineExpects(t *testing.T) {
 	data := newFakeData()
-	publish(t, data, fixtureRecords(t))
+	records := fixtureRecords(t)
+	publish(t, data, records)
 	handler, _ := New(data, nil)
 	set := catalogSet(t, handler)
 	assertEngineCatalog(t, set)
-	if set["kinds"].(map[string]any)["magic-item"].(float64) != 6 {
+	if set["kinds"].(map[string]any)["magic-item"].(float64) != float64(len(records)) {
 		t.Fatalf("kinds %v", set["kinds"])
 	}
 	revision := set["revision"].(string)
@@ -250,7 +251,7 @@ func TestServesPublishedRecordsLikeTheEngineExpects(t *testing.T) {
 		}
 		cursor = next
 	}
-	if strings.Join(seen, ",") != "hb.defense,hb.destiny,hb.edge,hb.lantern,hb.ring-of-wit,hb.trinket" {
+	if strings.Join(seen, ",") != "hb.defense,hb.destiny,hb.edge,hb.grove-staff,hb.lantern,hb.ring-of-wit,hb.trinket,hb.war-wand" {
 		t.Fatalf("records %v", seen)
 	}
 
@@ -312,7 +313,7 @@ func TestCachesUntilRepublished(t *testing.T) {
 
 	publish(t, data, records[2:])
 	second := catalogSet(t, handler)
-	if second["revision"] == first || second["recordCount"].(float64) != 6 {
+	if second["revision"] == first || second["recordCount"].(float64) != float64(len(records)) {
 		t.Fatalf("republish not observed: %v", second)
 	}
 	failure := callError(t, handler, "query", `{"setId":"rules","kind":"magic-item","limit":1,"cursor":"`+staleCursor+`"}`)
@@ -328,16 +329,18 @@ func TestRepublishDuringScanIsRetried(t *testing.T) {
 	data.onQuery = func(data *fakeData) {
 		data.mu.Lock()
 		defer data.mu.Unlock()
-		publishLocked(data, records[1:])
+		publishLocked(data, records[1:], len(records))
 	}
 	handler, _ := New(data, nil)
 	set := catalogSet(t, handler)
-	if set["recordCount"].(float64) != 6 {
+	if set["recordCount"].(float64) != float64(len(records)) {
 		t.Fatalf("a scan racing a publish must settle on the later publish: %v", set)
 	}
 }
 
-func publishLocked(data *fakeData, records []json.RawMessage) {
+// publishLocked republishes records over an earlier publish, which leaves
+// total records published.
+func publishLocked(data *fakeData, records []json.RawMessage, total int) {
 	for _, record := range records {
 		var identity struct {
 			ID string `json:"id"`
@@ -345,7 +348,7 @@ func publishLocked(data *fakeData, records []json.RawMessage) {
 		_ = json.Unmarshal(record, &identity)
 		data.put(homebrew.PublishedCollection, identity.ID, record)
 	}
-	data.put(homebrew.MetaCollection, homebrew.MetaKey, json.RawMessage(`{"schemaVersion":1,"revision":2,"publishedAt":2,"recordCount":6}`))
+	data.put(homebrew.MetaCollection, homebrew.MetaKey, json.RawMessage(`{"schemaVersion":1,"revision":2,"publishedAt":2,"recordCount":`+strconv.Itoa(total)+`}`))
 }
 
 func TestRejectsMalformedRequests(t *testing.T) {
@@ -377,7 +380,7 @@ func TestWithdrawnRecordsAreNotServed(t *testing.T) {
 	publish(t, data, append([]json.RawMessage{withdrawn}, records[1:]...))
 	var log bytes.Buffer
 	handler, _ := New(data, &log)
-	if count := catalogSet(t, handler)["recordCount"].(float64); count != 5 {
+	if count := catalogSet(t, handler)["recordCount"].(float64); count != float64(len(records)-1) {
 		t.Fatalf("served %v records", count)
 	}
 	if failure := callError(t, handler, "get", `{"setId":"rules","kind":"magic-item","id":"hb.defense"}`); failure.Data.Kind != workerrpc.KindNotFound {

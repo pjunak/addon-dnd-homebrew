@@ -204,5 +204,30 @@
       { "kind": "weapon", "bonus": null },
       { "kind": "weapon", "material": "silver" }
     ]
+  },
+  "spellcastingFoci": {
+    "valid": [
+      { "focus": { "appliesTo": ["spellAttack"], "bonus": [1, 2, 3] } },
+      { "focus": { "appliesTo": ["spellAttack", "spellSaveDC"], "classes": ["warlock"], "bonus": 2 } },
+      { "focus": { "appliesTo": ["spellSaveDC", "spellAttack"] }, "baseItem": { "kind": "weapon", "ids": ["quarterstaff"], "bonus": [1, 2] } },
+      { "focus": { "appliesTo": ["spellAttack"], "classes": ["cleric", "paladin"] }, "baseItem": { "kind": "armor", "armorTypes": ["shield"], "bonus": 1 } }
+    ],
+    "invalid": [
+      { "focus": {} },
+      { "focus": { "bonus": 1 } },
+      { "focus": { "appliesTo": [], "bonus": 1 } },
+      { "focus": { "appliesTo": ["spellAttack", "spellAttack"], "bonus": 1 } },
+      { "focus": { "appliesTo": ["attack"], "bonus": 1 } },
+      { "focus": { "appliesTo": "spellAttack", "bonus": 1 } },
+      { "focus": { "appliesTo": ["spellAttack"] } },
+      { "focus": { "appliesTo": ["spellAttack"], "bonus": 6 } },
+      { "focus": { "appliesTo": ["spellAttack"], "bonus": [1, 1] } },
+      { "focus": { "appliesTo": ["spellAttack"], "bonus": 1, "classes": [] } },
+      { "focus": { "appliesTo": ["spellAttack"], "bonus": 1, "classes": ["Warlock"] } },
+      { "focus": { "appliesTo": ["spellAttack"], "bonus": 1, "classes": ["warlock", "warlock"] } },
+      { "focus": { "appliesTo": ["spellAttack"], "bonus": 1, "material": "oak" } },
+      { "focus": { "appliesTo": ["spellAttack"], "bonus": 1 }, "baseItem": { "kind": "weapon", "ids": ["quarterstaff"], "bonus": 1 } },
+      { "focus": { "appliesTo": ["spellAttack"] }, "baseItem": { "kind": "weapon", "ids": ["quarterstaff"] } }
+    ]
   }
 }

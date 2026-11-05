@@ -91,8 +91,9 @@ disclosures there. The section bar links each `formSection` and each
 fieldset with a legend; it uses buttons, because the page address belongs to
 the host. Field looks follow `src/fields.ts`: a select or searchable list to
 pick from, a sunken text field to type into, `choiceField` buttons for two
-to five short choices, and `dependentGroup` ("↳ Because …") for fields a
-choice reveals. Descriptions use the host's writer (`markdownField`, the
+to five short choices (`optionalChoiceField` when none is also an answer:
+picking the picked one again clears it, as for weapon or armor), and
+`dependentGroup` ("↳ Because …") for fields a choice reveals. Descriptions use the host's writer (`markdownField`, the
 `ui.markdown-editor` capability) with its rules links. A new item opens the
 start chooser first; a wizard was considered and left out, because editing
 an item later would mean stepping through it again.
@@ -100,9 +101,11 @@ an item later would mean stepping through it again.
 The item editor's effect rows follow the Engine's vocabulary, with one
 editor-only pairing: a spell attack bonus and a spell save DC bonus with the
 same class, mode `add` and value show — and are added — as one **Spell attack
-bonus and save DC** row, because a focus-style item nearly always raises both
-together. Stored and published records keep the two separate effects, so the
-import format and the Engine see nothing new.
+bonus and save DC** row, because an item nearly always raises both together.
+Stored and published records keep the two separate effects. A +1, +2 or +3
+item whose spells follow the player's pick is a **Spellcasting focus**
+(`src/focus.ts`) instead, because effects hold fixed numbers; a weapon or
+armor focus shares the base item's bonus field rather than repeating it.
 
 ## Visibility
 
@@ -145,7 +148,9 @@ collections untouched.
   weapon or armor base (`baseItem`) follows the Engine's magic weapons and
   armor contract (`internal/rules/magic_gear.go`), with at most 20 ids and
   bonuses up to +5, and needs Engine 6.1.0. Spell attack and save DC effects
-  need Engine 6.2.0.
+  need Engine 6.2.0. A spellcasting focus (`spellcastingFocus`) follows the
+  Engine's `internal/rules/spellcasting_focus.go`, takes its bonus from
+  exactly one of its `baseItem` and itself, and needs Engine 6.3.0.
 - Subclass grants are checked for shape, not meaning: an unknown spell or class
   id, a toggle spending a use nobody declares, or a choice id another source
   also uses shows on the character, not in the editor. Some vocabulary fields

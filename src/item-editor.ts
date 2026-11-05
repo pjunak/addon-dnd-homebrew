@@ -20,8 +20,9 @@ import {
   splitTags,
   textField,
 } from "./fields.js";
+import { describeFocus, focusFields, readFocus } from "./focus.js";
 import { describeGrants, grantsEditor } from "./grants.js";
-import { describeGear, gearFields, readGear } from "./magic-gear.js";
+import { describeGear, gearFields, gearKind, readGear } from "./magic-gear.js";
 import {
   bodyPlacements,
   flatten,
@@ -114,6 +115,14 @@ export function itemEditor(
     () => formText(new FormData(form), "name").trim(),
     references,
   );
+  const focus = focusFields(
+    document,
+    t,
+    initial,
+    references,
+    () => gearKind(form),
+    () => context.restructured(),
+  );
   const who = attunementFields(document, t, initial, references);
   who.show(true);
   const whoGroup = dependentGroup(document, t("Because it requires attunement"), who.root);
@@ -126,7 +135,8 @@ export function itemEditor(
     const name = formText(data, "name").trim();
     const effectRows = effects.read(),
       granted = grants.read(),
-      gear = readGear(data);
+      gear = readGear(data),
+      focused = readFocus(data, gear.baseItem !== undefined);
     const overrides = readOverrides(data, currentSet);
     const attuned = overrides.attunement ?? currentSet?.attunement ?? noSetDefaults.attunement;
     // A requirement applies only while the item requires attunement.
@@ -139,7 +149,12 @@ export function itemEditor(
       text: formText(data, "text"),
       overrides,
       tags: splitTags(formText(data, "tags")),
-      characterMechanics: mechanicsOf(effectRows, granted, gear.baseItem),
+      characterMechanics: mechanicsOf(
+        effectRows,
+        granted,
+        gear.baseItem,
+        focused.spellcastingFocus,
+      ),
       characterEffects: effectRows,
       playerVisible: data.get("playerVisible") !== null,
       retired: data.get("retired") !== null,
@@ -148,6 +163,7 @@ export function itemEditor(
       ...(attuned && attunementPrerequisites ? { attunementPrerequisites } : {}),
       ...carrying,
       ...gear,
+      ...focused,
     };
   };
 
@@ -388,6 +404,7 @@ export function itemEditor(
       t("What it does"),
       doesNote,
       gearFields(document, t, initial, references),
+      focus.root,
       effectGroup,
       grants.root,
       adders,
@@ -409,6 +426,7 @@ export function itemEditor(
   preview.setAttribute("aria-live", "polite");
   form.append(preview);
   const update = (): void => {
+    focus.sync();
     const item = read();
     const published = flatten(currentSet, { ...item, name: item.name || t("New item") });
     const failure =
@@ -421,6 +439,7 @@ export function itemEditor(
     if (failure) preview.append(messageBlock(document, problemText(t, failure), "alert"));
     const lines = [
       ...describeGear(published.record.baseItem, t, references),
+      ...describeFocus(published.record.spellcastingFocus, t, references),
       ...describeEffects(published.record.characterEffects, t),
       ...describeGrants(published.record.grants, t),
     ];

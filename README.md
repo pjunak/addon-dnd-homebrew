@@ -140,6 +140,13 @@ Compendium, such as a longsword or a shield, with a bonus to attack and damage
 rolls or to Armor Class. Leave the base or the bonus open (any martial weapon,
 +1 to +3) and the player picks it on the sheet.
 
+With D&D Engine 6.3.0 or later, an item can be a **spellcasting focus**
+([format](docs/FORMAT.md#spellcasting-focus)): its magic bonus also raises
+spell attack rolls, spell save DCs or both, for every class or only some. A
+staff that is a weapon shares the weapon's bonus, so the player's one +1, +2
+or +3 pick raises its attacks and its spells together; a wand has a bonus of
+its own.
+
 Items can also have a **weight** (the sheet adds it to the character's load),
 **hold other items** (with a capacity, and weightless contents like a Bag of
 Holding) and say **who can attune**: a spellcaster, members of certain classes,
@@ -301,7 +308,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.11.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.12.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are

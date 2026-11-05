@@ -33,6 +33,16 @@
       "name": "a magic weapon carries its base and the bonuses to pick from",
       "item": { "id": "edge", "schemaVersion": 1, "setId": "", "name": "Edge", "text": "A keen blade.", "overrides": { "itemType": "Weapon (Any Martial)" }, "tags": [], "characterMechanics": "complete", "characterEffects": [], "playerVisible": false, "retired": false, "updatedAt": 5, "baseItem": { "kind": "weapon", "categories": ["martial"], "ranges": ["melee"], "bonus": [1, 2] } },
       "published": { "id": "hb.edge", "schemaVersion": 1, "itemId": "edge", "setId": "", "setName": "", "playerVisible": false, "retired": false, "withdrawn": false, "record": { "kind": "magic-item", "id": "hb.edge", "name": "Edge", "edition": "2024", "book": "homebrew", "itemType": "Weapon (Any Martial)", "rarity": "Common", "attunement": false, "tags": ["homebrew"], "text": "*Weapon (Any Martial), Common*\n\nA keen blade.", "characterMechanics": "complete", "characterEffects": [], "baseItem": { "kind": "weapon", "categories": ["martial"], "ranges": ["melee"], "bonus": [1, 2] } } }
+    },
+    {
+      "name": "a spellcasting focus that is no weapon carries its own bonuses",
+      "item": { "id": "war-wand", "schemaVersion": 1, "setId": "", "name": "War Wand", "text": "Sharpens spells.", "overrides": { "itemType": "Wand", "rarity": "Uncommon", "attunement": true }, "tags": [], "characterMechanics": "complete", "characterEffects": [], "playerVisible": false, "retired": false, "updatedAt": 6, "spellcastingFocus": { "appliesTo": ["spellAttack"], "bonus": [1, 2, 3] } },
+      "published": { "id": "hb.war-wand", "schemaVersion": 1, "itemId": "war-wand", "setId": "", "setName": "", "playerVisible": false, "retired": false, "withdrawn": false, "record": { "kind": "magic-item", "id": "hb.war-wand", "name": "War Wand", "edition": "2024", "book": "homebrew", "itemType": "Wand", "rarity": "Uncommon", "attunement": true, "tags": ["homebrew"], "text": "*Wand, Uncommon (Requires Attunement)*\n\nSharpens spells.", "characterMechanics": "complete", "characterEffects": [], "spellcastingFocus": { "appliesTo": ["spellAttack"], "bonus": [1, 2, 3] } } }
+    },
+    {
+      "name": "a weapon focus shares its weapon's bonus with its classes' spells",
+      "item": { "id": "grove-staff", "schemaVersion": 1, "setId": "", "name": "Grove Staff", "text": "Old oak.", "overrides": { "itemType": "Staff" }, "tags": [], "characterMechanics": "complete", "characterEffects": [], "playerVisible": false, "retired": false, "updatedAt": 7, "baseItem": { "kind": "weapon", "ids": ["quarterstaff"], "bonus": 2 }, "spellcastingFocus": { "appliesTo": ["spellAttack", "spellSaveDC"], "classes": ["druid", "ranger"] } },
+      "published": { "id": "hb.grove-staff", "schemaVersion": 1, "itemId": "grove-staff", "setId": "", "setName": "", "playerVisible": false, "retired": false, "withdrawn": false, "record": { "kind": "magic-item", "id": "hb.grove-staff", "name": "Grove Staff", "edition": "2024", "book": "homebrew", "itemType": "Staff", "rarity": "Common", "attunement": false, "tags": ["homebrew"], "text": "*Staff, Common*\n\nOld oak.", "characterMechanics": "complete", "characterEffects": [], "baseItem": { "kind": "weapon", "ids": ["quarterstaff"], "bonus": 2 }, "spellcastingFocus": { "appliesTo": ["spellAttack", "spellSaveDC"], "classes": ["druid", "ranger"] } } }
     }
   ]
 }

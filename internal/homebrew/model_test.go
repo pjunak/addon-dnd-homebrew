@@ -36,6 +36,10 @@ type effectFixture struct {
 		Valid   []json.RawMessage `json:"valid"`
 		Invalid []json.RawMessage `json:"invalid"`
 	} `json:"baseItems"`
+	SpellcastingFoci struct {
+		Valid   []focusCase `json:"valid"`
+		Invalid []focusCase `json:"invalid"`
+	} `json:"spellcastingFoci"`
 }
 
 type grantsCase struct {
@@ -69,12 +73,12 @@ func TestEffectsMatchSharedFixture(t *testing.T) {
 		}
 	}
 	for _, effects := range fixture.InvalidSets {
-		if ValidateMechanics("complete", effects, nil, nil) == nil {
+		if ValidateMechanics("complete", effects, nil, nil, nil) == nil {
 			t.Errorf("%+v was accepted", effects)
 		}
 	}
 	for _, effects := range fixture.ValidSets {
-		if err := ValidateMechanics("complete", effects, nil, nil); err != nil {
+		if err := ValidateMechanics("complete", effects, nil, nil, nil); err != nil {
 			t.Errorf("%+v: %v", effects, err)
 		}
 	}
@@ -149,14 +153,49 @@ func TestBaseItemsMatchSharedFixture(t *testing.T) {
 		}
 	}
 	bonus := &BaseItem{Kind: "weapon", IDs: []string{"longsword"}, Bonus: &Bonus{Values: []int{1}}}
-	if ValidateMechanics("narrative", nil, nil, bonus) == nil {
+	if ValidateMechanics("narrative", nil, nil, bonus, nil) == nil {
 		t.Error("a narrative item declared a bonus")
 	}
-	if err := ValidateMechanics("complete", nil, nil, bonus); err != nil {
+	if err := ValidateMechanics("complete", nil, nil, bonus, nil); err != nil {
 		t.Errorf("a bonus alone is not automation: %v", err)
 	}
-	if err := ValidateMechanics("narrative", nil, nil, &BaseItem{Kind: "weapon"}); err != nil {
+	if err := ValidateMechanics("narrative", nil, nil, &BaseItem{Kind: "weapon"}, nil); err != nil {
 		t.Errorf("a narrative item cannot name its base: %v", err)
+	}
+}
+
+// focusCase is a spellcastingFocus with the base item it is checked against.
+type focusCase struct {
+	Focus    json.RawMessage `json:"focus"`
+	BaseItem *BaseItem       `json:"baseItem"`
+}
+
+func TestSpellcastingFociMatchSharedFixture(t *testing.T) {
+	fixture := loadEffectFixture(t).SpellcastingFoci
+	// A focus is decoded exactly, as a draft or record holds it.
+	check := func(testCase focusCase) error {
+		var focus SpellcastingFocus
+		if err := decodeExact(testCase.Focus, &focus, []string{"appliesTo"}); err != nil {
+			return err
+		}
+		return ValidateSpellcastingFocus(focus, testCase.BaseItem)
+	}
+	for _, testCase := range fixture.Valid {
+		if err := check(testCase); err != nil {
+			t.Errorf("%s: %v", testCase.Focus, err)
+		}
+	}
+	for _, testCase := range fixture.Invalid {
+		if check(testCase) == nil {
+			t.Errorf("%s with base %+v was accepted", testCase.Focus, testCase.BaseItem)
+		}
+	}
+	focus := &SpellcastingFocus{AppliesTo: []string{"spellAttack"}, Bonus: &Bonus{Values: []int{1}}}
+	if ValidateMechanics("narrative", nil, nil, nil, focus) == nil {
+		t.Error("a narrative item was a spellcasting focus")
+	}
+	if err := ValidateMechanics("complete", nil, nil, nil, focus); err != nil {
+		t.Errorf("a focus alone is not automation: %v", err)
 	}
 }
 
@@ -190,25 +229,25 @@ func TestGrantsMatchSharedFixture(t *testing.T) {
 func TestMechanicsAgreeWithEngineGate(t *testing.T) {
 	effect := []Effect{{Target: "armorClass", Mode: "add", Value: 1}}
 	grants := map[string]any{"advantages": []any{map[string]any{"on": "deathSave"}}}
-	if ValidateMechanics("narrative", effect, nil, nil) == nil {
+	if ValidateMechanics("narrative", effect, nil, nil, nil) == nil {
 		t.Fatal("a narrative item with effects is an Engine blocker")
 	}
-	if ValidateMechanics("narrative", nil, grants, nil) == nil {
+	if ValidateMechanics("narrative", nil, grants, nil, nil) == nil {
 		t.Fatal("a narrative item with grants is an Engine blocker")
 	}
-	if ValidateMechanics("complete", nil, nil, nil) == nil {
+	if ValidateMechanics("complete", nil, nil, nil, nil) == nil {
 		t.Fatal("a complete item without effects or grants is meaningless")
 	}
-	if err := ValidateMechanics("complete", nil, grants, nil); err != nil {
+	if err := ValidateMechanics("complete", nil, grants, nil, nil); err != nil {
 		t.Fatalf("grants alone make an item complete: %v", err)
 	}
-	if ValidateMechanics("complete", effect, map[string]any{}, nil) == nil {
+	if ValidateMechanics("complete", effect, map[string]any{}, nil, nil) == nil {
 		t.Fatal("empty grants were accepted")
 	}
-	if ValidateMechanics("partial", nil, nil, nil) == nil {
+	if ValidateMechanics("partial", nil, nil, nil, nil) == nil {
 		t.Fatal("unknown mechanics were accepted")
 	}
-	if err := ValidateMechanics("narrative", []Effect{}, nil, nil); err != nil {
+	if err := ValidateMechanics("narrative", []Effect{}, nil, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 }

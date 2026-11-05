@@ -314,9 +314,43 @@ export function choiceField(
   if (hint) wrapper.append(help(document, hint));
   return wrapper;
 }
-/** The value of a choice field's checked radio. */
+/**
+ * Choices of which at most one is picked: picking another moves the pick, and
+ * picking the picked one again clears it. Checkboxes, because a radio cannot
+ * be cleared; `choiceValue` reads the pick, "" for none.
+ */
+export function optionalChoiceField(
+  document: Document,
+  label: string,
+  name: string,
+  selected: string,
+  options: readonly (readonly [string, string, string?])[],
+  hint?: string,
+): HTMLFieldSetElement {
+  const wrapper = choiceField(document, label, name, selected ? [selected] : [], options, hint);
+  // Registered before any owner's listener, so owners read the single pick.
+  wrapper.addEventListener("change", (event) => {
+    const picked = event.target;
+    if (!(picked instanceof HTMLInputElement) || !picked.checked) return;
+    for (const input of wrapper.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`))
+      if (input !== picked) input.checked = false;
+  });
+  return wrapper;
+}
+/** The value of a choice field's checked radio, or of an optional choice's pick. */
 export function choiceValue(root: ParentNode, name: string): string {
   return root.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value ?? "";
+}
+/** The ids an idsField sent: one value per picked chip, or a typed comma-separated list. */
+export function formIds(data: FormData, name: string): string[] {
+  return [
+    ...new Set(
+      formValues(data, name)
+        .flatMap((entry) => entry.split(","))
+        .map((id) => id.trim().toLowerCase())
+        .filter((id) => id !== ""),
+    ),
+  ];
 }
 /**
  * Fields shown because of a choice above them; `because` names that choice,

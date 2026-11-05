@@ -127,11 +127,12 @@ the document has no use for the bundle's `{"$ref": ...}`.
 | `text` | `""` | Markdown; the effect as the player reads it |
 | `characterEffects` | `[]` | See [Effects](#effects) |
 | `grants` | none | See [Grants](#grants) |
-| `characterMechanics` | from effects, grants and bonus | `"complete"` with effects, grants or a weapon or armor bonus, `"narrative"` with none of them |
+| `characterMechanics` | from effects, grants, bonus and focus | `"complete"` with effects, grants, a weapon or armor bonus or a spellcasting focus, `"narrative"` with none of them |
 | `overrides` | `{}` | Any of `itemType`, `rarity`, `attunement`, `bodyPlacements`, `weightLb`, replacing the set value |
 | `attunementPrerequisites` | none | Who may attune; see [Attunement requirement](#attunement-requirement) |
 | `container` | none | What the item holds: `{ "capacityLb": 30 }` (more than 0, at most 100000), `{ "weightless": true }` for contents that do not count toward the carrier's load, or both |
 | `baseItem` | none | The weapon or armor the item is, with its bonus; see [Weapon or armor](#weapon-or-armor) |
+| `spellcastingFocus` | none | What the item's bonus also raises for spells; see [Spellcasting focus](#spellcasting-focus) |
 | `tags` | `[]` | As for sets |
 | `playerVisible` | `false` | Listed in the gallery when its set is visible too |
 | `retired` | `false` | Hidden from the gallery; still usable on sheets |
@@ -274,6 +275,30 @@ without a bonus. In an import, `"baseItem": {}` removes it. Use the
 Compendium's ids for the base; without the Compendium installed, the sheet
 cannot find the base and shows a warning instead.
 
+## Spellcasting focus
+
+A spellcasting focus's magic bonus also raises spell attack rolls, spell save
+DCs or both. It needs D&D Engine 6.3.0; an older Engine ignores it.
+
+```json
+"spellcastingFocus": { "appliesTo": ["spellAttack", "spellSaveDC"], "classes": ["warlock"], "bonus": [1, 2, 3] }
+```
+
+| Field | Rule |
+| --- | --- |
+| `appliesTo` | `spellAttack`, `spellSaveDC` or both, each once |
+| `classes` | Optional: 1 to 20 class ids, each once, such as `warlock`; without them every class's spells |
+| `bonus` | Only for an item without `baseItem`: a whole number from 1 to 5, or a list such as `[1, 2, 3]` |
+
+A focus that is also a weapon or armor uses that `baseItem`'s bonus, which it
+must have, and declares none of its own; the player then picks one bonus for
+both. Any other focus, such as a wand, declares its own `bonus`. Like a weapon
+bonus, it makes the item automated, applies only while the item is equipped
+(and attuned when it requires attunement), and a list lets the player pick.
+Two copies of one focus do not stack. In an import, `"spellcastingFocus": {}`
+removes it. A fixed bonus with no pick can also be two effects
+(`spellAttack` and `spellSaveDC`); the editor shows such a pair as one row.
+
 ## Published record
 
 Publishing combines a set and an item into one Engine `magic-item` record:
@@ -286,10 +311,10 @@ Publishing combines a set and an item into one Engine `magic-item` record:
 | `tags` | `homebrew`, the set id, set tags, item tags |
 | `text` | `*<type>, <rarity>[ (Requires Attunement[ by <who>])]*`, the item text, the set description, `**Curse.** <curse>` |
 | `weightLb` | the item override, else the set; absent when neither has one |
-| `attunementPrerequisites`, `container`, `baseItem` | the item |
+| `attunementPrerequisites`, `container`, `baseItem`, `spellcastingFocus` | the item |
 | `characterEffects` | the item |
 | `grants` | the item's grants, plus the set condition as `conditions: [{ id, name, summary }]`; absent when neither exists |
-| `characterMechanics` | `complete` when the record has effects, grants or a bonus, else `narrative`. A text-only item in a set with a condition is `complete` and carries only the condition. |
+| `characterMechanics` | `complete` when the record has effects, grants, a bonus or a focus, else `narrative`. A text-only item in a set with a condition is `complete` and carries only the condition. |
 | `edition`, `book` | `2024`, `homebrew` |
 
 An item is in the gallery when the item and its set are both visible to

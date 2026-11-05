@@ -26,16 +26,18 @@
     "grants": { "$ref": "homebrew-common.schema.json#/$defs/itemGrants" },
     "attunementPrerequisites": { "$ref": "homebrew-common.schema.json#/$defs/attunementRequirement" },
     "container": { "$ref": "homebrew-common.schema.json#/$defs/container" },
-    "baseItem": { "$ref": "homebrew-common.schema.json#/$defs/baseItem" }
+    "baseItem": { "$ref": "homebrew-common.schema.json#/$defs/baseItem" },
+    "spellcastingFocus": { "$ref": "homebrew-effects.schema.json#/$defs/spellcastingFocus" }
   },
   "allOf": [
+    { "$ref": "homebrew-effects.schema.json#/$defs/focusRules" },
     {
       "if": { "properties": { "characterMechanics": { "const": "narrative" } } },
-      "then": { "properties": { "characterEffects": { "maxItems": 0 } }, "not": { "anyOf": [{ "required": ["grants"] }, { "required": ["baseItem"], "properties": { "baseItem": { "required": ["bonus"] } } }] } }
+      "then": { "properties": { "characterEffects": { "maxItems": 0 } }, "not": { "anyOf": [{ "required": ["grants"] }, { "required": ["baseItem"], "properties": { "baseItem": { "required": ["bonus"] } } }, { "required": ["spellcastingFocus"] }] } }
     },
     {
       "if": { "properties": { "characterMechanics": { "const": "complete" } } },
-      "then": { "anyOf": [{ "properties": { "characterEffects": { "minItems": 1 } } }, { "required": ["grants"] }, { "required": ["baseItem"], "properties": { "baseItem": { "required": ["bonus"] } } }] }
+      "then": { "anyOf": [{ "properties": { "characterEffects": { "minItems": 1 } } }, { "required": ["grants"] }, { "required": ["baseItem"], "properties": { "baseItem": { "required": ["bonus"] } } }, { "required": ["spellcastingFocus"] }] }
     }
   ]
 }

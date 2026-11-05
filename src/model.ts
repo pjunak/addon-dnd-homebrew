@@ -192,6 +192,8 @@ export const weaponProperties = [
 ] as const;
 export const maxBaseIds = 20;
 export const maxBonus = 5;
+/** What a spellcasting focus's bonus may raise: the Engine's spell effect targets. */
+export const focusTargets = ["spellAttack", "spellSaveDC"] as const;
 export const importFormat = "dnd-homebrew";
 
 export interface Effect {
@@ -319,6 +321,16 @@ export interface BaseItem {
   readonly except?: readonly string[];
   readonly bonus?: number | readonly number[];
 }
+/**
+ * A spellcasting focus: its magic bonus also raises spell attack rolls, spell
+ * save DCs or both, for the listed classes or every class. A weapon or armor
+ * focus shares its base item's bonus; any other focus has its own `bonus`.
+ */
+export interface SpellcastingFocus {
+  readonly appliesTo: readonly (typeof focusTargets)[number][];
+  readonly classes?: readonly string[];
+  readonly bonus?: number | readonly number[];
+}
 export interface Item {
   readonly id: string;
   readonly schemaVersion: 1;
@@ -336,6 +348,7 @@ export interface Item {
   readonly attunementPrerequisites?: AttunementRequirement;
   readonly container?: Container;
   readonly baseItem?: BaseItem;
+  readonly spellcastingFocus?: SpellcastingFocus;
 }
 /** The magic-item record served to the D&D Engine. */
 export interface ServedRecord {
@@ -357,6 +370,7 @@ export interface ServedRecord {
   readonly attunementPrerequisites?: AttunementRequirement;
   readonly container?: Container;
   readonly baseItem?: BaseItem;
+  readonly spellcastingFocus?: SpellcastingFocus;
 }
 /**
  * A removed item is withdrawn, never deleted: the browser cannot learn a
@@ -482,17 +496,19 @@ export function effectProblem(effect: Effect): Problem | undefined {
 }
 
 /**
- * "complete" needs at least one supported effect, grants or a weapon or armor
- * bonus; "narrative" declares none of them, though it may name its base
- * weapon or armor. Absent grants and base items are `undefined`.
+ * "complete" needs at least one supported effect, grants, a weapon or armor
+ * bonus or a spellcasting focus; "narrative" declares none of them, though it
+ * may name its base weapon or armor. Absent grants, base items and foci are
+ * `undefined`.
  */
 export function mechanicsProblem(
   mechanics: unknown,
   effects: readonly Effect[],
   grants?: unknown,
   baseItem?: BaseItem,
+  focus?: SpellcastingFocus,
 ): Problem | undefined {
-  const bonus = baseItem?.bonus !== undefined;
+  const bonus = baseItem?.bonus !== undefined || focus !== undefined;
   if (mechanics === "narrative")
     return effects.length > 0 || grants !== undefined || bonus
       ? problem("A text-only item cannot have effects, properties or a bonus.")
@@ -1019,16 +1035,41 @@ export function baseItemProblem(value: unknown): Problem | undefined {
     )
   )
     return problem("Name the base records or filter them, not both.");
-  const bonus = base["bonus"],
-    validBonus = (entry: unknown): boolean => isInteger(entry, 1, maxBonus);
-  if (
-    bonus !== undefined &&
-    !(Array.isArray(bonus) ? baseList(bonus, maxBonus, validBonus) : validBonus(bonus))
-  )
-    return problem("A bonus is a whole number from 1 to {count}, or a list of them.", {
-      count: maxBonus,
-    });
-  return undefined;
+  return base["bonus"] === undefined ? undefined : bonusProblem(base["bonus"]);
+}
+
+/** A magic bonus: one whole number from 1 to maxBonus, or a list of distinct ones to pick from. */
+function bonusProblem(bonus: unknown): Problem | undefined {
+  const valid = (entry: unknown): boolean => isInteger(entry, 1, maxBonus);
+  return (Array.isArray(bonus) ? baseList(bonus, maxBonus, valid) : valid(bonus))
+    ? undefined
+    : problem("A bonus is a whole number from 1 to {count}, or a list of them.", {
+        count: maxBonus,
+      });
+}
+
+/**
+ * A spellcasting focus, checked with its item's base: the bonus comes from
+ * exactly one of them. Mirrors the Engine's spellcastingFocus
+ * (internal/rules/spellcasting_focus.go) with Homebrew's limits.
+ */
+export function spellcastingFocusProblem(value: unknown, baseItem: unknown): Problem | undefined {
+  const shape = exactFields(value, ["appliesTo"], ["classes", "bonus"]);
+  if (shape) return shape;
+  const focus = value as Json;
+  if (!baseList(focus["appliesTo"], focusTargets.length, (entry) => oneOf(focusTargets, entry)))
+    return problem("A spellcasting focus raises spell attack rolls, spell save DCs or both.");
+  if (!baseList(focus["classes"], maxBaseIds, validId))
+    return problem("Name at most {count} classes by id, each once.", { count: maxBaseIds });
+  if (isRecord(baseItem)) {
+    if (focus["bonus"] !== undefined)
+      return problem("A weapon or armor focus uses the weapon's or armor's bonus.");
+    if (baseItem["bonus"] === undefined)
+      return problem("Give the weapon or armor a bonus for the focus to add.");
+    return undefined;
+  }
+  if (focus["bonus"] === undefined) return problem("Give the spellcasting focus a bonus.");
+  return bonusProblem(focus["bonus"]);
 }
 
 /** Rules that span a flattened record: a requirement needs attunement. */
@@ -1097,7 +1138,16 @@ export function itemProblem(value: Item): Problem | undefined {
       : requirementProblem(value.attunementPrerequisites)) ??
     (value.container === undefined ? undefined : containerProblem(value.container)) ??
     (value.baseItem === undefined ? undefined : baseItemProblem(value.baseItem)) ??
-    mechanicsProblem(value.characterMechanics, value.characterEffects, value.grants, value.baseItem)
+    (value.spellcastingFocus === undefined
+      ? undefined
+      : spellcastingFocusProblem(value.spellcastingFocus, value.baseItem)) ??
+    mechanicsProblem(
+      value.characterMechanics,
+      value.characterEffects,
+      value.grants,
+      value.baseItem,
+      value.spellcastingFocus,
+    )
   );
 }
 
@@ -1173,6 +1223,7 @@ export function parseItem(value: unknown): Item {
       "attunementPrerequisites",
       "container",
       "baseItem",
+      "spellcastingFocus",
     ]) ??
     exactFields((value as Record<string, unknown>)["overrides"], [], overrideFields) ??
     effectsShapeProblem((value as Record<string, unknown>)["characterEffects"]) ??
@@ -1212,7 +1263,15 @@ export function parsePublished(value: unknown): Published {
       "characterMechanics",
       "characterEffects",
     ],
-    ["bodyPlacements", "grants", "weightLb", "attunementPrerequisites", "container", "baseItem"],
+    [
+      "bodyPlacements",
+      "grants",
+      "weightLb",
+      "attunementPrerequisites",
+      "container",
+      "baseItem",
+      "spellcastingFocus",
+    ],
   );
   if (shape) throw new HomebrewError(shape.text, shape.params);
   const served = published.record;
@@ -1246,12 +1305,15 @@ export function parsePublished(value: unknown): Published {
       requirementProblem(served.attunementPrerequisites) === undefined) &&
     (served.container === undefined || containerProblem(served.container) === undefined) &&
     (served.baseItem === undefined || baseItemProblem(served.baseItem) === undefined) &&
+    (served.spellcastingFocus === undefined ||
+      spellcastingFocusProblem(served.spellcastingFocus, served.baseItem) === undefined) &&
     recordProblem(served) === undefined &&
     mechanicsProblem(
       served.characterMechanics,
       served.characterEffects,
       served.grants,
       served.baseItem,
+      served.spellcastingFocus,
     ) === undefined;
   if (!valid) throw new HomebrewError("A published record is invalid.");
   return published;
@@ -1317,10 +1379,12 @@ export function mechanicsOf(
   effects: readonly unknown[],
   grants: unknown,
   baseItem: unknown,
+  focus?: unknown,
 ): Mechanics {
   return effects.length > 0 ||
     grants !== undefined ||
-    (isRecord(baseItem) && baseItem["bonus"] !== undefined)
+    (isRecord(baseItem) && baseItem["bonus"] !== undefined) ||
+    focus !== undefined
     ? "complete"
     : "narrative";
 }
@@ -3145,6 +3209,13 @@ export function flatten(itemSet: ItemSet | undefined, item: Item): Published {
       : {}),
     ...(item.container ? { container: { ...item.container } } : {}),
     ...(item.baseItem ? { baseItem: JSON.parse(JSON.stringify(item.baseItem)) as BaseItem } : {}),
+    ...(item.spellcastingFocus
+      ? {
+          spellcastingFocus: JSON.parse(
+            JSON.stringify(item.spellcastingFocus),
+          ) as SpellcastingFocus,
+        }
+      : {}),
   };
   return {
     id: record.id,
@@ -3522,7 +3593,7 @@ type DraftKind = "set" | "item" | "subclass" | "feat" | "spell" | "species" | "b
 /** Optional objects `{}` clears in an import; a cleared field takes its partner. */
 const clearable: Readonly<Record<DraftKind, readonly string[]>> = {
   set: ["condition"],
-  item: ["grants", "attunementPrerequisites", "container", "baseItem"],
+  item: ["grants", "attunementPrerequisites", "container", "baseItem", "spellcastingFocus"],
   subclass: ["grants", "spellcasting"],
   feat: ["grants"],
   spell: [],
@@ -3798,6 +3869,7 @@ function normalize(
       Array.isArray(fields["characterEffects"]) ? fields["characterEffects"] : [],
       fields["grants"],
       fields["baseItem"],
+      fields["spellcastingFocus"],
     );
   fields["schemaVersion"] = 1;
   fields["updatedAt"] = now;

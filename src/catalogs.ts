@@ -1105,6 +1105,33 @@ export const cs: Readonly<Record<string, string>> = {
   "Because it holds other items": "Protože pojme jiné předměty",
   "Because it is a weapon": "Protože je to zbraň",
   "Because it is armor or a shield": "Protože je to zbroj nebo štít",
+  "Because it is a spellcasting focus": "Protože je to sesílací pomůcka",
+  "Its magic bonus also raises spell attack rolls, spell save DCs or both.":
+    "Její magický bonus zvyšuje i hody na útok kouzlem, SO záchranných hodů proti kouzlům, nebo obojí.",
+  "The bonus adds to": "Bonus zvyšuje",
+  "Spell attack rolls": "Hody na útok kouzlem",
+  "Leave the classes empty for every class.": "Bez vybraných povolání platí pro všechna povolání.",
+  "Uses the weapon's bonus above, so the player picks once.":
+    "Používá bonus zbraně výše, takže hráč volí jen jednou.",
+  "Uses the armor's bonus above, so the player picks once.":
+    "Používá bonus zbroje výše, takže hráč volí jen jednou.",
+  "the same bonus": "stejný bonus",
+  "spell attack rolls and spell save DCs":
+    "hodům na útok kouzlem a SO záchranných hodů proti kouzlům",
+  "spell attack rolls": "hodům na útok kouzlem",
+  "spell save DCs": "SO záchranných hodů proti kouzlům",
+  "Spellcasting focus: {bonus} to {what}": "Sesílací pomůcka: {bonus} k {what}",
+  "Spellcasting focus for {classes} spells: {bonus} to {what}":
+    "Sesílací pomůcka pro kouzla povolání {classes}: {bonus} k {what}",
+  "A spellcasting focus raises spell attack rolls, spell save DCs or both.":
+    "Sesílací pomůcka zvyšuje hody na útok kouzlem, SO záchranných hodů proti kouzlům, nebo obojí.",
+  "Name at most {count} classes by id, each once.":
+    "Uveďte nejvýše {count} povolání podle identifikátoru, každé jednou.",
+  "A weapon or armor focus uses the weapon's or armor's bonus.":
+    "Pomůcka, která je zbraní nebo zbrojí, používá bonus té zbraně nebo zbroje.",
+  "Give the weapon or armor a bonus for the focus to add.":
+    "Dejte zbrani nebo zbroji bonus, který pomůcka přičte.",
+  "Give the spellcasting focus a bonus.": "Dejte sesílací pomůcce bonus.",
   "Pick several to let the player choose.": "Vyberte víc možností a hráč si zvolí.",
   "A set gives its items shared values, which each item can change.":
     "Sada dává svým předmětům společné hodnoty, které může každý předmět změnit.",
@@ -1494,10 +1521,9 @@ export const cs: Readonly<Record<string, string>> = {
   "A published background is invalid.": "Zveřejněné zázemí je neplatné.",
   "{at}: background {id} appears twice.": "{at}: zázemí {id} je uvedeno dvakrát.",
   // Weapons and armor
-  "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player choose.":
-    "Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá volbu na hráči.",
+  "Leave both off for anything else. A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player choose.":
+    "U ostatních předmětů nechte obě volby vypnuté. Magická zbraň nebo zbroj je základní zbraň nebo zbroj z pravidel, například dlouhý meč. Její bonus se přičítá k hodům na útok a zranění, nebo k obrannému číslu. Více základů nebo bonusů nechá volbu na hráči.",
   "The item is": "Předmět je",
-  "Not a weapon or armor": "Není zbraň ani zbroj",
   "A weapon": "Zbraň",
   "Armor or a shield": "Zbroj nebo štít",
   "These records": "Tyto záznamy",
