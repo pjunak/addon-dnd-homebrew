@@ -3,7 +3,14 @@
 // grant anything a printed subclass feature can. The page around it owns the
 // name, class, text, saving and the preview.
 import type { Translator } from "./catalogs.js";
-import { actionButton, checkField, element, numberField, textArea, textField } from "./fields.js";
+import {
+  actionButton,
+  checkField,
+  element,
+  markdownField,
+  numberField,
+  textField,
+} from "./fields.js";
 import {
   freeId,
   maxFeatures,
@@ -210,7 +217,7 @@ function featureEditor(
     maxLength: 300,
     hint: t("A one-line summary of the feature: numbers, dice and actions."),
   });
-  const text = textArea(document, t("Description"), `${path}.text`, feature.text, 5, maxMarkdown);
+  const text = markdownField(document, t("Description"), `${path}.text`, feature.text, maxMarkdown);
   const grants = schemaEditor(context, grantsNode, feature.grants, {
     path: `${path}.grants`,
     label: t("Grants"),
@@ -231,7 +238,10 @@ function featureEditor(
     actionButton(document, t("Remove feature"), remove, "danger"),
   );
   const value = (control: HTMLElement): string =>
-    control.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")!.value;
+    (
+      control.querySelector<HTMLElement & { value: string }>("codex-addon-markdown-editor") ??
+      control.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")!
+    ).value;
   return {
     node,
     read: (taken) => {

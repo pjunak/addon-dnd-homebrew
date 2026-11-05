@@ -13,7 +13,7 @@ import {
   markdown,
   messageBlock,
   selectField,
-  textArea,
+  markdownField,
   textField,
 } from "./fields.js";
 import {
@@ -190,12 +190,11 @@ export function spellEditor(
     casting,
     flags,
     components,
-    textArea(
+    markdownField(
       document,
       t("Description"),
       "text",
       initial.text,
-      8,
       maxMarkdown,
       t("What the spell does, as players read it; the stat block above is added when published."),
     ),

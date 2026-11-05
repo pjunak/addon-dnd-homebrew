@@ -4,6 +4,7 @@
   color: var(--text-light);
   font: inherit;
   min-width: 0;
+  container: hb-shell / inline-size;
 }
 .hb-shell h1,
 .hb-shell h2,
@@ -175,10 +176,53 @@
   min-width: 0;
   container-type: inline-size;
 }
+/* Every kind's form: a head with the title, status and section bar; the
+   fields; and a side column with Settings above the published preview. */
 .hb-form {
   display: grid;
   gap: 1rem;
-  max-width: 52rem;
+  max-width: 80rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+.hb-form-head {
+  display: grid;
+  gap: 0.4rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+}
+.hb-form-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+.hb-form-title h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.hb-form-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.hb-section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.hb-section-nav button {
+  min-height: 2rem;
+  padding: 0 0.6rem;
+  font-size: var(--text-sm);
+}
+.hb-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
 }
 .hb-form-main {
   display: grid;
@@ -186,20 +230,179 @@
   min-width: 0;
   align-content: start;
 }
-/* A form with a preview shows it beside the fields once the editor is wide enough. */
-.hb-form:has(> .hb-preview) {
-  max-width: 80rem;
+.hb-form-side {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  min-width: 0;
+}
+.hb-settings {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--accent-gold-dim);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  min-width: 0;
+}
+.hb-settings h3 {
+  font-size: var(--text-md);
 }
 @container (min-width: 42rem) {
-  .hb-form:has(> .hb-preview) {
+  .hb-form {
     grid-template-columns: minmax(0, 1fr) minmax(15rem, 20rem);
     align-items: start;
   }
-  .hb-form > .hb-preview {
+  .hb-form-head {
+    grid-column: 1 / -1;
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+  }
+  .hb-form-side {
     position: sticky;
     top: var(--space-4);
     max-height: calc(100vh - 2rem);
     overflow: auto;
+  }
+}
+/* Narrow: Settings comes first, the preview after the fields. */
+@container (max-width: 41.99rem) {
+  .hb-form-side {
+    display: contents;
+  }
+  .hb-form-head {
+    order: -2;
+  }
+  .hb-settings {
+    order: -1;
+  }
+}
+.hb-section,
+.hb-start-item {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  min-width: 0;
+  scroll-margin-top: 9rem;
+}
+.hb-section-head {
+  font-size: var(--text-md);
+}
+.hb-collapsible > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  cursor: pointer;
+}
+.hb-collapsible > summary > h3 {
+  display: inline;
+}
+.hb-section-summary {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.hb-collapsible[open] > summary {
+  margin-bottom: 0.25rem;
+}
+/* Fields shown because of a choice above them. */
+.hb-depends {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--accent-gold-dim);
+}
+.hb-depends-why {
+  margin: 0;
+  color: var(--accent-gold);
+  font-size: var(--text-sm);
+}
+.hb-depends .hb-attunement {
+  padding-left: 0;
+  border-left: 0;
+}
+/* A list to pick from is raised and keeps its arrow; free text is sunken. */
+.hb-form select:not([multiple]),
+.hb-form .ui-combobox input {
+  background-color: var(--bg-raised);
+  box-shadow: var(--shadow-sm);
+}
+.hb-form
+  :is(input:not([type]), input[type="text"], input[type="number"], textarea):not(
+    .ui-combobox input,
+    .ui-chips input
+  ) {
+  background-color: var(--surface-sunken);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 35%);
+}
+.hb-writer {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.hb-writer-label {
+  color: var(--text-light);
+}
+.hb-adders-label {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+/* The new-item chooser. */
+.hb-start-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  gap: 0.75rem;
+}
+.hb-kind-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: 0.6rem;
+}
+.hb-kind-card {
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+  min-height: 5.5rem;
+  padding: 0.75rem;
+  text-align: start;
+  font: inherit;
+  color: var(--text-muted);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.hb-kind-card strong {
+  color: var(--text-parchment);
+}
+.hb-kind-card:hover {
+  border-color: var(--accent-gold);
+}
+.hb-kind-card:focus-visible {
+  outline: 2px solid var(--accent-gold);
+  outline-offset: 1px;
+}
+/* While a record is open on a narrower page, the list folds away. */
+.hb-browse {
+  display: none;
+}
+@container hb-shell (max-width: 75rem) {
+  .hb-shell.hb-editing:not(.hb-browsing) .hb-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hb-shell.hb-editing:not(.hb-browsing) .hb-tree {
+    display: none;
+  }
+  .hb-shell.hb-editing .hb-browse {
+    display: inline-flex;
   }
 }
 /* Fields that belong together share a line while there is room. */
@@ -584,6 +787,9 @@
     position: static;
     max-height: 40vh;
   }
+  .hb-form-head {
+    position: static;
+  }
 }
 .hb-group-row > .hb-tree-item {
   flex: 1 1 auto;
@@ -631,4 +837,12 @@
 .hb-new-panel button {
   justify-content: start;
   text-align: start;
+}
+.hb-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

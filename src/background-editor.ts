@@ -17,7 +17,7 @@ import {
   messageBlock,
   numberField,
   selectField,
-  textArea,
+  markdownField,
   textField,
 } from "./fields.js";
 import {
@@ -209,12 +209,11 @@ export function backgroundEditor(
       maxLength: maxEquipmentLine,
       placeholder: "Choose A or B: (A) Lantern, Traveler's Clothes, 12 GP; or (B) 50 GP",
     }),
-    textArea(
+    markdownField(
       document,
       t("Description"),
       "text",
       initial.text,
-      6,
       maxMarkdown,
       t(
         "The background as players read it; its abilities, feat, proficiencies and equipment are added when published.",

@@ -16,7 +16,7 @@ import {
   messageBlock,
   numberField,
   selectField,
-  textArea,
+  markdownField,
   textField,
 } from "./fields.js";
 import {
@@ -434,12 +434,11 @@ export function featEditor(
       maxLength: 300,
       hint: t("A one-line summary of the feat: numbers, dice and actions."),
     }),
-    textArea(
+    markdownField(
       document,
       t("Description"),
       "text",
       initial.text,
-      6,
       maxMarkdown,
       t("The feat as players read it."),
     ),

@@ -11,6 +11,7 @@ export async function activate(context: AddonContext): Promise<Disposable> {
   context.capabilities.require("services.own");
   context.capabilities.require("ui.contributions");
   context.capabilities.require("ui.markdown");
+  context.capabilities.require("ui.markdown-editor");
   context.capabilities.require("ui.controls.v1");
   context.signal.throwIfAborted();
   const importer = await context.services.own("codex.import-adapter", { signal: context.signal });

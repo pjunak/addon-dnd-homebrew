@@ -1,5 +1,14 @@
 import type { Translator } from "./catalogs.js";
-import { chipsField, element, formText, formValues, idsField, selectField } from "./fields.js";
+import {
+  chipsField,
+  choiceField,
+  choiceValue,
+  dependentGroup,
+  element,
+  formText,
+  formValues,
+  idsField,
+} from "./fields.js";
 import {
   armorTypes,
   maxBonus,
@@ -53,7 +62,7 @@ export function gearFields(
     mode: Mode = base && base.ids === undefined ? "filter" : "ids";
   const chips = (values: readonly string[]): (readonly [string, string])[] =>
     values.map((value) => [value, t(gearLabels[value] ?? value)] as const);
-  const kindField = selectField(
+  const kindField = choiceField(
     document,
     t("The item is"),
     "baseKind",
@@ -67,7 +76,7 @@ export function gearFields(
       "A magic weapon or armor is a base weapon or armor from the rules data, such as a longsword. Its bonus adds to attack and damage rolls, or to Armor Class. Several bases or bonuses let the player choose.",
     ),
   );
-  const modeField = selectField(document, t("Base"), "baseMode", mode, [
+  const modeField = choiceField(document, t("Base"), "baseMode", mode, [
     ["ids", t("These records")],
     ["filter", t("Any that match")],
   ]);
@@ -135,21 +144,35 @@ export function gearFields(
     references && pickerOptions(references.armor),
     { placeholder: "hide-armor", hint: t("Ids left out, separated by commas.") },
   );
-  const bonus = chipsField(
+  const bonus = choiceField(
     document,
     t("Bonus"),
     "baseBonus",
     bonusesOf(base).map(String),
     Array.from({ length: maxBonus }, (_, index) => [String(index + 1), `+${index + 1}`] as const),
+    t("Pick several to let the player choose."),
   );
   const choice = element(document, "div", "hb-row"),
     filters = element(document, "div", "hb-row");
   choice.append(modeField, bonus);
   filters.append(categories, ranges, properties);
+  const which = dependentGroup(
+    document,
+    "",
+    choice,
+    weapons,
+    armor,
+    filters,
+    types,
+    weaponExcept,
+    armorExcept,
+  );
+  const why = which.querySelector(".hb-depends-why")!;
   const show = (): void => {
-    const chosen = kindField.querySelector("select")!.value as Kind,
-      filter = modeField.querySelector("select")!.value === "filter";
-    modeField.hidden = bonus.hidden = chosen === "";
+    const chosen = choiceValue(kindField, "baseKind") as Kind,
+      filter = choiceValue(modeField, "baseMode") === "filter";
+    which.hidden = chosen === "";
+    why.textContent = `↳ ${chosen === "weapon" ? t("Because it is a weapon") : t("Because it is armor or a shield")}`;
     weapons.hidden = chosen !== "weapon" || filter;
     armor.hidden = chosen !== "armor" || filter;
     categories.hidden =
@@ -158,13 +181,12 @@ export function gearFields(
       weaponExcept.hidden =
         chosen !== "weapon" || !filter;
     types.hidden = armorExcept.hidden = chosen !== "armor" || !filter;
-    choice.hidden = chosen === "";
     filters.hidden = chosen !== "weapon" || !filter;
   };
   // The form's own change listener marks the draft dirty and redraws the preview.
-  kindField.querySelector("select")!.addEventListener("change", show);
-  modeField.querySelector("select")!.addEventListener("change", show);
-  root.append(kindField, choice, weapons, armor, filters, types, weaponExcept, armorExcept);
+  kindField.addEventListener("change", show);
+  modeField.addEventListener("change", show);
+  root.append(kindField, which);
   show();
   return root;
 }

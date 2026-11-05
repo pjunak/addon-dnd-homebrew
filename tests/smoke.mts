@@ -69,6 +69,7 @@ void test("compiled entry binds both routes and the wiki provider and disposes i
       "ui.contributions",
       "ui.controls.v1",
       "ui.markdown",
+      "ui.markdown-editor",
     ]);
     assert.deepEqual(
       bindings.map(({ id, binding }) => [id, binding.kind]),

@@ -44,6 +44,19 @@ export const itemTemplates: readonly ItemTemplate[] = [
     },
   },
   {
+    id: "focus",
+    label: "Spellcasting focus",
+    hint: "+1 to spell attack rolls and spell save DCs while attuned.",
+    item: {
+      overrides: { itemType: "Wand", rarity: "Uncommon", attunement: true },
+      characterEffects: [
+        { target: "spellAttack", mode: "add", value: 1 },
+        { target: "spellSaveDC", mode: "add", value: 1 },
+      ],
+      text: "While holding this wand, you have a +1 bonus to spell attack rolls and to the saving throw DCs of your spells.",
+    },
+  },
+  {
     id: "bonus",
     label: "Bonus to a statistic",
     hint: "+1 Armor Class while attuned; change the effect for another statistic.",
@@ -105,6 +118,12 @@ export const itemTemplates: readonly ItemTemplate[] = [
       overrides: { itemType: "Potion", rarity: "Common" },
       text: "This potion's magic takes effect when you drink it as a Bonus Action.",
     },
+  },
+  {
+    id: "story",
+    label: "Story item",
+    hint: "Text only: nothing the sheet calculates.",
+    item: {},
   },
 ];
 

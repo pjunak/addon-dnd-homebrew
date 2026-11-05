@@ -48,6 +48,39 @@ customElements.define(
     }
   },
 );
+// The host's writer: a named textarea that reports changes as the real one does.
+customElements.define(
+  "codex-addon-markdown-editor",
+  class extends HTMLElement {
+    readonly #area = document.createElement("textarea");
+    label = "";
+    maximumLength = 200_000;
+    constructor() {
+      super();
+      this.#area.addEventListener("input", () =>
+        this.dispatchEvent(
+          new CustomEvent("markdown-change", { bubbles: true, detail: { value: this.value } }),
+        ),
+      );
+    }
+    connectedCallback(): void {
+      this.#area.setAttribute("aria-label", this.label);
+      this.append(this.#area);
+    }
+    get name(): string {
+      return this.#area.name;
+    }
+    set name(value: string) {
+      this.#area.name = value;
+    }
+    get value(): string {
+      return this.#area.value;
+    }
+    set value(value: string) {
+      this.#area.value = value;
+    }
+  },
+);
 
 const fixture = (await (await fetch("../fixtures/publish.json")).json()) as PublishFixture;
 const subclasses = (
@@ -303,14 +336,17 @@ const startPanel = [
 [...newCatalog.querySelectorAll<HTMLButtonElement>(".hb-header button")]
   .find((button) => button.textContent === "New item")
   ?.click();
-for (let attempt = 0; attempt < 60 && !newCatalog.querySelector(".hb-templates"); attempt++)
+for (let attempt = 0; attempt < 60 && !newCatalog.querySelector(".hb-kind-cards"); attempt++)
   await frame();
-const templateButtons = [...newCatalog.querySelectorAll<HTMLButtonElement>(".hb-templates button")];
-templateButtons.find((button) => button.textContent === "Magic weapon")?.click();
+const templateButtons = [...newCatalog.querySelectorAll<HTMLButtonElement>(".hb-kind-card")];
+const chooserHeading = newCatalog.querySelector(".hb-start-item h2")?.textContent;
+templateButtons
+  .find((button) => button.querySelector("strong")?.textContent === "Magic weapon")
+  ?.click();
 for (
   let attempt = 0;
   attempt < 60 &&
-  newCatalog.querySelector<HTMLSelectElement>('select[name="baseKind"]')?.value !== "weapon";
+  newCatalog.querySelector<HTMLInputElement>('input[name="baseKind"]:checked')?.value !== "weapon";
   attempt++
 )
   await frame();
@@ -604,6 +640,14 @@ globalThis.runRenderingContract = () => {
       `[name="${name}"]`,
     );
     if (!control || control.closest<HTMLElement>("[hidden]")) return undefined;
+    // Button choices: the checked radio, or every checked box.
+    if (
+      control instanceof HTMLInputElement &&
+      (control.type === "radio" || control.type === "checkbox")
+    )
+      return [...edgeCatalog.querySelectorAll<HTMLInputElement>(`[name="${name}"]:checked`)]
+        .map((entry) => entry.value)
+        .join(", ");
     return control instanceof HTMLSelectElement && control.multiple
       ? [...control.selectedOptions].map((entry) => entry.value).join(", ")
       : control.value;
@@ -653,7 +697,7 @@ globalThis.runRenderingContract = () => {
   const inherited = [
     catalog.querySelector<HTMLSelectElement>('select[name="overrideRarity"]')?.selectedOptions[0]
       ?.textContent,
-    catalog.querySelector<HTMLSelectElement>('select[name="overrideAttunement"]')?.value,
+    catalog.querySelector<HTMLInputElement>('input[name="overrideAttunement"]:checked')?.value,
     catalog.querySelector<HTMLInputElement>('input[name="inheritPlacements"]')?.checked,
   ];
   check(
@@ -664,14 +708,58 @@ globalThis.runRenderingContract = () => {
   );
   const own = [
     ringCatalog.querySelector<HTMLSelectElement>('select[name="overrideRarity"]')?.value,
-    ringCatalog.querySelector<HTMLInputElement>('input[name="overrideAttunement"]')?.checked,
+    ringCatalog.querySelector<HTMLInputElement>('input[name="overrideAttunement"]:checked')?.value,
     ringCatalog.querySelector('[name="inheritPlacements"]') === null,
   ];
   check(
     "an item without a set shows its own values",
-    JSON.stringify(own) === JSON.stringify(["Uncommon", true, true]),
+    JSON.stringify(own) === JSON.stringify(["Uncommon", "yes", true]),
     own,
-    ["Uncommon", true, true],
+    ["Uncommon", "yes", true],
+  );
+  const settingsFields = [...catalog.querySelectorAll<HTMLElement>(".hb-settings [name]")].map(
+    (field) => field.getAttribute("name"),
+  );
+  const expectedSettings = ["setId", "playerVisible", "retired", "tags", "id"];
+  check(
+    "an item's set, visibility, tags and id sit together in Settings",
+    JSON.stringify(settingsFields) === JSON.stringify(expectedSettings),
+    settingsFields,
+    expectedSettings,
+  );
+  const sectionBar = [...catalog.querySelectorAll(".hb-section-nav button")].map(
+    (button) => button.textContent,
+  );
+  const expectedSections = ["Basics", "Description", "What it does", "Carrying"];
+  check(
+    "the section bar links an item's sections",
+    JSON.stringify(sectionBar) === JSON.stringify(expectedSections),
+    sectionBar,
+    expectedSections,
+  );
+  const writers = [
+    ...document.querySelectorAll<HTMLElement & { name: string }>(
+      ".hb-editor codex-addon-markdown-editor",
+    ),
+  ].map((writer) => writer.name);
+  check(
+    "descriptions use the host's writer",
+    writers.includes("text") &&
+      !document.querySelector(
+        '.hb-editor textarea[name="text"]:not(codex-addon-markdown-editor textarea)',
+      ),
+    writers,
+    "…text",
+  );
+  const formStatus = [...catalog.querySelectorAll(".hb-form-status .hb-badge")].map(
+    (node) => node.textContent,
+  );
+  check(
+    "the head says who sees the item",
+    JSON.stringify(formStatus) === JSON.stringify(["Visible to players"]) ||
+      JSON.stringify(formStatus) === JSON.stringify(["Hidden"]),
+    formStatus,
+    "Visible to players or Hidden",
   );
   const whoHidden = [catalog, lanternCatalog].map(
     (root) => root.querySelector('select[name="requirement"]')?.closest("[hidden]") !== null,
@@ -689,13 +777,13 @@ globalThis.runRenderingContract = () => {
     [0, 7],
   );
   check(
-    "a new item offers every template",
-    templateButtons.length === itemTemplates.length,
-    templateButtons.length,
-    itemTemplates.length,
+    "a new item asks what you are making and offers every template",
+    templateButtons.length === itemTemplates.length && chooserHeading === "What are you making?",
+    [templateButtons.length, chooserHeading],
+    [itemTemplates.length, "What are you making?"],
   );
   const started = [
-    newCatalog.querySelector<HTMLInputElement>('input[name="overrideItemType"]')?.value,
+    newCatalog.querySelector<HTMLSelectElement>('select[name="overrideItemTypeChoice"]')?.value,
     newCatalog.querySelector<HTMLSelectElement>('select[name="overrideRarity"]')?.value,
     lines(newCatalog, ".hb-effect-summary")[0],
   ];

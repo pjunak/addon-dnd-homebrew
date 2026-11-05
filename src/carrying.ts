@@ -1,6 +1,7 @@
 import type { Translator } from "./catalogs.js";
 import {
   checkField,
+  dependentGroup,
   element,
   formText,
   idsField,
@@ -122,8 +123,9 @@ export function containerFields(document: Document, t: Translator, item: Item): 
     "containerWeightless",
     container?.weightless === true,
   );
-  const details = element(document, "div", "hb-row");
-  details.append(capacity, weightless);
+  const row = element(document, "div", "hb-row");
+  row.append(capacity, weightless);
+  const details = dependentGroup(document, t("Because it holds other items"), row);
   const show = (): void => {
     details.hidden = !holds.querySelector("input")!.checked;
   };

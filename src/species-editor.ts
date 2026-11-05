@@ -14,7 +14,7 @@ import {
   messageBlock,
   numberField,
   selectField,
-  textArea,
+  markdownField,
   textField,
 } from "./fields.js";
 import { damageLabels } from "./grants.js";
@@ -123,7 +123,10 @@ function entryList<T>(
   return { root, read };
 }
 const valueOf = (control: HTMLElement): string =>
-  control.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")!.value;
+  (
+    control.querySelector<HTMLElement & { value: string }>("codex-addon-markdown-editor") ??
+    control.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")!
+  ).value;
 
 /** The species form; fields go into `main`, and the published preview follows the form. */
 export function speciesEditor(
@@ -229,7 +232,7 @@ export function speciesEditor(
       const node = element(document, "fieldset", "hb-effects-fieldset hb-feature");
       const legend = element(document, "legend", "", trait.name || t("New trait"));
       const name = textField(document, t("Name"), `${path}.name`, trait.name, { maxLength: 120 });
-      const text = textArea(document, t("Text"), `${path}.text`, trait.text, 3, maxTraitText);
+      const text = markdownField(document, t("Text"), `${path}.text`, trait.text, maxTraitText);
       name.querySelector("input")!.addEventListener("input", (event) => {
         legend.textContent =
           (event.currentTarget as HTMLInputElement).value.trim() || t("New trait");
@@ -261,7 +264,7 @@ export function speciesEditor(
           ? t("Saved characters refer to it; it cannot change.")
           : t("Leave it empty to make one from the name."),
       });
-      const text = textArea(document, t("Text"), `${path}.text`, lineage.text, 4, maxLineageText);
+      const text = markdownField(document, t("Text"), `${path}.text`, lineage.text, maxLineageText);
       const granted = schemaEditor(formContext("lineage"), grantsNode, lineage.grants, {
         path: `${path}.grants`,
         label: t("Lineage grants"),
@@ -340,12 +343,11 @@ export function speciesEditor(
       following,
     ),
     resistances,
-    textArea(
+    markdownField(
       document,
       t("Description"),
       "text",
       initial.text,
-      6,
       maxMarkdown,
       t("The species as players read it; its size, speed and senses are added when published."),
     ),

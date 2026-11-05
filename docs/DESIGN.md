@@ -80,6 +80,23 @@ worker (`internal/homebrew/schema.go`, against the contracts with the same
 validator library as the host). Both name the failing place by path, and the
 form names its controls by the same path, so saving moves to the problem.
 
+## One editor page for every kind
+
+Every kind's form comes from one shell in `src/catalog-element.ts` (`#form`,
+then `#finishForm` once rendered): a head with the title, status chips and a
+section bar, the fields, and a side column with **Settings** above the
+published preview. Editors put visibility, tags and id fields into Settings
+or mark them with `setting()`; `#finishForm` also moves the kinds' old "Id"
+disclosures there. The section bar links each `formSection` and each
+fieldset with a legend; it uses buttons, because the page address belongs to
+the host. Field looks follow `src/fields.ts`: a select or searchable list to
+pick from, a sunken text field to type into, `choiceField` buttons for two
+to five short choices, and `dependentGroup` ("↳ Because …") for fields a
+choice reveals. Descriptions use the host's writer (`markdownField`, the
+`ui.markdown-editor` capability) with its rules links. A new item opens the
+start chooser first; a wizard was considered and left out, because editing
+an item later would mean stepping through it again.
+
 ## Visibility
 
 Character sheets evaluate with the viewer's authority, so `homebrew_published`,

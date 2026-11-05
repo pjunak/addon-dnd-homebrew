@@ -57,44 +57,55 @@ D&D Engine ── merges with the Compendium ──► Character Sheets
 
 1. **Homebrew** (DM sidebar): create an item, a set, a subclass, a feat, a
    spell, a species or a background, or import a file. Drafts are private to the DM and never touch character sheets. A
-   new item can **start from** a common kind: a +1 weapon, armor or shield, a
-   bonus to a statistic, an ability score item, a spell cast from the item, a
-   resistance, a container or a potion. The preview beside the form shows the
-   item as it will be published. **Save and add another** keeps the set for
-   the next item, **Duplicate** starts a new item from an existing one, and
-   Ctrl+S saves.
-2. Put items that share their type, rarity, attunement, placements,
+   new item first asks **What are you making?**: a +1 weapon, armor or shield,
+   a spellcasting focus, a bonus to a statistic, an ability score item, a
+   spell cast from the item, a resistance, a container, a potion or a story
+   item, or start blank or from a copy of an existing item. Every kind's form
+   is one page in sections, with a section bar at the top. Lists to pick from
+   have an arrow, free text fields are sunken, and fields a choice reveals sit
+   under it, marked "↳ Because …". The set, *Visible to players*, *Retired*,
+   tags and id sit together in **Settings** beside the form, above the preview
+   of the item as it will be published. **Save and add another** keeps the set
+   for the next item, **Duplicate** starts a new item from an existing one,
+   and Ctrl+S saves.
+2. Descriptions use the host's writer (it needs a host with
+   `ui.markdown-editor`): formatting, a Markdown view, and rules links. Select
+   words and choose **Link to…**, right-click, press Ctrl+K or type `[[` to
+   link them to a Compendium or Homebrew entry, for example "temporary hit
+   points" to the rule. Effects the sheet cannot calculate, such as temporary
+   hit points equal to 1d4 × the spell's level, go here as text.
+3. Put items that share their type, rarity, attunement, placements,
    description or curse into a **set**. An item in a set shows the set's
    values as *From set* and can change any of them; moving an item into
    another set or out of one keeps what it changed. A set lists its items and
    shows all of them to players, or hides them, at once. Deleting a set
    deletes its items too, or keeps them without a set.
-3. Add what the item does on the sheet where the Engine supports it: effects
+4. Add what the item does on the sheet where the Engine supports it: effects
    such as +1 Armor Class or a proficiency, advantages, limited uses, spells,
    toggles, resistances and a weapon or armor base. An item with none of them
    is **Text only** and the sheet shows its description; the editor decides
    this from what the item declares.
-4. **Publish** reviews the changes and writes them for character sheets. Every
+5. **Publish** reviews the changes and writes them for character sheets. Every
    character sheet then asks its owner to adopt the new rules on its next save,
    so publish batches of edits rather than every keystroke.
-5. **Item Gallery** (DM and players) lists items whose set and item are both
+6. **Item Gallery** (DM and players) lists items whose set and item are both
    marked *Visible to players*. A sheet link still opens a held item that is not
    listed.
-6. **New subclass** creates a subclass for a class. Add its features with their
+7. **New subclass** creates a subclass for a class. Add its features with their
    levels, text and grants, and anything the subclass itself has: subclass
    spells, pools such as superiority dice, table columns such as a die that
    grows, and a third caster's spellcasting.
-7. **New feat** creates a feat. It can start as an origin feat, a general feat
+8. **New feat** creates a feat. It can start as an origin feat, a general feat
    with +1 to an ability score, a fighting style or an epic boon. Choose where
    the Builder offers it (its category), what a character needs to take it,
    whether it can be taken more than once, and what it grants.
-8. **New spell** creates a spell: its level, school, the classes whose spell
+9. **New spell** creates a spell: its level, school, the classes whose spell
    lists include it, its casting time, range, components and duration, and
    what it does.
-9. **New species** creates a species: its creature type, size (or sizes the
+10. **New species** creates a species: its creature type, size (or sizes the
    player picks from), speeds, darkvision and resistances, its printed traits,
    lineages a player picks one of, and what it grants on the sheet.
-10. **New background** creates a background: the three abilities it raises,
+11. **New background** creates a background: the three abilities it raises,
     its origin feat (the Compendium's or this campaign's), skill and tool
     proficiencies, equipment, and anything else it grants.
 
@@ -290,7 +301,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.10.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.11.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are

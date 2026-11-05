@@ -283,3 +283,97 @@ export function configureDialog(dialog: HTMLDialogElement, close: () => void): v
     close();
   });
 }
+/**
+ * Two to five short choices as joined buttons (the host's `choices` style):
+ * radios for one choice, or checkboxes when `multiple` lets several be picked.
+ */
+export function choiceField(
+  document: Document,
+  label: string,
+  name: string,
+  selected: string | readonly string[],
+  options: readonly (readonly [string, string, string?])[],
+  hint?: string,
+): HTMLFieldSetElement {
+  const multiple = typeof selected !== "string";
+  const wrapper = element(document, "fieldset", "hb-choices");
+  wrapper.dataset["ui"] = "choices";
+  wrapper.dataset["uiKey"] = name;
+  wrapper.append(element(document, "legend", "", label));
+  for (const [value, optionLabel, details] of options) {
+    const choice = document.createElement("label");
+    const input = document.createElement("input");
+    input.type = multiple ? "checkbox" : "radio";
+    input.name = name;
+    input.value = value;
+    input.checked = multiple ? selected.includes(value) : selected === value;
+    choice.append(input, document.createTextNode(optionLabel));
+    if (details) choice.title = details;
+    wrapper.append(choice);
+  }
+  if (hint) wrapper.append(help(document, hint));
+  return wrapper;
+}
+/** The value of a choice field's checked radio. */
+export function choiceValue(root: ParentNode, name: string): string {
+  return root.querySelector<HTMLInputElement>(`input[name="${name}"]:checked`)?.value ?? "";
+}
+/**
+ * Fields shown because of a choice above them; `because` names that choice,
+ * for example "Because it requires attunement".
+ */
+export function dependentGroup(
+  document: Document,
+  because: string,
+  ...children: HTMLElement[]
+): HTMLElement {
+  const group = element(document, "div", "hb-depends");
+  group.append(element(document, "p", "hb-depends-why", `↳ ${because}`), ...children);
+  return group;
+}
+/**
+ * The host's Markdown writer (`ui.markdown-editor`). Its named source field
+ * keeps FormData reading it, and each change reaches the form as an input event.
+ */
+export function markdownField(
+  document: Document,
+  label: string,
+  name: string,
+  value: string,
+  maxLength: number,
+  hint?: string,
+): HTMLElement {
+  const wrapper = element(document, "div", "hb-writer");
+  const writer = document.createElement("codex-addon-markdown-editor") as HTMLElement & {
+    value: string;
+    name: string;
+    label: string;
+    maximumLength: number;
+  };
+  writer.name = name;
+  writer.label = label;
+  writer.maximumLength = maxLength;
+  writer.value = value;
+  writer.addEventListener("markdown-change", () =>
+    wrapper.dispatchEvent(new Event("input", { bubbles: true })),
+  );
+  wrapper.append(element(document, "span", "hb-writer-label", label), writer);
+  if (hint) wrapper.append(help(document, hint));
+  return wrapper;
+}
+/** Marks a field for the form's Settings panel (visibility, id, tags and the like). */
+export function setting<T extends HTMLElement>(field: T): T {
+  field.dataset["hbSetting"] = "";
+  return field;
+}
+/** A form section the section bar links to; `label` is its heading. */
+export function formSection(
+  document: Document,
+  label: string,
+  ...children: HTMLElement[]
+): HTMLElement {
+  const section = element(document, "section", "hb-section");
+  section.dataset["hbSection"] = label;
+  section.append(element(document, "h3", "hb-section-head", label), ...children);
+  return section;
+}

@@ -2,19 +2,22 @@ import { attunementFields, containerFields, readCarrying } from "./carrying.js";
 import { problemText, type Translator } from "./catalogs.js";
 import { describeEffect, effectsEditor } from "./effects.js";
 import {
-  actionButton,
   checkField,
   chipsField,
+  choiceField,
+  dependentGroup,
   element,
   formNumber,
+  formSection,
   formText,
   formValues,
   markdown,
+  markdownField,
   messageBlock,
   numberField,
   selectField,
+  setting,
   splitTags,
-  textArea,
   textField,
 } from "./fields.js";
 import { describeGrants, grantsEditor } from "./grants.js";
@@ -38,9 +41,8 @@ import {
   type Rarity,
 } from "./model.js";
 import type { References } from "./references.js";
-import { fromTemplate, itemTemplates } from "./templates.js";
 
-/** Common item types, offered as suggestions; any one-line type is allowed. */
+/** Common item types; "Other…" takes any one-line type. */
 export const itemTypes = [
   "Wondrous Item",
   "Armor",
@@ -53,6 +55,7 @@ export const itemTypes = [
   "Scroll",
   "Ammunition",
 ] as const;
+const otherType = "other";
 
 export interface ItemEditorContext {
   readonly document: Document;
@@ -65,8 +68,6 @@ export interface ItemEditorContext {
   readonly changed: () => void;
   /** Asks the owner to refresh enhanced controls after controls are added or removed. */
   readonly restructured: () => void;
-  /** Opens a new draft again with `item`, as a template does; only for new drafts. */
-  readonly restart?: (item: Item) => void;
 }
 
 export interface ItemEditor {
@@ -75,14 +76,15 @@ export interface ItemEditor {
 }
 
 /**
- * The item form: name and set, what the item is (its own values or its
- * set's), its description, what it does on the sheet, how it is carried and
- * who sees it. Fields go into `main`; the published preview follows the form.
+ * The item form in sections: Basics, Description, What it does and Carrying.
+ * The set, visibility, tags and id go into `settings`; the published preview
+ * follows the form. Fields a choice reveals sit under that choice.
  */
 export function itemEditor(
   context: ItemEditorContext,
   form: HTMLFormElement,
   main: HTMLElement,
+  settings: HTMLElement,
   initial: Item,
   saved: boolean,
 ): ItemEditor {
@@ -113,8 +115,11 @@ export function itemEditor(
     references,
   );
   const who = attunementFields(document, t, initial, references);
-  const top = element(document, "div", "hb-basics"),
+  who.show(true);
+  const whoGroup = dependentGroup(document, t("Because it requires attunement"), who.root);
+  const kind = element(document, "div", "hb-basics"),
     carry = element(document, "div", "hb-basics");
+  const carrySummary = element(document, "span", "hb-section-summary");
 
   const read = (): Item => {
     const data = new FormData(form);
@@ -146,17 +151,41 @@ export function itemEditor(
     };
   };
 
-  /** Type, rarity and attunement on top; weight and placements with carrying. */
+  /** Type, rarity and attunement in Basics; weight and placements in Carrying. */
   const renderBasics = (overrides: Overrides): void => {
     const fromSet = (text: string): string => t("From set ({value})", { value: text });
     const inherited = currentSet;
-    const kind = element(document, "div", "hb-row");
-    kind.append(
-      textField(document, t("Item type"), "overrideItemType", overrides.itemType ?? "", {
-        maxLength: 120,
-        placeholder: inherited ? fromSet(inherited.itemType) : noSetDefaults.itemType,
-        suggestions: itemTypes,
-      }),
+    const own = overrides.itemType ?? "";
+    const typeChoice = own === "" ? (inherited ? "" : noSetDefaults.itemType) : own;
+    const known = (itemTypes as readonly string[]).includes(typeChoice) || typeChoice === "";
+    const typeSelect = selectField(
+      document,
+      t("Item type"),
+      "overrideItemTypeChoice",
+      known ? typeChoice : otherType,
+      [
+        ...(inherited ? [["", fromSet(t(inherited.itemType))] as const] : []),
+        ...itemTypes.map((type) => [type, t(type)] as const),
+        [otherType, t("Other…")],
+      ],
+    );
+    const typeText = textField(document, t("Item type"), "overrideItemType", known ? "" : own, {
+      maxLength: 120,
+      placeholder: t("Sentient Sword"),
+      hint: t("Any one-line type, shown under the item's name."),
+    });
+    const typeOther = dependentGroup(document, t("Because you chose Other…"), typeText);
+    const showType = (): void => {
+      typeOther.hidden = typeSelect.querySelector("select")!.value !== otherType;
+    };
+    typeSelect.querySelector("select")!.addEventListener("change", () => {
+      showType();
+      context.restructured();
+    });
+    showType();
+    const row = element(document, "div", "hb-row");
+    row.append(
+      typeSelect,
       selectField(
         document,
         t("Rarity"),
@@ -168,34 +197,33 @@ export function itemEditor(
         ],
       ),
     );
-    const attunement = inherited
-      ? selectField(
-          document,
-          t("Requires attunement"),
-          "overrideAttunement",
-          overrides.attunement === undefined ? "" : overrides.attunement ? "yes" : "no",
-          [
-            ["", fromSet(t(inherited.attunement ? "Yes" : "No"))],
-            ["yes", t("Yes")],
-            ["no", t("No")],
-          ],
-        )
-      : checkField(
-          document,
-          t("Requires attunement"),
-          "overrideAttunement",
-          overrides.attunement === true,
-        );
-    const attune = element(document, "div", "hb-row");
-    attune.append(attunement, who.root);
-    top.replaceChildren(kind, attune);
-    const showWho = (chosen: boolean | undefined): void =>
-      who.show(chosen ?? currentSet?.attunement ?? noSetDefaults.attunement);
-    attunement
-      .querySelector("input, select")!
-      .addEventListener("change", () =>
-        showWho(readOverrides(new FormData(form), currentSet).attunement),
-      );
+    const attunement = choiceField(
+      document,
+      t("Requires attunement"),
+      "overrideAttunement",
+      inherited
+        ? overrides.attunement === undefined
+          ? ""
+          : overrides.attunement
+            ? "yes"
+            : "no"
+        : overrides.attunement === true
+          ? "yes"
+          : "no",
+      [
+        ...(inherited ? [["", fromSet(t(inherited.attunement ? "Yes" : "No"))] as const] : []),
+        ["no", t("No")],
+        ["yes", t("Yes")],
+      ],
+    );
+    kind.replaceChildren(row, typeOther, attunement, whoGroup);
+    const showWho = (chosen: boolean | undefined): void => {
+      whoGroup.hidden = !(chosen ?? currentSet?.attunement ?? noSetDefaults.attunement);
+    };
+    attunement.addEventListener("change", () => {
+      showWho(readOverrides(new FormData(form), currentSet).attunement);
+      context.restructured();
+    });
 
     const placementOptions = bodyPlacements.map((placement) => [placement, t(placement)] as const);
     const weight = numberField(document, t("Weight (lb)"), "overrideWeight", overrides.weightLb, {
@@ -223,14 +251,15 @@ export function itemEditor(
         overrides.bodyPlacements === undefined,
       );
       const box = inherit.querySelector("input")!;
+      const own = dependentGroup(document, t("Because the item has its own placements"), chips);
       const show = (): void => {
-        chips.hidden = box.checked;
+        own.hidden = box.checked;
       };
       box.addEventListener("change", () => {
         show();
         context.restructured();
       });
-      placements.append(inherit, chips);
+      placements.append(inherit, own);
       show();
     } else placements.append(chips);
     const physical = element(document, "div", "hb-row");
@@ -241,34 +270,16 @@ export function itemEditor(
   };
   renderBasics(initial.overrides);
 
-  if (!saved && context.restart) {
-    const bar = element(document, "div", "hb-templates");
-    bar.append(element(document, "span", "hb-templates-label", t("Start from")));
-    const templateTexts = new Set(
-      itemTemplates.flatMap((template) => (template.item.text ? [t(template.item.text)] : [])),
-    );
-    for (const template of itemTemplates) {
-      const button = actionButton(
-        document,
-        t(template.label),
-        () => {
-          const draft = read();
-          // A description the DM wrote stays; one a template wrote is replaced.
-          const own = templateTexts.has(draft.text) ? { ...draft, text: "" } : draft;
-          context.restart?.(fromTemplate(template, own, currentSet, t));
-        },
-        "quiet",
-      );
-      button.title = t(template.hint);
-      bar.append(button);
-    }
-    main.append(bar);
-  }
-
-  const setField = selectField(document, t("Set"), "setId", initial.setId, [
-    ["", t("No set")],
-    ...context.sets.map((itemSet) => [itemSet.id, itemSet.name] as const),
-  ]);
+  const setField = setting(
+    selectField(
+      document,
+      t("Set"),
+      "setId",
+      initial.setId,
+      [["", t("No set")], ...context.sets.map((itemSet) => [itemSet.id, itemSet.name] as const)],
+      t("A set gives its items shared values, which each item can change."),
+    ),
+  );
   setField.querySelector("select")!.addEventListener("change", (event) => {
     const previous = currentSet;
     const overrides = readOverrides(new FormData(form), previous);
@@ -276,24 +287,14 @@ export function itemEditor(
     renderBasics(moveOverrides(overrides, previous, currentSet));
     context.restructured();
   });
-  const identity = element(document, "div", "hb-row hb-identity");
-  identity.append(
-    textField(document, t("Name"), "name", initial.name, { maxLength: 120 }),
-    setField,
-  );
 
-  const mechanics = element(document, "fieldset", "hb-effects-fieldset");
-  mechanics.append(
-    element(document, "legend", "", t("What it does")),
-    element(
-      document,
-      "p",
-      "hb-hint",
-      t(
-        "Applies while the item is equipped, and attuned when it requires attunement. An item without any of these is text only: players see its description.",
-      ),
+  const doesNote = element(
+    document,
+    "p",
+    "hb-hint",
+    t(
+      "Applies while the item is equipped, and attuned when it requires attunement. An item without any of these is text only: players see its description.",
     ),
-    gearFields(document, t, initial, references),
   );
   // Lists show only once they hold a row; one row of buttons adds to each.
   const effectGroup = element(document, "div", "hb-grants-section");
@@ -303,55 +304,42 @@ export function itemEditor(
   );
   const adders = element(document, "div", "hb-adders");
   adders.dataset["uiActions"] = "";
-  adders.append(effects.button, ...grants.adders);
+  adders.append(
+    element(document, "span", "hb-adders-label", t("Add:")),
+    effects.button,
+    ...grants.adders,
+  );
   const passive = element(document, "div", "hb-passive");
   passive.append(
     element(document, "h4", "hb-grants-heading", t("Resistances and immunities")),
     grants.passive,
   );
-  mechanics.append(effectGroup, grants.root, adders, passive);
 
-  const carrying = element(document, "fieldset", "hb-effects-fieldset");
-  carrying.append(
-    element(document, "legend", "", t("Carrying")),
-    carry,
-    containerFields(document, t, initial),
-  );
+  // Carrying is folded to one line until it is opened.
+  const carrying = element(document, "details", "hb-section hb-collapsible");
+  carrying.dataset["hbSection"] = t("Carrying");
+  carrying.open =
+    initial.container !== undefined ||
+    initial.overrides.weightLb !== undefined ||
+    initial.overrides.bodyPlacements !== undefined;
+  const carryHead = element(document, "summary");
+  carryHead.append(element(document, "h3", "hb-section-head", t("Carrying")), carrySummary);
+  carrying.append(carryHead, carry, containerFields(document, t, initial));
 
-  const more = element(document, "details", "hb-defaults");
-  more.open = !saved && initial.id !== "";
-  const id = textField(document, t("Id"), "id", initial.id, {
-    maxLength: 64,
-    readOnly: saved,
-    placeholder: "ring-of-embers",
-    hint: saved
-      ? t("Used in saved characters; it cannot change after the first save.")
-      : t(
-          "Leave it empty to make one from the name. Saved characters use it, so it cannot change after the first save.",
-        ),
-  });
-  more.append(
-    element(document, "summary", "", t("Id and tags")),
-    id,
-    textField(document, t("Tags"), "tags", initial.tags.join(", "), {
-      hint: t("Lowercase words joined by hyphens, separated by commas."),
+  const id = setting(
+    textField(document, t("Id"), "id", initial.id, {
+      maxLength: 64,
+      readOnly: saved,
+      placeholder: "ring-of-embers",
+      hint: saved
+        ? t("Used in saved characters; it cannot change after the first save.")
+        : t(
+            "Leave it empty to make one from the name. Saved characters use it, so it cannot change after the first save.",
+          ),
     }),
   );
-
-  main.append(
-    identity,
-    top,
-    textArea(
-      document,
-      t("Description"),
-      "text",
-      initial.text,
-      5,
-      maxMarkdown,
-      t("The effect as players read it."),
-    ),
-    mechanics,
-    carrying,
+  settings.append(
+    setField,
     checkField(
       document,
       t("Visible to players"),
@@ -361,7 +349,7 @@ export function itemEditor(
     ),
   );
   if (saved)
-    main.append(
+    settings.append(
       checkField(
         document,
         t("Retired"),
@@ -370,7 +358,43 @@ export function itemEditor(
         t("Retired items stay usable by characters but leave the player gallery."),
       ),
     );
-  main.append(more);
+  settings.append(
+    textField(document, t("Tags"), "tags", initial.tags.join(", "), {
+      hint: t("Lowercase words joined by hyphens, separated by commas."),
+    }),
+    id,
+  );
+
+  const description = markdownField(
+    document,
+    t("Description"),
+    "text",
+    initial.text,
+    maxMarkdown,
+    t("The effect as players read it. Select words to link them to a rule, or type [[ to search."),
+  );
+  // The section's heading already says it; the writer keeps its accessible name.
+  description.querySelector(".hb-writer-label")?.classList.add("hb-visually-hidden");
+  main.append(
+    formSection(
+      document,
+      t("Basics"),
+      textField(document, t("Name"), "name", initial.name, { maxLength: 120 }),
+      kind,
+    ),
+    formSection(document, t("Description"), description),
+    formSection(
+      document,
+      t("What it does"),
+      doesNote,
+      gearFields(document, t, initial, references),
+      effectGroup,
+      grants.root,
+      passive,
+      adders,
+    ),
+    carrying,
+  );
 
   // The id placeholder follows the name: it shows the id saving will use.
   const nameInput = form.querySelector<HTMLInputElement>('input[name="name"]')!,
@@ -406,6 +430,7 @@ export function itemEditor(
       preview.append(list);
     }
     preview.append(markdown(document, published.record.text));
+    carrySummary.textContent = carryingSummary(item, currentSet, t);
   };
   form.addEventListener("input", update);
   form.addEventListener("change", update);
@@ -413,23 +438,44 @@ export function itemEditor(
   return { read };
 }
 
+/** "5 lb · Neck · holds 500 lb": the Carrying section while it is folded. */
+function carryingSummary(item: Item, itemSet: ItemSet | undefined, t: Translator): string {
+  const weight = item.overrides.weightLb ?? itemSet?.weightLb;
+  const placements = item.overrides.bodyPlacements ?? itemSet?.bodyPlacements ?? [];
+  const parts = [
+    weight === undefined ? t("Weight unknown") : t("{weight} lb", { weight }),
+    ...placements.map((placement) => t(placement)),
+    ...(item.container
+      ? [
+          item.container.capacityLb === undefined
+            ? t("Holds items")
+            : t("Holds {weight} lb", { weight: item.container.capacityLb }),
+        ]
+      : []),
+  ];
+  return parts.join(" · ");
+}
+
 /** The values the item sets itself; empty fields and the no-set defaults are left out. */
 function readOverrides(data: FormData, itemSet: ItemSet | undefined): Overrides {
-  const itemType = formText(data, "overrideItemType").trim(),
+  const typeChoice = formText(data, "overrideItemTypeChoice"),
+    itemType =
+      typeChoice === otherType ? formText(data, "overrideItemType").trim() : typeChoice.trim(),
     rarity = formText(data, "overrideRarity"),
     attunement = formText(data, "overrideAttunement"),
     weight = formNumber(data, "overrideWeight"),
     placements = formValues(data, "overridePlacements") as BodyPlacement[];
+  const ownType = itemType !== "" && (itemSet !== undefined || itemType !== noSetDefaults.itemType);
   const ownRarity = rarity !== "" && (itemSet !== undefined || rarity !== noSetDefaults.rarity);
   const ownPlacements =
     itemSet !== undefined ? data.get("inheritPlacements") === null : placements.length > 0;
   return {
-    ...(itemType ? { itemType } : {}),
+    ...(ownType ? { itemType } : {}),
     ...(ownRarity ? { rarity: rarity as Rarity } : {}),
-    // A checkbox sends "on" while checked; the set's select sends "yes" or "no".
-    ...(attunement === "yes" || attunement === "on"
+    // Without a set, "No" is the default and is not stored.
+    ...(attunement === "yes"
       ? { attunement: true }
-      : attunement === "no"
+      : attunement === "no" && itemSet !== undefined
         ? { attunement: false }
         : {}),
     ...(ownPlacements ? { bodyPlacements: placements } : {}),

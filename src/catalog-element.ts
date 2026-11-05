@@ -6,13 +6,16 @@ import {
   badge,
   checkField,
   chipsField,
+  choiceField,
   element,
   formNumber,
   formText,
   formValues,
+  markdownField,
   messageBlock,
   numberField,
   selectField,
+  setting,
   splitTags,
   textArea,
   textField,
@@ -21,6 +24,7 @@ import { fold } from "./gallery-model.js";
 import { parseImportCommit, parseImportPreview, type ImportPreview } from "./import-review.js";
 import { featCategoryLabels, featEditor, type FeatEditor } from "./feat-editor.js";
 import { itemEditor, itemTypes, type ItemEditor } from "./item-editor.js";
+import { fromTemplate, itemTemplates } from "./templates.js";
 import { LiveRefresh } from "./live-refresh.js";
 import {
   bodyPlacements,
@@ -761,7 +765,10 @@ export function defineCatalogElement(generation?: string): string {
         ?.focus({ preventScroll: true });
     }
     #setDirty(dirty: boolean): void {
+      const changed = this.#dirty !== dirty;
       this.#dirty = dirty;
+      const form = this.#editor.querySelector("form");
+      if (changed && form) this.#showStatus(form);
       this.#contribution?.edits.set({ dirty, saving: this.#busy });
       if (!dirty) this.#refresh?.wake();
     }
@@ -876,6 +883,8 @@ export function defineCatalogElement(generation?: string): string {
             ? this.#drafts.sets.find((entry) => entry.value.id === selection.id)
             : undefined;
         this.#editor.replaceChildren(this.#setForm(stored));
+      } else if (selection.kind === "new-item" && !selection.template) {
+        this.#editor.replaceChildren(this.#itemStart(selection.setId));
       } else {
         const stored =
           selection.kind === "item"
@@ -887,6 +896,81 @@ export function defineCatalogElement(generation?: string): string {
             : this.#itemForm(stored, undefined),
         );
       }
+      const form = this.#editor.querySelector("form");
+      this.classList.toggle("hb-editing", form !== null);
+      if (form) this.#finishForm(form);
+    }
+    /**
+     * "What are you making?": a new item starts from a common kind, blank, or
+     * a copy of an existing item. Every choice opens the usual form.
+     */
+    #itemStart(setId: string): HTMLElement {
+      const t = this.#t;
+      const root = element(document, "section", "hb-start-item");
+      root.setAttribute("aria-labelledby", "hb-start-title");
+      const title = element(document, "h2", "", t("What are you making?"));
+      title.id = "hb-start-title";
+      const itemSet = this.#drafts?.sets.find((entry) => entry.value.id === setId)?.value;
+      const blank = (): Item => newItem("", "", setId, Date.now());
+      const open = (item: Item): void =>
+        void this.#select({ kind: "new-item", setId: item.setId, template: item });
+      const cards = element(document, "div", "hb-kind-cards");
+      for (const template of itemTemplates) {
+        const card = element(document, "button", "hb-kind-card");
+        card.type = "button";
+        card.append(
+          element(document, "strong", "", t(template.label)),
+          element(document, "span", "", t(template.hint)),
+        );
+        card.addEventListener("click", () => open(fromTemplate(template, blank(), itemSet, t)));
+        cards.append(card);
+      }
+      const head = element(document, "div", "hb-start-head");
+      const intro = element(document, "div");
+      intro.append(
+        title,
+        element(
+          document,
+          "p",
+          "hb-hint",
+          t("Pick the closest one. It fills in the form; you can change everything afterwards."),
+        ),
+      );
+      head.append(
+        intro,
+        actionButton(document, t("Start blank"), () => open(blank()), "quiet"),
+      );
+      root.append(head, cards);
+      const items = [...(this.#drafts?.items ?? [])].sort((a, b) =>
+        compare(fold(a.value.name), fold(b.value.name)),
+      );
+      if (items.length > 0) {
+        const copy = selectField(
+          document,
+          t("Copy an existing item"),
+          "copyFrom",
+          "",
+          [
+            ["", t("Choose an item")],
+            ...items.map((entry) => [entry.value.id, entry.value.name] as const),
+          ],
+          t("Opens a new item with its values; the original stays as it is."),
+        );
+        copy.querySelector("select")!.addEventListener("change", (event) => {
+          const chosen = items.find(
+            (entry) => entry.value.id === (event.target as HTMLSelectElement).value,
+          );
+          if (chosen)
+            open({
+              ...chosen.value,
+              id: "",
+              name: t("{name} (copy)", { name: chosen.value.name }),
+              retired: false,
+            });
+        });
+        root.append(copy);
+      }
+      return root;
     }
     /**
      * The permanent id field. A new draft may leave it empty: the placeholder
@@ -968,12 +1052,44 @@ export function defineCatalogElement(generation?: string): string {
      * A draft form: its fields go into `main`, and an editor with a preview
      * appends it after `main`. Ctrl+S (Cmd+S) saves.
      */
-    #form(title: string): { form: HTMLFormElement; main: HTMLElement } {
+    #form(title: string): { form: HTMLFormElement; main: HTMLElement; settings: HTMLElement } {
+      const t = this.#t;
       const form = element(document, "form", "hb-form");
       form.noValidate = true;
+      const head = element(document, "div", "hb-form-head");
+      const heading = element(document, "div", "hb-form-title");
+      const browse = actionButton(document, t("All records"), () => {
+        const open = !this.classList.contains("hb-browsing");
+        this.classList.toggle("hb-browsing", open);
+        browse.setAttribute("aria-expanded", String(open));
+        if (open) this.#tree.querySelector<HTMLElement>("input, button")?.focus();
+      });
+      browse.classList.add("hb-browse");
+      browse.setAttribute("aria-expanded", String(this.classList.contains("hb-browsing")));
+      heading.append(
+        browse,
+        element(document, "h2", "", title),
+        element(document, "span", "hb-form-status"),
+      );
+      const legend = element(document, "p", "hb-legend");
+      legend.append(
+        element(document, "span", "hb-legend-pick", t("▾ pick from a list")),
+        element(document, "span", "hb-legend-type", t("✎ type freely")),
+        element(document, "span", "hb-legend-depends", t("↳ shown because of the choice above")),
+      );
+      head.append(heading, element(document, "nav", "hb-section-nav"), legend);
       const main = element(document, "div", "hb-form-main");
-      main.append(element(document, "h2", "", title));
-      form.append(main);
+      const side = element(document, "div", "hb-form-side");
+      const settings = element(document, "section", "hb-settings");
+      settings.setAttribute("aria-label", t("Settings"));
+      settings.append(element(document, "h3", "", t("Settings")));
+      side.append(settings);
+      form.append(head, main, side);
+      form.addEventListener("markdown-save", () =>
+        form.querySelector<HTMLButtonElement>('.hb-editor-actions button[type="submit"]')?.click(),
+      );
+      form.addEventListener("input", () => this.#showStatus(form));
+      form.addEventListener("change", () => this.#showStatus(form));
       // A form replaced after saving can still report a field's last change.
       const edited = (): void => {
         if (form.isConnected) this.#setDirty(true);
@@ -989,12 +1105,84 @@ export function defineCatalogElement(generation?: string): string {
       });
       if (this.#editorMessage)
         main.append(messageBlock(document, this.#editorMessage.text, this.#editorMessage.kind));
-      return { form, main };
+      return { form, main, settings };
+    }
+    /**
+     * Lays out a rendered form: settings fields an editor left in the form go
+     * to the Settings panel, the preview follows it, and the section bar
+     * links the form's sections.
+     */
+    #finishForm(form: HTMLFormElement): void {
+      const t = this.#t;
+      const main = form.querySelector<HTMLElement>(":scope > .hb-form-main"),
+        side = form.querySelector<HTMLElement>(":scope > .hb-form-side"),
+        settings = side?.querySelector<HTMLElement>(".hb-settings");
+      if (!main || !side || !settings) return;
+      for (const field of main.querySelectorAll<HTMLElement>("[data-hb-setting]"))
+        settings.append(field);
+      // The kinds' own "Id" disclosures become plain settings fields.
+      for (const details of main.querySelectorAll<HTMLDetailsElement>("details.hb-defaults")) {
+        settings.append(...[...details.children].filter((child) => child.tagName !== "SUMMARY"));
+        details.remove();
+      }
+      settings.hidden = settings.children.length <= 1;
+      const preview = form.querySelector<HTMLElement>(":scope > .hb-preview");
+      if (preview) side.append(preview);
+      const nav = form.querySelector<HTMLElement>(".hb-section-nav");
+      const sections = [
+        ...main.querySelectorAll<HTMLElement>(
+          ":scope > [data-hb-section], :scope > fieldset.hb-effects-fieldset",
+        ),
+      ];
+      if (nav && sections.length > 1) {
+        nav.setAttribute("aria-label", t("Sections"));
+        for (const section of sections) {
+          const label =
+            section.dataset["hbSection"] ??
+            section.querySelector(":scope > legend")?.textContent ??
+            "";
+          if (!label) continue;
+          // Buttons, not links: the page's address belongs to the host.
+          nav.append(
+            actionButton(
+              document,
+              label,
+              () => {
+                if (section instanceof HTMLDetailsElement) section.open = true;
+                section.scrollIntoView({ block: "start", behavior: "smooth" });
+                section
+                  .querySelector<HTMLElement>("input, select, textarea, summary")
+                  ?.focus({ preventScroll: true });
+              },
+              "quiet",
+            ),
+          );
+        }
+      } else nav?.remove();
+      this.#showStatus(form);
+    }
+    /** The form's status chips: unsaved changes, who sees it, retired. */
+    #showStatus(form: HTMLFormElement): void {
+      const t = this.#t;
+      const status = form.querySelector(".hb-form-status");
+      if (!status) return;
+      const chips: HTMLElement[] = [];
+      if (this.#dirty) chips.push(badge(document, t("Unsaved changes"), "accent"));
+      const visible = form.querySelector<HTMLInputElement>('input[name="playerVisible"]');
+      if (visible)
+        chips.push(
+          visible.checked
+            ? badge(document, t("Visible to players"))
+            : badge(document, t("Hidden"), "muted"),
+        );
+      if (form.querySelector<HTMLInputElement>('input[name="retired"]')?.checked)
+        chips.push(badge(document, t("Retired"), "warn"));
+      status.replaceChildren(...chips);
     }
     #setForm(stored: Stored<ItemSet> | undefined): HTMLFormElement {
       const t = this.#t;
       const value = stored?.value ?? newSet("", "", Date.now());
-      const { form, main } = this.#form(stored ? value.name : t("New set"));
+      const { form, main, settings } = this.#form(stored ? value.name : t("New set"));
       const row = (...fields: HTMLElement[]): HTMLElement => {
         const node = element(document, "div", "hb-row");
         node.append(...fields);
@@ -1028,7 +1216,16 @@ export function defineCatalogElement(generation?: string): string {
           ),
         ),
         row(
-          checkField(document, t("Requires attunement"), "attunement", value.attunement),
+          choiceField(
+            document,
+            t("Requires attunement"),
+            "attunement",
+            value.attunement ? "yes" : "no",
+            [
+              ["no", t("No")],
+              ["yes", t("Yes")],
+            ],
+          ),
           numberField(document, t("Weight (lb)"), "weightLb", value.weightLb, {
             min: 0,
             max: maxWeight,
@@ -1043,21 +1240,19 @@ export function defineCatalogElement(generation?: string): string {
           value.bodyPlacements,
           bodyPlacements.map((placement) => [placement, t(placement)] as const),
         ),
-        textArea(
+        markdownField(
           document,
           t("Shared description"),
           "description",
           value.description,
-          4,
           maxMarkdown,
           t("Added to every item in the set."),
         ),
-        textArea(
+        markdownField(
           document,
           t("Curse"),
           "curse",
           value.curse,
-          3,
           maxMarkdown,
           t("Added to every item as its curse."),
         ),
@@ -1094,16 +1289,7 @@ export function defineCatalogElement(generation?: string): string {
           t("What each level does, as players read it."),
         ),
       );
-      const more = element(document, "details", "hb-defaults");
-      more.append(
-        element(document, "summary", "", t("Id and tags")),
-        this.#idField(stored !== undefined, value.id, "elemental-rings"),
-        textField(document, t("Tags"), "tags", value.tags.join(", "), {
-          hint: t("Lowercase words joined by hyphens, separated by commas."),
-        }),
-      );
-      main.append(
-        condition,
+      settings.append(
         checkField(
           document,
           t("Visible to players"),
@@ -1111,9 +1297,13 @@ export function defineCatalogElement(generation?: string): string {
           value.playerVisible,
           t("Lists the set in the player gallery. Each item also needs its own switch."),
         ),
+        textField(document, t("Tags"), "tags", value.tags.join(", "), {
+          hint: t("Lowercase words joined by hyphens, separated by commas."),
+        }),
+        this.#idField(stored !== undefined, value.id, "elemental-rings"),
       );
+      main.append(condition);
       if (stored) main.append(this.#setMembers(stored));
-      main.append(more);
       this.#previewId(form, () => this.#setIds());
       const actions = element(document, "div", "hb-editor-actions");
       actions.dataset["uiActions"] = "";
@@ -1226,7 +1416,7 @@ export function defineCatalogElement(generation?: string): string {
         curse: formText(data, "curse"),
         itemType: formText(data, "itemType").trim(),
         rarity: formText(data, "rarity") as Rarity,
-        attunement: data.get("attunement") !== null,
+        attunement: formText(data, "attunement") === "yes",
         bodyPlacements: formValues(data, "bodyPlacements") as BodyPlacement[],
         tags: splitTags(formText(data, "tags")),
         namePrefix: formText(data, "namePrefix").trim(),
@@ -1263,7 +1453,7 @@ export function defineCatalogElement(generation?: string): string {
     ): HTMLFormElement {
       const t = this.#t;
       const value = stored?.value ?? template ?? newItem("", "", setId ?? "", Date.now());
-      const { form, main } = this.#form(stored ? value.name : t("New item"));
+      const { form, main, settings } = this.#form(stored ? value.name : t("New item"));
       const sets = [...(this.#drafts?.sets ?? [])]
         .sort((a, b) => compare(fold(a.value.name), fold(b.value.name)))
         .map((entry) => entry.value);
@@ -1276,10 +1466,10 @@ export function defineCatalogElement(generation?: string): string {
           takenIds: () => this.#itemIds(),
           changed: () => this.#setDirty(true),
           restructured: () => this.#controls?.refresh(),
-          ...(stored ? {} : { restart: (item: Item) => this.#restart(item) }),
         },
         form,
         main,
+        settings,
         value,
         stored !== undefined,
       );
@@ -1323,16 +1513,6 @@ export function defineCatalogElement(generation?: string): string {
       main.append(actions);
       form.addEventListener("submit", (event) => event.preventDefault());
       return form;
-    }
-    /** Opens the new item again as `item`, keeping the changes it carries. */
-    #restart(item: Item): void {
-      this.#selection = { kind: "new-item", setId: item.setId, template: item };
-      this.#renderEditor();
-      this.#controls?.refresh();
-      this.#setDirty(true);
-      this.#editor
-        .querySelector<HTMLInputElement>('input[name="name"]')
-        ?.focus({ preventScroll: true });
     }
     async #saveItem(
       editor: ItemEditor,
@@ -1382,7 +1562,7 @@ export function defineCatalogElement(generation?: string): string {
           });
       main.append(
         textField(document, t("Name"), "name", value.name, { maxLength: 120 }),
-        this.#idField(stored !== undefined, value.id, "path-of-the-storm-drum"),
+        setting(this.#idField(stored !== undefined, value.id, "path-of-the-storm-drum")),
         classField,
         numberField(document, t("Subclass level"), "subclassLevel", value.subclassLevel, {
           min: 1,
@@ -1393,12 +1573,11 @@ export function defineCatalogElement(generation?: string): string {
           maxLength: 300,
           hint: t("An optional one-line summary."),
         }),
-        textArea(
+        markdownField(
           document,
           t("Description"),
           "text",
           value.text,
-          6,
           maxMarkdown,
           t("The subclass as players read it."),
         ),
@@ -1921,7 +2100,7 @@ export function defineCatalogElement(generation?: string): string {
       const main = this.#editor.querySelector(".hb-form-main");
       main?.querySelector(":scope > .hb-message")?.remove();
       const block = messageBlock(document, problemText(this.#t, problem), "alert");
-      main?.querySelector("h2")?.after(block);
+      main?.prepend(block);
       block.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
     /**

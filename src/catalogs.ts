@@ -1075,6 +1075,58 @@ export const cs: Readonly<Record<string, string>> = {
   // Item editor
   "Start from": "Začít od",
   "What it does": "Co dělá",
+  // Editor layout and start chooser
+  "What are you making?": "Co vytváříte?",
+  "Pick the closest one. It fills in the form; you can change everything afterwards.":
+    "Vyberte nejbližší možnost. Vyplní formulář; vše můžete později změnit.",
+  "Start blank": "Začít od nuly",
+  "Copy an existing item": "Zkopírovat existující předmět",
+  "Choose an item": "Vyberte předmět",
+  "Opens a new item with its values; the original stays as it is.":
+    "Otevře nový předmět s jeho hodnotami; původní zůstane beze změny.",
+  "All records": "Všechny záznamy",
+  "▾ pick from a list": "▾ výběr ze seznamu",
+  "✎ type freely": "✎ volný text",
+  "↳ shown because of the choice above": "↳ zobrazeno kvůli volbě výše",
+  Settings: "Nastavení",
+  Sections: "Oddíly",
+  "Unsaved changes": "Neuložené změny",
+  Basics: "Základ",
+  "Add:": "Přidat:",
+  "Other…": "Jiný…",
+  "Sentient Sword": "Vnímavý meč",
+  "Any one-line type, shown under the item's name.":
+    "Libovolný jednořádkový typ, zobrazený pod názvem předmětu.",
+  "Because you chose Other…": "Protože jste zvolili Jiný…",
+  "Because it requires attunement": "Protože vyžaduje sladění",
+  "Because the item has its own placements": "Protože má předmět vlastní umístění",
+  "Because it holds other items": "Protože pojme jiné předměty",
+  "Because it is a weapon": "Protože je to zbraň",
+  "Because it is armor or a shield": "Protože je to zbroj nebo štít",
+  "Pick several to let the player choose.": "Vyberte víc možností a hráč si zvolí.",
+  "A set gives its items shared values, which each item can change.":
+    "Sada dává svým předmětům společné hodnoty, které může každý předmět změnit.",
+  "The effect as players read it. Select words to link them to a rule, or type [[ to search.":
+    "Účinek, jak ho čtou hráči. Označte slova a propojte je s pravidlem, nebo napište [[ a hledejte.",
+  "Weight unknown": "Váha neznámá",
+  "{weight} lb": "{weight} lb",
+  "Holds items": "Pojme předměty",
+  "Holds {weight} lb": "Pojme {weight} lb",
+  "Spellcasting focus": "Sesílací pomůcka",
+  "+1 to spell attack rolls and spell save DCs while attuned.":
+    "+1 k útokům kouzly a SO záchranných hodů proti kouzlům, dokud je sladěn.",
+  "While holding this wand, you have a +1 bonus to spell attack rolls and to the saving throw DCs of your spells.":
+    "Dokud držíte tuto hůlku, máte bonus +1 k hodům na útok kouzlem a ke SO záchranných hodů proti vašim kouzlům.",
+  "Story item": "Příběhový předmět",
+  "Text only: nothing the sheet calculates.": "Jen text: deník nic nepočítá.",
+  "Wondrous Item": "Divotvorný předmět",
+  Armor: "Zbroj",
+  Weapon: "Zbraň",
+  Ring: "Prsten",
+  Rod: "Žezlo",
+  Staff: "Hůl",
+  Wand: "Hůlka",
+  Scroll: "Svitek",
   "Applies while the item is equipped, and attuned when it requires attunement. An item without any of these is text only: players see its description.":
     "Platí, dokud je předmět vybavený, a sladěný, pokud sladění vyžaduje. Předmět bez čehokoli z toho je pouze textový: hráči uvidí jeho popis.",
   "Bonuses and proficiencies": "Bonusy a zdatnosti",
