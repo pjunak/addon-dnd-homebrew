@@ -344,10 +344,13 @@ for (
   attempt++
 )
   await frame();
-const startPanel = [
-  newCatalog.querySelectorAll(".hb-start button").length,
-  newCatalog.querySelectorAll(".hb-kinds dt").length,
-];
+// The overview: each kind's card with its draft count and New action, and the publish state.
+const startCards = [...newCatalog.querySelectorAll<HTMLElement>(".hb-kind-tile")].map((card) => [
+  card.dataset["kind"],
+  card.querySelector(".hb-kind-count")?.textContent,
+  card.querySelector("button")?.textContent,
+]);
+const startStatus = newCatalog.querySelector<HTMLElement>(".hb-status")?.dataset["state"];
 // A new item started from the magic weapon template.
 [...newCatalog.querySelectorAll<HTMLButtonElement>(".hb-header button")]
   .find((button) => button.textContent === "New item")
@@ -801,11 +804,26 @@ globalThis.runRenderingContract = () => {
     whoHidden,
     [true, false],
   );
+  const expectedCards = [
+    ["item", String(fixture.cases.length), "New item"],
+    ["set", String(fixture.sets.length), "New set"],
+    ["subclass", String(subclasses.length), "New subclass"],
+    ["feat", String(feats.length), "New feat"],
+    ["spell", String(spells.length), "New spell"],
+    ["species", String(species.length), "New species"],
+    ["background", String(backgrounds.length), "New background"],
+  ];
   check(
-    "the empty editor explains each kind and leaves the buttons to the header",
-    JSON.stringify(startPanel) === JSON.stringify([0, 7]),
-    startPanel,
-    [0, 7],
+    "the overview shows each kind with its drafts and a New action",
+    JSON.stringify(startCards) === JSON.stringify(expectedCards),
+    startCards,
+    expectedCards,
+  );
+  check(
+    "the publish status says changes are waiting",
+    startStatus === "pending",
+    startStatus,
+    "pending",
   );
   check(
     "a new item asks what you are making and offers every template",

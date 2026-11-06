@@ -26,6 +26,7 @@ import { featCategoryLabels, featEditor, type FeatEditor } from "./feat-editor.j
 import { itemEditor, itemTypes, type ItemEditor } from "./item-editor.js";
 import { fromTemplate, itemTemplates } from "./templates.js";
 import { LiveRefresh } from "./live-refresh.js";
+import { homebrewKinds, overview, type KindKey, type KindSummary } from "./overview.js";
 import {
   bodyPlacements,
   canonical,
@@ -73,6 +74,7 @@ import {
   type Item,
   type ItemSet,
   type Problem,
+  type PublishPlan,
   type Rarity,
   type Species,
   type Spell,
@@ -139,7 +141,7 @@ export function defineCatalogElement(generation?: string): string {
     /** Pickers' records; undefined until loaded, or when no Compendium answers. */
     #references: References | undefined;
     #mechanics: MechanicsEditor | undefined;
-    readonly #header = document.createElement("div");
+    readonly #header = Object.assign(document.createElement("div"), { className: "hb-top" });
     readonly #tree = document.createElement("nav");
     readonly #editor = document.createElement("section");
     readonly #fileInput = document.createElement("input");
@@ -326,7 +328,9 @@ export function defineCatalogElement(generation?: string): string {
         ]
           .filter((part) => part !== "")
           .join(" ");
-        this.#header.append(element(document, "p", "hb-status", status));
+        const line = element(document, "p", "hb-status", status);
+        line.dataset["state"] = pending > 0 ? "pending" : meta ? "published" : "empty";
+        this.#header.append(line);
       }
       if (this.#message)
         this.#header.append(messageBlock(document, t(this.#message.text), this.#message.kind));
@@ -366,18 +370,12 @@ export function defineCatalogElement(generation?: string): string {
         toggle.setAttribute("aria-expanded", String(open));
         if (open) panel.querySelector<HTMLButtonElement>("button")?.focus();
       };
-      const kinds: readonly (readonly [string, Selection])[] = [
-        ["Subclass", { kind: "new-subclass" }],
-        ["Feat", { kind: "new-feat" }],
-        ["Spell", { kind: "new-spell" }],
-        ["Species", { kind: "new-species" }],
-        ["Background", { kind: "new-background" }],
-      ];
-      for (const [label, selection] of kinds)
+      // Items and sets have their own header buttons.
+      for (const kind of homebrewKinds.filter(({ key }) => key !== "item" && key !== "set"))
         panel.append(
-          actionButton(document, t(label), () => {
+          actionButton(document, t(kind.one), () => {
             show(false);
-            void this.#select(selection);
+            void this.#select(this.#newSelection(kind.key));
           }),
         );
       root.addEventListener("keydown", (event) => {
@@ -547,7 +545,7 @@ export function defineCatalogElement(generation?: string): string {
           const button = this.#treeButton(entry.value.name, selection(entry.value.id));
           button.append(badge(document, detail(entry.value), "muted"));
           const pending = state(entry.value);
-          if (pending) button.append(badge(document, t(pending), "warn"));
+          if (pending) button.append(badge(document, t(pending), "accent"));
           const row = element(document, "li");
           row.append(button);
           list.append(row);
@@ -669,39 +667,96 @@ export function defineCatalogElement(generation?: string): string {
       // Only what needs attention or differs from a usual item gets a badge.
       const badges: [string, "" | "muted" | "warn" | "accent"][] =
         item.characterMechanics === "complete" ? [] : [["Text only", "muted"]];
-      if (!(item.playerVisible && (itemSet?.playerVisible ?? true)))
-        badges.push(["Hidden", "muted"]);
+      if (hiddenFromPlayers(item, itemSet)) badges.push(["Hidden", "muted"]);
       if (item.retired) badges.push(["Retired", "warn"]);
       const published = this.#published?.records.get(`hb.${item.id}`);
-      if (!published || published.value.withdrawn) badges.push(["Unpublished", "warn"]);
+      if (!published || published.value.withdrawn) badges.push(["Unpublished", "accent"]);
       else if (canonical(published.value) !== canonical(flatten(itemSet, item)))
-        badges.push(["Changed", "warn"]);
+        badges.push(["Changed", "accent"]);
       return badges;
     }
     #pendingChanges(): number {
-      if (!this.#drafts || !this.#published) return 0;
-      const plan = planPublish(
-        this.#drafts.sets.map((entry) => entry.value),
-        this.#drafts.items.map((entry) => entry.value),
-        this.#published.records,
-        this.#published.meta,
+      const plan = this.#plan();
+      return plan ? changeCount(plan) : 0;
+    }
+    /**
+     * What publishing would change: for every kind, or with `only` for that
+     * kind's drafts alone (sets always come along, because items need them).
+     */
+    #plan(only?: KindKey): PublishPlan | undefined {
+      const drafts = this.#drafts,
+        published = this.#published;
+      if (!drafts || !published) return undefined;
+      const take = <T>(key: KindKey, list: readonly Stored<T>[]): T[] =>
+        !only || only === key ? list.map((entry) => entry.value) : [];
+      const served = <V>(key: KindKey, records: ReadonlyMap<string, V>): ReadonlyMap<string, V> =>
+        !only || only === key ? records : new Map<string, V>();
+      return planPublish(
+        drafts.sets.map((entry) => entry.value),
+        take("item", drafts.items),
+        served("item", published.records),
+        published.meta,
         0,
-        this.#drafts.subclasses.map((entry) => entry.value),
-        this.#published.subclasses,
-        this.#drafts.feats.map((entry) => entry.value),
-        this.#published.feats,
-        this.#drafts.spells.map((entry) => entry.value),
-        this.#published.spells,
-        this.#drafts.species.map((entry) => entry.value),
-        this.#published.species,
-        this.#drafts.backgrounds.map((entry) => entry.value),
-        this.#published.backgrounds,
+        take("subclass", drafts.subclasses),
+        served("subclass", published.subclasses),
+        take("feat", drafts.feats),
+        served("feat", published.feats),
+        take("spell", drafts.spells),
+        served("spell", published.spells),
+        take("species", drafts.species),
+        served("species", published.species),
+        take("background", drafts.backgrounds),
+        served("background", published.backgrounds),
       );
-      // A published draft with a problem would also be withdrawn; count it once.
-      return new Set([
-        ...plan.changes.map((change) => change.id),
-        ...plan.problems.map((entry) => `hb.${entry.itemId}`),
-      ]).size;
+    }
+    /** Each kind at a glance for the overview: drafts, changes to publish, and hidden ones. */
+    #summaries(): Record<KindKey, KindSummary> {
+      const drafts = this.#drafts;
+      const sets = new Map((drafts?.sets ?? []).map((entry) => [entry.value.id, entry.value]));
+      const lists: Record<KindKey, readonly unknown[]> = {
+        item: drafts?.items ?? [],
+        set: drafts?.sets ?? [],
+        subclass: drafts?.subclasses ?? [],
+        feat: drafts?.feats ?? [],
+        spell: drafts?.spells ?? [],
+        species: drafts?.species ?? [],
+        background: drafts?.backgrounds ?? [],
+      };
+      const hidden: Partial<Record<KindKey, number>> = {
+        item: (drafts?.items ?? []).filter(({ value }) =>
+          hiddenFromPlayers(value, sets.get(value.setId)),
+        ).length,
+        set: (drafts?.sets ?? []).filter(({ value }) => !value.playerVisible).length,
+      };
+      const summaries = {} as Record<KindKey, KindSummary>;
+      for (const kind of homebrewKinds) {
+        const plan = kind.published ? this.#plan(kind.key) : undefined;
+        summaries[kind.key] = {
+          count: lists[kind.key].length,
+          pending: plan ? changeCount(plan) : 0,
+          hidden: hidden[kind.key] ?? 0,
+        };
+      }
+      return summaries;
+    }
+    /** A new draft of a kind; a new item joins the set being looked at. */
+    #newSelection(key: KindKey): Selection {
+      switch (key) {
+        case "item":
+          return { kind: "new-item", setId: this.#currentSetId() };
+        case "set":
+          return { kind: "new-set" };
+        case "subclass":
+          return { kind: "new-subclass" };
+        case "feat":
+          return { kind: "new-feat" };
+        case "spell":
+          return { kind: "new-spell" };
+        case "species":
+          return { kind: "new-species" };
+        case "background":
+          return { kind: "new-background" };
+      }
     }
 
     #selected(): StoredDraft | undefined {
@@ -791,43 +846,14 @@ export function defineCatalogElement(generation?: string): string {
       this.#mechanics = undefined;
       const selection = this.#selection;
       if (!selection || !this.#drafts) {
-        // The header holds the buttons; this explains what each kind is for.
-        const start = element(document, "div", "hb-start");
-        const kinds = element(document, "dl", "hb-kinds");
-        for (const [name, about] of [
-          [
-            "Item",
-            "A magic item, such as a +1 weapon, a ring of resistance or a wand with a spell. Start from a common kind and change what you need.",
-          ],
-          [
-            "Set",
-            "Items that share their type, rarity, attunement, description or curse, such as a deck of cards.",
-          ],
-          ["Subclass", "A class's subclass, with its features by level."],
-          ["Feat", "An origin feat, a general feat, a fighting style or an epic boon."],
-          ["Spell", "A spell with its stat block, on the spell lists of the classes you choose."],
-          [
-            "Species",
-            "A species for character creation, with its size, speeds and traits, and lineages to choose from.",
-          ],
-          [
-            "Background",
-            "A background for character creation: the abilities it raises, its origin feat, skills, tools and equipment.",
-          ],
-        ] as const)
-          kinds.append(element(document, "dt", "", t(name)), element(document, "dd", "", t(about)));
-        start.append(
-          element(
+        this.#editor.replaceChildren(
+          overview(
             document,
-            "p",
-            "hb-hint",
-            t(
-              "Choose something on the left to edit it, or start something new with the buttons above.",
-            ),
+            t,
+            this.#summaries(),
+            (key) => void this.#select(this.#newSelection(key)),
           ),
-          kinds,
         );
-        this.#editor.replaceChildren(start);
         return;
       }
       if (selection.kind === "background" || selection.kind === "new-background") {
@@ -2585,6 +2611,17 @@ export function defineCatalogElement(generation?: string): string {
   return tag;
 }
 
+/** An item players cannot see: hidden itself, or in a hidden set. */
+function hiddenFromPlayers(item: Item, itemSet: ItemSet | undefined): boolean {
+  return !(item.playerVisible && (itemSet?.playerVisible ?? true));
+}
+/** How many records a plan changes; a published draft with a problem would also be withdrawn, so it counts once. */
+function changeCount(plan: PublishPlan): number {
+  return new Set([
+    ...plan.changes.map((change) => change.id),
+    ...plan.problems.map((entry) => `hb.${entry.itemId}`),
+  ]).size;
+}
 function isConflict(error: unknown): boolean {
   return (
     typeof error === "object" && error !== null && (error as { status?: unknown }).status === 409

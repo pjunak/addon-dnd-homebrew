@@ -19,6 +19,8 @@
   justify-content: space-between;
   align-items: end;
   gap: 1rem;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--chrome-divider);
 }
 .hb-title p,
 .hb-status,
@@ -28,6 +30,12 @@
 }
 .hb-hint {
   font-size: var(--text-sm);
+}
+/* The page head: title and actions over the host's hairline, then the publish state. */
+.hb-top {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
 }
 .hb-actions {
   display: flex;
@@ -138,14 +146,6 @@
 .hb-tree-toggle:focus-visible {
   outline: 2px solid var(--accent-gold);
   outline-offset: 1px;
-}
-.hb-start {
-  display: grid;
-  gap: 0.75rem;
-  max-width: 40rem;
-}
-.hb-start .hb-hint {
-  margin: 0;
 }
 .hb-badge {
   display: inline-block;
@@ -795,20 +795,6 @@
   flex: 1 1 auto;
   min-width: 0;
 }
-.hb-kinds {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 0.4rem 1rem;
-  margin: 0;
-}
-.hb-kinds dt {
-  font-weight: 700;
-  color: var(--text-parchment);
-}
-.hb-kinds dd {
-  margin: 0;
-  color: var(--text-muted);
-}
 /* On phones the host's bottom navigation covers the screen's bottom edge, so
    the save bar stops above it (the host's breakpoint and token). */
 @media (max-width: 768px) {
@@ -845,4 +831,166 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+/* The publish state at a glance: a dot whose colour says whether anything waits. */
+.hb-status[data-state] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  color: var(--text-light);
+  font-size: var(--text-sm);
+}
+.hb-status[data-state]::before {
+  content: "";
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.hb-status[data-state="pending"] {
+  border-color: var(--accent-gold-dim);
+}
+.hb-status[data-state="pending"]::before {
+  background: var(--accent-gold);
+}
+.hb-status[data-state="published"]::before {
+  background: var(--color-success);
+}
+/* The start screen: the host's section heading, a card per kind (as DM Tools'
+   workflow cards), then how a draft reaches play. */
+.hb-overview {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+.hb-overview-head {
+  display: grid;
+  gap: var(--space-1);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.hb-overview .hb-overview-title {
+  font: 600 var(--text-lg) / 1.2 var(--font-title);
+  letter-spacing: 0.05em;
+}
+.hb-overview-head .hb-hint {
+  margin: 0;
+}
+.hb-kind-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--space-3);
+}
+.hb-kind-tile {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+.hb-kind-tile:hover,
+.hb-kind-tile:focus-within {
+  border-color: rgba(var(--accent-gold-rgb), 0.5);
+}
+.hb-kind-tile-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.hb-kind-icon {
+  flex: none;
+  color: var(--accent-gold);
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+.hb-kind-tile h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--text-md);
+  letter-spacing: 0.05em;
+  overflow-wrap: anywhere;
+}
+.hb-kind-count {
+  flex: none;
+  color: var(--text-parchment);
+  font: 700 var(--text-xl) / 1 var(--font-ui);
+  font-variant-numeric: tabular-nums;
+}
+.hb-kind-about {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.hb-kind-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  min-height: 1.4rem;
+  margin: 0;
+}
+.hb-kind-none {
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-style: italic;
+}
+.hb-kind-tile .ui-action {
+  justify-self: start;
+}
+.hb-flow {
+  display: grid;
+  gap: var(--space-2);
+}
+.hb-flow h3 {
+  font-size: var(--text-md);
+  letter-spacing: 0.05em;
+}
+.hb-flow ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: hb-flow;
+}
+.hb-flow li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.15rem var(--space-2);
+  align-content: start;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  counter-increment: hb-flow;
+}
+.hb-flow li::before {
+  content: counter(hb-flow);
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1px solid var(--accent-gold-dim);
+  border-radius: 50%;
+  color: var(--accent-gold);
+  font: 600 var(--text-sm) / 1 var(--font-title);
+}
+.hb-flow strong {
+  color: var(--text-parchment);
+  font-weight: 600;
 }

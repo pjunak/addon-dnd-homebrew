@@ -98,6 +98,13 @@ picking the picked one again clears it, as for weapon or armor), and
 start chooser first; a wizard was considered and left out, because editing
 an item later would mean stepping through it again.
 
+With nothing selected, the editor shows the overview (`src/overview.ts`): a
+card per kind with its drafts, what waits to publish and what players cannot
+see, and that kind's New action, then how a draft reaches play. Its counts
+come from the same publish planner as the Publish button, run per kind, so
+they add up to the header's total. Waiting to publish is gold everywhere
+(the header's state, the cards, the list's badges); red is kept for problems.
+
 The item editor's effect rows follow the Engine's vocabulary, with one
 editor-only pairing: a spell attack bonus and a spell save DC bonus with the
 same class, mode `add` and value show — and are added — as one **Spell attack

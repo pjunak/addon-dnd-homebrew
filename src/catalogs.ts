@@ -46,6 +46,25 @@ export const cs: Readonly<Record<string, string>> = {
   "Search homebrew": "Hledat ve vlastním obsahu",
   "Items without a set": "Předměty bez sady",
   "Items: {count}": "Předmětů: {count}",
+  Items: "Předměty",
+  Sets: "Sady",
+  "Your homebrew": "Váš vlastní obsah",
+  "Choose a draft in the list to edit it, or start a new one here.":
+    "Vyberte koncept v seznamu a upravte ho, nebo tady začněte nový.",
+  "Drafts: {count}": "Konceptů: {count}",
+  "None yet": "Zatím žádné",
+  "{count} to publish": "{count} ke zveřejnění",
+  "All published": "Vše zveřejněno",
+  "{count} hidden from players": "{count} skryto před hráči",
+  "How homebrew reaches the table": "Jak se vlastní obsah dostane ke stolu",
+  Draft: "Koncept",
+  "Drafts stay private to you while you write them.":
+    "Koncepty vidíte jen vy, dokud na nich pracujete.",
+  "Publishing puts all your drafts into play at once.":
+    "Zveřejnění uvede všechny koncepty do hry najednou.",
+  Play: "Hra",
+  "Character sheets use what you publish, and players find visible items in the Item Gallery.":
+    "Deníky postav používají to, co zveřejníte, a hráči najdou viditelné předměty v Galerii předmětů.",
   "Some stored drafts could not be read:": "Některé uložené koncepty nelze přečíst:",
   // Badges
   "Text only": "Pouze text",
@@ -1304,8 +1323,6 @@ export const cs: Readonly<Record<string, string>> = {
   "Level 19 or higher, with +1 to one ability score, up to 30.":
     "Od 19. úrovně, s +1 k jedné hodnotě vlastnosti, nejvýše na 30.",
   // The empty editor
-  "Choose something on the left to edit it, or start something new with the buttons above.":
-    "Vyberte něco vlevo k úpravě, nebo začněte něco nového tlačítky nahoře.",
   Subclass: "Podpovolání",
   "A magic item, such as a +1 weapon, a ring of resistance or a wand with a spell. Start from a common kind and change what you need.":
     "Magický předmět, například zbraň +1, prsten odolnosti nebo hůlka s kouzlem. Začněte od běžného druhu a změňte, co potřebujete.",

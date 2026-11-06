@@ -6,6 +6,7 @@ import { bodyPlacements, rarities, skills } from "#web/model";
 import { skillName } from "#web/effects";
 import { featTemplates } from "#web/feat-editor";
 import { itemTemplates } from "#web/templates";
+import { homebrewKinds } from "#web/overview";
 import { vocabularyWords } from "#web/vocabulary";
 
 const unescape = (text: string): string => JSON.parse(`"${text}"`) as string;
@@ -51,6 +52,7 @@ void test("every English message shown in the UI has a Czech translation", async
     ...vocabularyWords(),
     ...itemTemplates.flatMap((template) => [template.label, template.hint]),
     ...featTemplates.flatMap((template) => [template.label, template.hint]),
+    ...homebrewKinds.flatMap((kind) => [kind.one, kind.many, kind.newLabel, kind.about]),
   ])
     if (!(text in cs)) missing.add(`vocabulary: ${text}`);
   assert.deepEqual([...missing], []);
