@@ -1,6 +1,6 @@
 .hb-shell {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
   color: var(--text-light);
   font: inherit;
   min-width: 0;
@@ -18,14 +18,14 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: end;
-  gap: 1rem;
+  gap: var(--space-4);
   padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--chrome-divider);
 }
 .hb-title p,
 .hb-status,
 .hb-hint {
-  margin: 0.35rem 0 0;
+  margin: var(--space-1) 0 0;
   color: var(--text-muted);
 }
 .hb-hint {
@@ -40,36 +40,36 @@
 .hb-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 .hb-message {
   margin: 0;
 }
 .hb-message ul {
-  margin: 0.5rem 0 0;
-  padding-left: 1.25rem;
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-5);
 }
 .hb-layout {
   display: grid;
   grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr);
-  gap: 1rem;
+  gap: var(--space-4);
   align-items: start;
 }
 .hb-tree {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
   position: sticky;
   top: var(--space-4);
   max-height: calc(100vh - 8rem);
   overflow: auto;
-  padding: 0.75rem;
+  padding: var(--space-3);
   background: var(--bg-raised);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
 }
 .hb-tree-groups {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 .hb-group h2.hb-group-head {
   font-size: var(--text-sm);
@@ -77,12 +77,12 @@
   letter-spacing: 0.04em;
   color: var(--text-muted);
   font-family: var(--font-ui);
-  padding: 0.25rem 0.5rem;
+  padding: var(--space-1) var(--space-2);
 }
 .hb-group ul {
   list-style: none;
   margin: 0;
-  padding: 0 0 0 0.5rem;
+  padding: 0 0 0 var(--space-2);
   display: grid;
   gap: 0.15rem;
 }
@@ -90,9 +90,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.3rem;
+  gap: var(--space-1);
   width: 100%;
-  padding: 0.35rem 0.5rem;
+  padding: var(--space-1) var(--space-2);
   text-align: start;
   font: inherit;
   color: inherit;
@@ -149,7 +149,7 @@
 }
 .hb-badge {
   display: inline-block;
-  padding: 0 0.4rem;
+  padding: 0 var(--space-2);
   font-size: var(--text-xs);
   line-height: 1.5;
   border-radius: 999px;
@@ -180,14 +180,14 @@
    fields; and a side column with Settings above the published preview. */
 .hb-form {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
   max-width: 80rem;
   grid-template-columns: minmax(0, 1fr);
 }
 .hb-form-head {
   display: grid;
-  gap: 0.4rem;
-  padding-bottom: 0.5rem;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-base);
 }
@@ -195,7 +195,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 0.75rem;
+  gap: var(--space-2) var(--space-3);
 }
 .hb-form-title h2 {
   min-width: 0;
@@ -204,42 +204,37 @@
 .hb-form-status {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: var(--space-1);
 }
 .hb-section-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
-}
-.hb-section-nav button {
-  min-height: 2rem;
-  padding: 0 0.6rem;
-  font-size: var(--text-sm);
+  gap: var(--space-1);
 }
 .hb-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1rem;
+  gap: var(--space-1) var(--space-4);
   margin: 0;
   color: var(--text-muted);
   font-size: var(--text-xs);
 }
 .hb-form-main {
   display: grid;
-  gap: 0.85rem;
+  gap: var(--space-3);
   min-width: 0;
   align-content: start;
 }
 .hb-form-side {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-4);
   align-content: start;
   min-width: 0;
 }
 .hb-settings {
   display: grid;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: var(--space-3);
+  padding: var(--space-3);
   border: 1px solid var(--accent-gold-dim);
   border-radius: var(--radius);
   background: var(--bg-raised);
@@ -281,9 +276,9 @@
 .hb-section,
 .hb-start-item {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin: 0;
-  padding: 0.75rem;
+  padding: var(--space-3);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
   background: var(--bg-surface);
@@ -297,7 +292,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.25rem 0.75rem;
+  gap: var(--space-1) var(--space-3);
   cursor: pointer;
 }
 .hb-collapsible > summary > h3 {
@@ -308,14 +303,14 @@
   font-size: var(--text-sm);
 }
 .hb-collapsible[open] > summary {
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--space-1);
 }
 /* Fields shown because of a choice above them. */
 .hb-depends {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--space-2);
   min-width: 0;
-  padding-left: 0.75rem;
+  padding-left: var(--space-3);
   border-left: 2px solid var(--accent-gold-dim);
 }
 .hb-depends-why {
@@ -326,20 +321,6 @@
 .hb-depends .hb-attunement {
   padding-left: 0;
   border-left: 0;
-}
-/* A list to pick from is raised and keeps its arrow; free text is sunken. */
-.hb-form select:not([multiple]),
-.hb-form .ui-combobox input {
-  background-color: var(--bg-raised);
-  box-shadow: var(--shadow-sm);
-}
-.hb-form
-  :is(input:not([type]), input[type="text"], input[type="number"], textarea):not(
-    .ui-combobox input,
-    .ui-chips input
-  ) {
-  background-color: var(--surface-sunken);
-  box-shadow: inset 0 1px 3px rgb(0 0 0 / 35%);
 }
 .hb-writer {
   display: grid;
@@ -359,19 +340,19 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: end;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 .hb-kind-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
-  gap: 0.6rem;
+  gap: var(--space-2);
 }
 .hb-kind-card {
   display: grid;
-  gap: 0.3rem;
+  gap: var(--space-1);
   align-content: start;
   min-height: 5.5rem;
-  padding: 0.75rem;
+  padding: var(--space-3);
   text-align: start;
   font: inherit;
   color: var(--text-muted);
@@ -410,7 +391,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: start;
-  gap: 0.6rem 0.75rem;
+  gap: var(--space-2) var(--space-3);
   min-width: 0;
 }
 .hb-row > * {
@@ -427,12 +408,12 @@
 .hb-passive,
 .hb-attunement {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--space-2);
   min-width: 0;
 }
 /* Who can attune reads as part of the attunement choice above it. */
 .hb-attunement {
-  padding-left: 0.75rem;
+  padding-left: var(--space-3);
   border-left: 2px solid var(--border-subtle);
 }
 .hb-templates,
@@ -441,17 +422,17 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }
 .hb-templates-label {
-  margin-right: 0.25rem;
+  margin-right: var(--space-1);
   color: var(--text-muted);
   font-size: var(--text-sm);
 }
 .hb-set-items {
   display: grid;
-  gap: 0.5rem;
-  padding: 0.75rem;
+  gap: var(--space-2);
+  padding: var(--space-3);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
 }
@@ -461,7 +442,7 @@
 .hb-set-items ul {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
-  gap: 0.15rem 0.5rem;
+  gap: 0.15rem var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -470,7 +451,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 .hb-check .hb-hint {
   flex-basis: 100%;
@@ -480,9 +461,9 @@
 .hb-defaults,
 .hb-preview {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-3);
   margin: 0;
-  padding: 0.75rem;
+  padding: var(--space-3);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
   background: var(--bg-surface);
@@ -495,7 +476,7 @@
   display: none;
 }
 .hb-effects-fieldset legend {
-  padding: 0 0.35rem;
+  padding: 0 var(--space-1);
   color: var(--accent-gold);
 }
 .hb-defaults summary {
@@ -504,11 +485,11 @@
 }
 .hb-effects {
   display: grid;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 .hb-effect-list {
   display: grid;
-  gap: 0.5rem;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -517,8 +498,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: end;
-  gap: 0.5rem;
-  padding-bottom: 0.5rem;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
   border-bottom: 1px dashed var(--border-subtle);
 }
 .hb-effect-row > [data-ui-field] {
@@ -534,10 +515,10 @@
 .hb-grants,
 .hb-grants-section {
   display: grid;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 .hb-grants {
-  gap: 1rem;
+  gap: var(--space-4);
 }
 .hb-grants-heading {
   margin: 0;
@@ -558,7 +539,7 @@
 .hb-toggle-changes {
   flex: 1 1 100%;
   min-width: 0;
-  padding-left: 0.75rem;
+  padding-left: var(--space-3);
   border-left: 2px solid var(--border-subtle);
 }
 .hb-toggle-change:last-child {
@@ -569,34 +550,34 @@
 .hb-mechanics,
 .hb-feature-list {
   display: grid;
-  gap: 0.85rem;
+  gap: var(--space-3);
   min-width: 0;
 }
 .hb-feature-head {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 .hb-feature > button[data-ui-variant="danger"] {
   justify-self: start;
 }
 .hb-schema-group {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--space-2);
   margin: 0;
-  padding: 0.6rem 0.75rem;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
   min-width: 0;
 }
 .hb-schema-group .hb-schema-group {
-  padding: 0.5rem;
+  padding: var(--space-2);
 }
 .hb-schema-group legend {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0 0.35rem;
+  gap: var(--space-2);
+  padding: 0 var(--space-1);
   color: var(--accent-gold);
 }
 .hb-schema-group > .hb-hint {
@@ -609,7 +590,7 @@
 .hb-schema-entries,
 .hb-schema-variant {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--space-2);
   min-width: 0;
 }
 /* A Remove button is small and sits on its field's label line or in a legend,
@@ -617,7 +598,7 @@
 .hb-schema-remove {
   flex: none;
   min-height: 1.5rem;
-  padding: 0 0.4rem;
+  padding: 0 var(--space-2);
   font-size: var(--text-sm);
   white-space: nowrap;
 }
@@ -637,7 +618,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: end;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 .hb-schema-pair > [data-ui-field],
 .hb-schema-pair > .hb-schema-variant {
@@ -654,13 +635,13 @@
   border-collapse: collapse;
 }
 .hb-schema-table th {
-  padding: 0 0.4rem 0.25rem 0;
+  padding: 0 var(--space-2) var(--space-1) 0;
   font-size: var(--text-sm);
   font-weight: 600;
   text-align: left;
 }
 .hb-schema-table td {
-  padding: 0 0.4rem 0.35rem 0;
+  padding: 0 var(--space-2) var(--space-1) 0;
   vertical-align: top;
 }
 .hb-schema-table input:not([type="checkbox"]) {
@@ -688,20 +669,20 @@
 .hb-card-effects ul,
 .hb-change-list {
   margin: 0;
-  padding-left: 1.25rem;
+  padding-left: var(--space-5);
 }
 .hb-editor-actions,
 .hb-dialog-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 /* Saving stays in reach at the bottom of a long form. */
 .hb-editor-actions {
   position: sticky;
   bottom: 0;
   z-index: 1;
-  padding: 0.6rem 0;
+  padding: var(--space-2) 0;
   background: var(--bg-base);
   border-top: 1px solid var(--border-subtle);
 }
@@ -719,13 +700,13 @@
   display: flex;
   justify-content: space-between;
   align-items: start;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 .hb-dialog-body {
   display: grid;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 .hb-dialog-body p {
   margin: 0;
@@ -733,7 +714,7 @@
 .hb-gallery-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-2);
   align-items: center;
 }
 .hb-gallery-filters input[type="search"] {
@@ -742,16 +723,16 @@
 .hb-gallery-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 .hb-gallery-list > .hb-message {
   grid-column: 1 / -1;
 }
 .hb-card {
   display: grid;
-  gap: 0.5rem;
+  gap: var(--space-2);
   align-content: start;
-  padding: 0.85rem;
+  padding: var(--space-3);
   background: var(--bg-raised);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -771,12 +752,12 @@
   color: var(--text-muted);
 }
 .hb-card-effects {
-  padding-top: 0.5rem;
+  padding-top: var(--space-2);
   border-top: 1px solid var(--border-subtle);
   font-size: var(--text-md);
 }
 .hb-card-effects p {
-  margin: 0 0 0.25rem;
+  margin: 0 0 var(--space-1);
   color: var(--accent-gold);
 }
 @media (max-width: 48rem) {
@@ -812,17 +793,16 @@
   top: calc(100% + 0.25rem);
   left: 0;
   display: grid;
-  gap: 0.25rem;
+  gap: var(--space-1);
   min-width: 11rem;
-  padding: 0.4rem;
+  padding: var(--space-2);
   background: var(--bg-raised);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
   box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 40%);
 }
-.hb-new-panel button {
+.hb-new-panel > .ui-action {
   justify-content: start;
-  text-align: start;
 }
 .hb-visually-hidden {
   position: absolute;
@@ -836,12 +816,12 @@
 .hb-status[data-state] {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: var(--space-2);
   justify-self: start;
   width: fit-content;
   max-width: 100%;
   margin: 0;
-  padding: 0.2rem 0.7rem;
+  padding: var(--space-1) var(--space-3);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-pill);
   background: var(--bg-surface);
@@ -938,7 +918,7 @@
 .hb-kind-state {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: var(--space-1);
   min-height: 1.4rem;
   margin: 0;
 }

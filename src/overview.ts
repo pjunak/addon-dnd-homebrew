@@ -1,5 +1,5 @@
 import type { Translator } from "./catalogs.js";
-import { actionButton, badge, element } from "./fields.js";
+import { badge, compactAction, element } from "./fields.js";
 
 export type KindKey = "item" | "set" | "subclass" | "feat" | "spell" | "species" | "background";
 
@@ -153,8 +153,7 @@ function kindCard(
         badge(document, t("{count} hidden from players", { count: summary.hidden }), "muted"),
       );
   }
-  const action = actionButton(document, t(kind.newLabel), () => start(kind.key));
-  action.classList.add("ui-action");
+  const action = compactAction(document, t(kind.newLabel), () => start(kind.key));
   card.append(head, element(document, "p", "hb-kind-about", t(kind.about)), state, action);
   return card;
 }

@@ -3,6 +3,7 @@ import { choiceDialog, confirmDialog, openDialog } from "./dialogs.js";
 import { downloadFile } from "./download.js";
 import {
   actionButton,
+  compactAction,
   badge,
   checkField,
   chipsField,
@@ -373,13 +374,18 @@ export function defineCatalogElement(generation?: string): string {
         if (open) panel.querySelector<HTMLButtonElement>("button")?.focus();
       };
       // Items and sets have their own header buttons.
-      for (const kind of homebrewKinds.filter(({ key }) => key !== "item" && key !== "set"))
-        panel.append(
-          actionButton(document, t(kind.one), () => {
+      for (const kind of homebrewKinds.filter(({ key }) => key !== "item" && key !== "set")) {
+        const choice = compactAction(
+          document,
+          t(kind.one),
+          () => {
             show(false);
             void this.#select(this.#newSelection(kind.key));
-          }),
+          },
+          "quiet",
         );
+        panel.append(choice);
+      }
       root.addEventListener("keydown", (event) => {
         if (event.key !== "Escape" || toggle.getAttribute("aria-expanded") !== "true") return;
         event.stopPropagation();
@@ -1086,6 +1092,8 @@ export function defineCatalogElement(generation?: string): string {
       const t = this.#t;
       const form = element(document, "form", "hb-form");
       form.noValidate = true;
+      // Lists to pick from are raised and free text sunken, as in the host's record form.
+      form.dataset["uiForm"] = "";
       const head = element(document, "div", "hb-form-head");
       const heading = element(document, "div", "hb-form-title");
       const browse = actionButton(document, t("All records"), () => {
@@ -1173,20 +1181,19 @@ export function defineCatalogElement(generation?: string): string {
             "";
           if (!label) continue;
           // Buttons, not links: the page's address belongs to the host.
-          nav.append(
-            actionButton(
-              document,
-              label,
-              () => {
-                if (section instanceof HTMLDetailsElement) section.open = true;
-                section.scrollIntoView({ block: "start", behavior: "smooth" });
-                section
-                  .querySelector<HTMLElement>("input, select, textarea, summary")
-                  ?.focus({ preventScroll: true });
-              },
-              "quiet",
-            ),
+          const step = compactAction(
+            document,
+            label,
+            () => {
+              if (section instanceof HTMLDetailsElement) section.open = true;
+              section.scrollIntoView({ block: "start", behavior: "smooth" });
+              section
+                .querySelector<HTMLElement>("input, select, textarea, summary")
+                ?.focus({ preventScroll: true });
+            },
+            "quiet",
           );
+          nav.append(step);
         }
       } else nav?.remove();
       this.#showStatus(form);

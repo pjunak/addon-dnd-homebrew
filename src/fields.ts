@@ -245,6 +245,17 @@ export function actionButton(
   button.addEventListener("click", action);
   return button;
 }
+/** The host's compact action (`.ui-action`) for toolbars, menus and cards. */
+export function compactAction(
+  document: Document,
+  label: string,
+  action: () => void,
+  variant: "" | "primary" | "danger" | "quiet" = "",
+): HTMLButtonElement {
+  const button = actionButton(document, label, action, variant);
+  button.classList.add("ui-action");
+  return button;
+}
 export function badge(
   document: Document,
   text: string,
