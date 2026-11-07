@@ -383,7 +383,14 @@
       "Nothing to import: every entry matches what is stored.": "Nothing to import: every entry matches what is stored.",
       "create": "create",
       "update": "update",
-      "delete": "delete"
+      "delete": "delete",
+      "D&D homebrew": "D&D homebrew",
+      "Custom item sets, items, subclasses, feats, spells, species and backgrounds as drafts; publish them from Homebrew to put them into play.": "Custom item sets, items, subclasses, feats, spells, species and backgrounds as drafts; publish them from Homebrew to put them into play.",
+      "Replacing removes drafts that are not in this file. Their published records stay in play until the next publish, which removes them and blocks characters that still hold them.": "Replacing removes drafts that are not in this file. Their published records stay in play until the next publish, which removes them and blocks characters that still hold them.",
+      "Imports write drafts. Publish them from Homebrew to put them into play.": "Imports write drafts. Publish them from Homebrew to put them into play.",
+      "homebrew drafts changed while previewing; preview again": "homebrew drafts changed while previewing; preview again",
+      "homebrew drafts changed while reading; preview again": "homebrew drafts changed while reading; preview again",
+      "the import changes {count} drafts; split it into files of at most {limit} changes": "the import changes {count} drafts; split it into files of at most {limit} changes"
     },
     "gallery": {
       "Search the gallery": "Search the gallery",

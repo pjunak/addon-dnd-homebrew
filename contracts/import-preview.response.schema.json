@@ -5,6 +5,7 @@
     "contractVersion": { "const": "import-preview-result.v1" }, "token": { "type": "string", "minLength": 20, "maxLength": 200 }, "format": { "type": "string", "maxLength": 100 }, "mode": { "enum": ["merge", "replace"] },
     "summary": { "type": "object", "additionalProperties": false, "required": ["creates", "updates", "skips", "deletes"], "properties": { "creates": { "type": "integer", "minimum": 0 }, "updates": { "type": "integer", "minimum": 0 }, "skips": { "type": "integer", "minimum": 0 }, "deletes": { "type": "integer", "minimum": 0 } } },
     "warnings": { "type": "array", "maxItems": 100, "items": { "type": "string", "maxLength": 500 } },
+    "warningTexts": { "type": "array", "maxItems": 100, "items": { "type": "object", "additionalProperties": false, "required": ["text"], "properties": { "text": { "type": "string", "maxLength": 500 }, "key": { "type": "string", "minLength": 1, "maxLength": 500 }, "args": { "type": "object", "maxProperties": 16, "additionalProperties": { "type": ["string", "number"] } } } } },
     "changes": { "type": "array", "maxItems": 256, "items": { "type": "object", "additionalProperties": false, "required": ["collection", "id", "operation", "label"], "properties": { "collection": { "type": "string", "maxLength": 100 }, "id": { "type": "string", "maxLength": 120 }, "operation": { "enum": ["create", "update", "delete"] }, "label": { "type": "string", "maxLength": 200 } } } }
   }
 }

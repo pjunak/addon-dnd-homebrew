@@ -392,7 +392,14 @@
       "Nothing to import: every entry matches what is stored.": "Není co importovat: všechny položky odpovídají uloženým.",
       "create": "nové",
       "update": "změna",
-      "delete": "odebrání"
+      "delete": "odebrání",
+      "D&D homebrew": "Vlastní obsah D&D",
+      "Custom item sets, items, subclasses, feats, spells, species and backgrounds as drafts; publish them from Homebrew to put them into play.": "Vlastní sady předmětů, předměty, podpovolání, odbornosti, kouzla, druhy a zázemí jako koncepty; do hry je dostanete zveřejněním v doplňku Vlastní obsah.",
+      "Replacing removes drafts that are not in this file. Their published records stay in play until the next publish, which removes them and blocks characters that still hold them.": "Nahrazení odebere koncepty, které v tomto souboru nejsou. Jejich zveřejněné záznamy zůstanou ve hře do příštího zveřejnění, které je odebere a zablokuje postavy, jež je stále mají.",
+      "Imports write drafts. Publish them from Homebrew to put them into play.": "Import zapisuje koncepty. Do hry je dostanete zveřejněním v doplňku Vlastní obsah.",
+      "homebrew drafts changed while previewing; preview again": "koncepty vlastního obsahu se během náhledu změnily; zobrazte náhled znovu",
+      "homebrew drafts changed while reading; preview again": "koncepty vlastního obsahu se během čtení změnily; zobrazte náhled znovu",
+      "the import changes {count} drafts; split it into files of at most {limit} changes": "import mění {count} konceptů; rozdělte ho do souborů s nejvýše {limit} změnami"
     },
     "gallery": {
       "Search the gallery": "Hledat v galerii",

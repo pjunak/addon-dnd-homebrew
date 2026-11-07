@@ -173,9 +173,10 @@ func (handler *Handler) HandleRPC(ctx context.Context, request workerrpc.Request
 		}
 		return map[string]any{
 			"contractVersion": "import-adapter-description.v1", "id": "dnd-homebrew",
-			"label":       "D&D homebrew",
-			"description": "Custom item sets, items, subclasses, feats, spells, species and backgrounds as drafts; publish them from Homebrew to put them into play.",
-			"formats":     []string{Format},
+			// Homebrew's catalog keys texts by their English wording.
+			"label": adapterLabel, "labelKey": adapterLabel,
+			"description": adapterDescription, "descriptionKey": adapterDescription,
+			"formats": []string{Format},
 		}, nil
 	case MethodPrefix + "preview":
 		var input struct {
@@ -217,11 +218,34 @@ func (handler *Handler) HandleRPC(ctx context.Context, request workerrpc.Request
 // importPlan is a reviewed import: the summary shown to the DM and the exact
 // mutations a commit submits.
 type importPlan struct {
-	Mode      string
-	Summary   summary
-	Changes   []change
-	Warnings  []string
-	Mutations []workerrpc.AddonDataMutation
+	Mode     string
+	Summary  summary
+	Changes  []change
+	Warnings []string
+	// WarningTexts are Warnings with their catalog keys, in the same order.
+	WarningTexts []workerrpc.LocalizedText
+	Mutations    []workerrpc.AddonDataMutation
+}
+
+const (
+	adapterLabel       = "D&D homebrew"
+	adapterDescription = "Custom item sets, items, subclasses, feats, spells, species and backgrounds as drafts; publish them from Homebrew to put them into play."
+)
+
+// warn adds a warning keyed by its English wording in Homebrew's catalog.
+func (plan *importPlan) warn(text string) {
+	plan.Warnings = append(plan.Warnings, text)
+	plan.WarningTexts = append(plan.WarningTexts, workerrpc.Localized(text, text, nil))
+}
+
+// keyedProblem is a document problem in Homebrew's wording, keyed in its catalog.
+type keyedProblem struct{ text workerrpc.LocalizedText }
+
+func (problem keyedProblem) Error() string { return problem.text.Text }
+
+// drafts changed under a preview; the DM previews again.
+func changedDrafts(text string) error {
+	return invalid(text, workerrpc.IssueDetails(workerrpc.Localized(text, text, nil)))
 }
 
 func (handler *Handler) preview(ctx context.Context, meta *workerrpc.Meta, body json.RawMessage) (any, error) {
@@ -233,7 +257,7 @@ func (handler *Handler) preview(ctx context.Context, meta *workerrpc.Meta, body 
 	if err != nil {
 		return nil, unavailable("could not retain the reviewed import plan")
 	}
-	return map[string]any{"contractVersion": "import-preview-result.v1", "token": token, "format": Format, "mode": plan.Mode, "summary": plan.Summary, "warnings": plan.Warnings, "changes": plan.Changes}, nil
+	return map[string]any{"contractVersion": "import-preview-result.v1", "token": token, "format": Format, "mode": plan.Mode, "summary": plan.Summary, "warnings": plan.Warnings, "warningTexts": plan.WarningTexts, "changes": plan.Changes}, nil
 }
 
 // contribute plans a bundle's homebrew document like a preview. The host
@@ -261,6 +285,10 @@ func (handler *Handler) plan(ctx context.Context, meta *workerrpc.Meta, body jso
 		return importPlan{}, drafts{}, err
 	}
 	plan, err := buildPlan(body, current, handler.now().UnixMilli())
+	var problem keyedProblem
+	if errors.As(err, &problem) {
+		return importPlan{}, drafts{}, invalid("homebrew import document is invalid", workerrpc.IssueDetails(problem.text))
+	}
 	if err != nil {
 		return importPlan{}, drafts{}, invalid("homebrew import document is invalid", map[string]any{"issue": err.Error()})
 	}
@@ -279,7 +307,7 @@ func buildPlan(body json.RawMessage, current drafts, now int64) (importPlan, err
 	if err != nil {
 		return importPlan{}, err
 	}
-	plan := importPlan{Mode: doc.Mode, Changes: []change{}, Warnings: []string{}, Mutations: []workerrpc.AddonDataMutation{}}
+	plan := importPlan{Mode: doc.Mode, Changes: []change{}, Warnings: []string{}, WarningTexts: []workerrpc.LocalizedText{}, Mutations: []workerrpc.AddonDataMutation{}}
 	finalSets := make(map[string]bool)
 	if doc.Mode == "merge" {
 		for id := range storedSets {
@@ -430,14 +458,15 @@ func buildPlan(body json.RawMessage, current drafts, now int64) (importPlan, err
 		plan.deleteMissing(homebrew.SpeciesCollection, current.species, seen, "species:")
 		plan.deleteMissing(homebrew.BackgroundsCollection, current.backgrounds, seen, "background:")
 		if plan.Summary.Deletes > 0 {
-			plan.Warnings = append(plan.Warnings, "Replacing removes drafts that are not in this file. Their published records stay in play until the next publish, which removes them and blocks characters that still hold them.")
+			plan.warn("Replacing removes drafts that are not in this file. Their published records stay in play until the next publish, which removes them and blocks characters that still hold them.")
 		}
 	}
 	if len(plan.Mutations) > maximumWrites {
-		return importPlan{}, fmt.Errorf("the import changes %d drafts; split it into files of at most %d changes", len(plan.Mutations), maximumWrites)
+		template := "the import changes {count} drafts; split it into files of at most {limit} changes"
+		return importPlan{}, keyedProblem{workerrpc.Localized(template, fmt.Sprintf("the import changes %d drafts; split it into files of at most %d changes", len(plan.Mutations), maximumWrites), map[string]any{"count": len(plan.Mutations), "limit": maximumWrites})}
 	}
 	if plan.Summary.Creates+plan.Summary.Updates > 0 {
-		plan.Warnings = append(plan.Warnings, "Imports write drafts. Publish them from Homebrew to put them into play.")
+		plan.warn("Imports write drafts. Publish them from Homebrew to put them into play.")
 	}
 	// Sets, their items, subclasses, feats, spells, species, then backgrounds; each by id.
 	sort.Slice(plan.Changes, func(i, j int) bool {
@@ -622,7 +651,7 @@ func (handler *Handler) resolveTombstones(ctx context.Context, meta *workerrpc.M
 		}
 		_, err := handler.data.Get(ctx, meta, mutation.Reference, mutation.Key)
 		if err == nil {
-			return invalid("homebrew drafts changed while previewing; preview again", nil)
+			return changedDrafts("homebrew drafts changed while previewing; preview again")
 		}
 		if revision, deleted := workerrpc.DeletedRevision(err); deleted {
 			mutations[index].ExpectedRevision = revision
@@ -670,7 +699,7 @@ func (handler *Handler) read(ctx context.Context, meta *workerrpc.Meta) (drafts,
 				return drafts{}, err
 			}
 			if page.DataRevision == nil || revision != nil && *revision != *page.DataRevision {
-				return drafts{}, invalid("homebrew drafts changed while reading; preview again", nil)
+				return drafts{}, changedDrafts("homebrew drafts changed while reading; preview again")
 			}
 			revision = page.DataRevision
 			for _, document := range page.Documents {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -496,4 +497,72 @@ func TestSubclassesImportCreateUpdateClearAndReplace(t *testing.T) {
 
 func storedValue(body json.RawMessage, revision int64) stored {
 	return stored{body: body, revision: revision}
+}
+
+// The Import Center translates the adapter's label, description, warnings
+// and fixed-sentence problems through Homebrew's catalog, which keys texts by
+// their English wording; the responses keep their contract.
+func TestImportTextsCarryCatalogKeys(t *testing.T) {
+	body, err := os.ReadFile("../../locales/en.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var catalog struct {
+		Sections map[string]map[string]string `json:"sections"`
+	}
+	if err := json.Unmarshal(body, &catalog); err != nil {
+		t.Fatal(err)
+	}
+	cataloged := func(key string) bool { return catalog.Sections["import"][key] == key }
+	schemas := compileSchemas(t, "import-description.response.schema.json", "import-preview.response.schema.json")
+	store := newFakeStore()
+	handler, _ := New(store)
+	described, err := handle(t, handler, dm, "describe", map[string]any{})
+	encoded, _ := json.Marshal(described)
+	if err != nil || described["labelKey"] != described["label"] || !cataloged(described["labelKey"].(string)) ||
+		!cataloged(described["descriptionKey"].(string)) || validate(t, schemas["import-description.response.schema.json"], "describe", encoded) != nil {
+		t.Fatalf("describe %v %v", described, err)
+	}
+	document := json.RawMessage(`{"format":"dnd-homebrew","schemaVersion":1,"sets":[{"id":"omens","name":"Omens","itemType":"Wondrous Item","rarity":"Rare"}],"items":[]}`)
+	preview, err := handle(t, handler, dm, "preview", map[string]any{"contractVersion": "import-preview.v1", "format": Format, "document": document})
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, _ = json.Marshal(preview)
+	warnings, texts := preview["warnings"].([]any), preview["warningTexts"].([]any)
+	if len(warnings) == 0 || len(texts) != len(warnings) || validate(t, schemas["import-preview.response.schema.json"], "preview", encoded) != nil {
+		t.Fatalf("preview %s", encoded)
+	}
+	for index, warning := range warnings {
+		text := texts[index].(map[string]any)
+		if text["text"] != warning || text["key"] != warning || !cataloged(warning.(string)) {
+			t.Errorf("warning %d = %v, text %v", index, warning, text)
+		}
+	}
+	for _, key := range []string{
+		"homebrew drafts changed while previewing; preview again",
+		"homebrew drafts changed while reading; preview again",
+		"the import changes {count} drafts; split it into files of at most {limit} changes",
+	} {
+		if !cataloged(key) {
+			t.Errorf("locales/en.json import section lacks %q", key)
+		}
+	}
+	// A keyed problem reaches the caller as issue details.
+	sets := make([]string, 0, maximumWrites+1)
+	for index := range maximumWrites + 1 {
+		sets = append(sets, fmt.Sprintf(`{"id":"set-%d","name":"Set %d","itemType":"Wondrous Item","rarity":"Rare"}`, index, index))
+	}
+	large := json.RawMessage(`{"format":"dnd-homebrew","schemaVersion":1,"sets":[` + strings.Join(sets, ",") + `],"items":[]}`)
+	_, err = handle(t, handler, dm, "preview", map[string]any{"contractVersion": "import-preview.v1", "format": Format, "document": large})
+	var failure *workerrpc.RPCError
+	var details struct {
+		Issue, IssueKey string
+		IssueArgs       map[string]any
+	}
+	if !errors.As(err, &failure) || failure.Data == nil || json.Unmarshal(failure.Data.Details, &details) != nil ||
+		details.IssueKey != "the import changes {count} drafts; split it into files of at most {limit} changes" ||
+		details.Issue != fmt.Sprintf("the import changes %d drafts; split it into files of at most %d changes", maximumWrites+1, maximumWrites) {
+		t.Fatalf("oversized import = %v, details %+v", err, details)
+	}
 }

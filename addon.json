@@ -3,7 +3,7 @@
   "packageFormat": 1,
   "id": "dnd-homebrew",
   "name": "D&D Homebrew",
-  "version": "1.13.0",
+  "version": "1.14.0",
   "description": "DM-authored homebrew (item sets, items, subclasses, feats, spells, species and backgrounds) served as D&D rules data.",
   "license": "MIT",
   "compatibility": {
