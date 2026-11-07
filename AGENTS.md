@@ -55,6 +55,9 @@ Tasks for all repositories live in the host's `docs/BACKLOG.md`.
   predicates (`prerequisiteMatches`), never words. The editor renders forms from the schema;
   `src/vocabulary.ts` only words them, and each of its English words needs a
   Czech translation (`tests/localization.mts`).
+- Interface texts are keyed by their English wording in `locales/en.json`
+  (`message-catalog.v1`); add each new text there and its Czech to
+  `locales/cs.json`, translate manifest strings in the `manifest` section.
 - Published records are never deleted, only withdrawn: a browser cannot learn
   a deleted key's tombstone revision and could not publish that id again.
 - Every publish writes the records and the `homebrew_meta` revision in one

@@ -205,7 +205,19 @@ const rules: ServiceHandle = {
   },
 };
 const references = new ReferenceLoader(async () => rules, signal);
-registerRuntime(generation, { ui, repository, importer, references, signal });
+// English keys are the English texts, so the English fixture fills them as written.
+const fill = (text: string, args: Readonly<Record<string, string | number>> = {}): string =>
+  text.replace(/\{(\w+)\}/gu, (match, name: string) =>
+    Object.hasOwn(args, name) ? String(args[name]) : match,
+  );
+const i18n: AddonContext["i18n"] = {
+  locale: "en",
+  t: fill,
+  plural: (key, count, args = {}) => fill(key, { n: count, ...args }),
+  message: ({ text, args = {} }) => fill(text, args),
+  onChange: () => () => {},
+};
+registerRuntime(generation, { ui, repository, importer, references, signal, i18n });
 const catalogTag = defineCatalogElement(generation),
   galleryTag = defineGalleryElement(generation);
 const context = (query: [string, string][]): ContributionContext => ({

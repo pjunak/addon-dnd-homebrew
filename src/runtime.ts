@@ -9,6 +9,7 @@ export interface HomebrewRuntime {
   readonly references: ReferenceLoader;
   readonly signal: AbortSignal;
   readonly ui: AddonContext["ui"];
+  readonly i18n: AddonContext["i18n"];
 }
 interface Registry {
   readonly generations: Map<string, HomebrewRuntime>;
@@ -20,6 +21,12 @@ export function registerRuntime(generation: string, runtime: HomebrewRuntime): (
   return () => {
     if (registry.generations.get(generation) === runtime) registry.generations.delete(generation);
   };
+}
+/** The runtime's translator while its generation is open; a closed SDK session throws. */
+export function liveI18n(
+  runtime: HomebrewRuntime | undefined,
+): HomebrewRuntime["i18n"] | undefined {
+  return runtime && !runtime.signal.aborted ? runtime.i18n : undefined;
 }
 export function runtimeFor(generation: string): HomebrewRuntime | undefined {
   return getRegistry().generations.get(generation);

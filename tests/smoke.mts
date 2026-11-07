@@ -68,6 +68,7 @@ void test("compiled entry binds both routes and the wiki provider and disposes i
       "services.own",
       "ui.contributions",
       "ui.controls.v1",
+      "ui.i18n",
       "ui.markdown",
       "ui.markdown-editor",
     ]);

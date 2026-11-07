@@ -84,7 +84,7 @@ import {
 import { backgroundEditor, type BackgroundEditor } from "./background-editor.js";
 import { optionOf, type FeatOption, type References } from "./references.js";
 import type { DraftCollection, Drafts, PublishedState } from "./repository.js";
-import { runtimeFor, type HomebrewRuntime } from "./runtime.js";
+import { liveI18n, runtimeFor, type HomebrewRuntime } from "./runtime.js";
 import { speciesEditor, type SpeciesEditor } from "./species-editor.js";
 import { spellEditor, spellLevelLabel, type SpellEditor } from "./spell-editor.js";
 import { mechanicsEditor, type MechanicsEditor } from "./subclass-editor.js";
@@ -154,7 +154,7 @@ export function defineCatalogElement(generation?: string): string {
       else if (hostLocale(previous.host) !== hostLocale(value.host)) this.#renderAll(true);
     }
     get #t(): Translator {
-      return translator(hostLocale(this.#contribution?.host));
+      return translator(liveI18n(this.#runtime));
     }
     connectedCallback(): void {
       this.classList.add("dnd-homebrew", "hb-shell");
@@ -213,6 +213,8 @@ export function defineCatalogElement(generation?: string): string {
         () => void this.#load(),
       );
       runtime.repository.subscribe(() => this.#refresh?.invalidate(), this.#signal());
+      // Catalogs for a new language arrive after the switch.
+      runtime.i18n.onChange(() => this.#renderAll(true), { signal: this.#signal() });
       this.#message = { text: "Loading homebrew items…", kind: "status" };
       this.#renderHeader();
       void this.#load();

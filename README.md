@@ -18,7 +18,8 @@ background its ability scores, origin feat, proficiencies and equipment. More ki
 homebrew will join this add-on, published together and imported from the same
 file format.
 
-English and Czech controls follow the host language.
+Its texts, in English and Czech, live in `message-catalog.v1` files under
+`locales/` and follow the reader's language through the host's `ui.i18n`.
 
 ## How it fits together
 
@@ -308,7 +309,7 @@ npx playwright install chromium
 npm run check:fast        # source guard, types, Oxlint, Prettier, fast Go checks
 npm run check             # build, unit and Chromium rendering tests, Go tests
 go run ./cmd/build-package
-go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.12.0.zip
+go tool -modfile=go.tools.mod codex-addon-inspect dist/dnd-homebrew-1.13.0.zip
 ```
 
 Use Node from `.nvmrc` and Go from `go.mod`. `web/`, `worker/` and `dist/` are

@@ -31,7 +31,7 @@ type checksumInventory struct {
 }
 
 var targets = []target{{"windows", "amd64", "worker/windows-amd64/dnd-homebrew.exe"}, {"linux", "amd64", "worker/linux-amd64/dnd-homebrew"}, {"linux", "arm64", "worker/linux-arm64/dnd-homebrew"}}
-var packageEntries = []string{"addon.json", "contracts", "LICENSE", "README.md", "web", "worker"}
+var packageEntries = []string{"addon.json", "contracts", "LICENSE", "locales", "README.md", "web", "worker"}
 
 func main() {
 	if err := run(); err != nil {

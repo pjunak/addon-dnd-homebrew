@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
-import { cs } from "#web/catalogs";
+import { readFileSync } from "node:fs";
 import { bodyPlacements, rarities, skills } from "#web/model";
 import { skillName } from "#web/effects";
 import { featTemplates } from "#web/feat-editor";
@@ -10,6 +10,17 @@ import { homebrewKinds } from "#web/overview";
 import { vocabularyWords } from "#web/vocabulary";
 
 const unescape = (text: string): string => JSON.parse(`"${text}"`) as string;
+// Czech by English key, across every section of the catalog.
+const cs: Readonly<Record<string, string>> = Object.assign(
+  {},
+  ...Object.values(
+    (
+      JSON.parse(readFileSync(new URL("../locales/cs.json", import.meta.url), "utf8")) as {
+        sections: Record<string, Record<string, string>>;
+      }
+    ).sections,
+  ),
+);
 
 void test("every English message shown in the UI has a Czech translation", async () => {
   const directory = new URL("../src/", import.meta.url);
@@ -63,4 +74,13 @@ void test("translations keep every placeholder", () => {
     [...text.matchAll(/\{(\w+)\}/gu)].map((match) => match[1]!).sort();
   for (const [english, czech] of Object.entries(cs))
     assert.deepEqual(names(czech), names(english), english);
+});
+
+void test("the English catalog lists every key Czech translates", () => {
+  const english = JSON.parse(
+    readFileSync(new URL("../locales/en.json", import.meta.url), "utf8"),
+  ) as { sections: Record<string, Record<string, string>> };
+  const keys = new Set(Object.values(english.sections).flatMap((section) => Object.keys(section)));
+  for (const key of Object.keys(cs))
+    if (!key.startsWith("manifest.")) assert.ok(keys.has(key), key);
 });

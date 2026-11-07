@@ -3,7 +3,7 @@
   "packageFormat": 1,
   "id": "dnd-homebrew",
   "name": "D&D Homebrew",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "DM-authored homebrew (item sets, items, subclasses, feats, spells, species and backgrounds) served as D&D rules data.",
   "license": "MIT",
   "compatibility": {
@@ -12,7 +12,7 @@
     "workerProtocol": "^1.0.0"
   },
   "capabilities": {
-    "required": ["data.transactions", "services.own", "ui.contributions", "ui.controls.v1", "ui.markdown", "ui.markdown-editor", "worker.native"],
+    "required": ["data.transactions", "services.own", "ui.contributions", "ui.controls.v1", "ui.i18n", "ui.markdown", "ui.markdown-editor", "worker.native"],
     "optional": []
   },
   "runtime": {
@@ -30,10 +30,10 @@
   "permissions": [],
   "rules": { "supports": ["dnd-2024"] },
   "contributions": [
-    { "id": "homebrew.route", "surface": "route", "label": "Homebrew", "roles": ["dm"], "config": { "path": "homebrew", "labels": { "cs": "Vlastní obsah" } } },
-    { "id": "homebrew.sidebar", "surface": "sidebar", "label": "Homebrew", "roles": ["dm"], "order": 220, "config": { "route": "homebrew.route", "labels": { "cs": "Vlastní obsah" } } },
-    { "id": "gallery.route", "surface": "route", "label": "Item Gallery", "roles": ["dm", "player"], "config": { "path": "homebrew-gallery", "labels": { "cs": "Galerie předmětů" } } },
-    { "id": "gallery.sidebar", "surface": "sidebar", "label": "Item Gallery", "roles": ["dm", "player"], "order": 221, "config": { "route": "gallery.route", "labels": { "cs": "Galerie předmětů" } } },
+    { "id": "homebrew.route", "surface": "route", "label": "Homebrew", "roles": ["dm"], "config": { "path": "homebrew" } },
+    { "id": "homebrew.sidebar", "surface": "sidebar", "label": "Homebrew", "roles": ["dm"], "order": 220, "config": { "route": "homebrew.route" } },
+    { "id": "gallery.route", "surface": "route", "label": "Item Gallery", "roles": ["dm", "player"], "config": { "path": "homebrew-gallery" } },
+    { "id": "gallery.sidebar", "surface": "sidebar", "label": "Item Gallery", "roles": ["dm", "player"], "order": 221, "config": { "route": "gallery.route" } },
     { "id": "homebrew.wiki", "surface": "wiki-kind", "label": "Homebrew items", "roles": ["dm", "player"], "config": { "contractVersion": 1, "kinds": ["magic-item"], "search": true } }
   ],
   "collections": [
@@ -61,5 +61,6 @@
     "consumes": [
       { "contract": "dnd5e.rules-data", "range": "^3.0.0", "cardinality": "many", "required": false, "selection": "all-compatible" }
     ]
-  }
+  },
+  "locales": { "en": "locales/en.json", "cs": "locales/cs.json" }
 }

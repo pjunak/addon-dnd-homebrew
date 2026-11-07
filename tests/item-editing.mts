@@ -85,7 +85,7 @@ void test("a matching spell attack and save DC pair reads as one line", () => {
         { target: "spellSaveDC", mode: "add", value: 1 },
         { target: "armorClass", mode: "add", value: 1 },
       ],
-      translator("en"),
+      translator(),
     ),
     ["Spell attack bonus and save DC +1", "Armor Class +1"],
   );
@@ -97,7 +97,7 @@ void test("a matching spell attack and save DC pair reads as one line", () => {
         { target: "spellAttack", key: "warlock", mode: "add", value: 2 },
         { target: "spellAttack", mode: "add", value: 1 },
       ],
-      translator("en"),
+      translator(),
     ),
     ["Warlock spell attack bonus and save DC +2", "Spell attack bonus +1"],
   );
@@ -188,7 +188,7 @@ void test("an item casts this campaign's spells by hb. id and names them in word
   };
   assert.equal(itemProblem(item), undefined);
   assert.equal(
-    describeGrants(grants, translator("en"))[1],
+    describeGrants(grants, translator())[1],
     "Cast Ember Lance, Fire Bolt with a use of Ember Wand",
   );
   const foreign = { ...grants, spells: [{ ids: ["xx.ember-lance"], resource: "uses" }] };

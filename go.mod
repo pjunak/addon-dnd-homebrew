@@ -3,7 +3,7 @@ module github.com/pjunak/addon-dnd-homebrew
 go 1.27.3
 
 require (
-	github.com/pjunak/ttrpg-codex v0.0.0-20261102202637-0878bcc86853
+	github.com/pjunak/ttrpg-codex v0.0.0-20261107002505-3cce2048bf35
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	golang.org/x/text v0.42.0
 )

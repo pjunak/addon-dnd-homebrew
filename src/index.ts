@@ -13,6 +13,7 @@ export async function activate(context: AddonContext): Promise<Disposable> {
   context.capabilities.require("ui.markdown");
   context.capabilities.require("ui.markdown-editor");
   context.capabilities.require("ui.controls.v1");
+  context.capabilities.require("ui.i18n");
   context.signal.throwIfAborted();
   const importer = await context.services.own("codex.import-adapter", { signal: context.signal });
   const repository = new HomebrewRepository(context);
@@ -34,6 +35,7 @@ export async function activate(context: AddonContext): Promise<Disposable> {
     references: rules,
     signal: context.signal,
     ui: context.ui,
+    i18n: context.i18n,
   });
   const bindings = [
     context.ui.bind("homebrew.route", {

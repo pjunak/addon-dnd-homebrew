@@ -1,4 +1,4 @@
-import { hostLocale, translator, type Translator } from "./catalogs.js";
+import { translator, type Translator } from "./catalogs.js";
 import { describeEffects } from "./effects.js";
 import { describeFocus } from "./focus.js";
 import { describeGrants } from "./grants.js";
@@ -8,7 +8,7 @@ import { fold, revealed, served } from "./gallery-model.js";
 import { LiveRefresh } from "./live-refresh.js";
 import { HomebrewError, type Published } from "./model.js";
 import type { PublishedState } from "./repository.js";
-import { runtimeFor, type HomebrewRuntime } from "./runtime.js";
+import { liveI18n, runtimeFor, type HomebrewRuntime } from "./runtime.js";
 import type { ContributionContext } from "./sdk.js";
 
 export const galleryElementTag = "dnd-homebrew-gallery";
@@ -41,7 +41,7 @@ export function defineGalleryElement(generation?: string): string {
       else this.#render();
     }
     get #t(): Translator {
-      return translator(hostLocale(this.#contribution?.host));
+      return translator(liveI18n(this.#runtime));
     }
     get #focusId(): string {
       const query = (this.#contribution?.host as RouteHost | undefined)?.query;
@@ -88,6 +88,8 @@ export function defineGalleryElement(generation?: string): string {
         () => void this.#load(),
       );
       runtime.repository.subscribe(() => this.#refresh?.invalidate(), this.#signal());
+      // Catalogs for a new language arrive after the switch.
+      runtime.i18n.onChange(() => this.#render(), { signal: this.#signal() });
       this.#render();
       void this.#load();
     }
